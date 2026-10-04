@@ -1,0 +1,60 @@
+# Enclave
+
+A real-time, multi-agent territory-capture tournament. Write an agent, submit it, and watch it fight four others for the map.
+
+Five agents drop into a bounded circular arena for 180 seconds. Leave your land and you draw a trail behind you. Close the loop and everything you enclosed becomes yours. Cut a rival's trail and you don't just kill them, you take their whole territory and get a short speed burst to go after the next one. Whoever owns the most of the map when the clock runs out wins.
+
+Anyone can enter. Your agent can be a few lines of rules, a trained neural net, a search routine, or anything in between. The server runs ladder rounds of random 5-agent lobbies, rates agents by how they place, and a final round sets the leaderboard. Every match is deterministic from its seed and action log, so any game can be replayed and any dispute settled by running it again.
+
+The name is the thing you fight over: an enclave, a bounded patch of land you hold against everyone else.
+
+## The game
+
+- **Arena.** Circular, 11,304 playable cells on a 120x120 grid. The wall is solid. Steer into it and you slide along the edge instead of dying.
+- **Match.** Five players, 180 seconds. The engine runs at 30 ticks per second; agents decide 10 times per second.
+- **Movement.** Three actions: `0` straight, `1` left, `2` right. You move faster the more land you hold (+1 cell per second for every 5% of the map), and you get a 1.5x burst for 5 seconds after a kill. Speed is capped so you never move more than one cell per tick.
+- **Capture.** Re-enter your own land with an open trail and everything the loop encloses becomes yours, including other players' land.
+- **Death.** Cut into your own trail and your land goes neutral. Get cut by a rival, or lose a head-on, and the killer takes your land. Either way you respawn with a small fresh patch on empty ground.
+- **Score.** Your share of the map at the end. Ties break on time-averaged coverage, then fewer deaths.
+
+The full specification is in [`Paper.io Tournament Spec.md`](Paper.io%20Tournament%20Spec.md). A few rules here (taking territory on a kill, the kill speed burst, solid walls) intentionally differ from that draft.
+
+## What your agent sees
+
+Every decision, your agent gets a view built from its own point of view. There are 16 channels: your territory, trail, and head, the same three for each of the four opponents, and the arena mask.
+
+- **Global view**, shape `(16, 120, 120)`. The whole arena, north up. Use it for planning.
+- **Local view**, shape `(16, 31, 31)`. Cropped on your head and rotated so your heading points up, so "straight", "left", and "right" always mean the same pixels. Use it for quick reactions.
+- **Scalars**: your coverage, rank, speed, boost remaining, time left, and each opponent's coverage, speed, and alive flag.
+
+## Writing an agent
+
+```python
+class Agent:
+    def reset(self, config: dict) -> None:
+        """Called once per match with the constants and a seed."""
+
+    def act(self, obs: dict) -> int:
+        """Called every decision. Return 0, 1 or 2."""
+```
+
+Three baselines ship in [`paperio/agents/`](paperio/agents): `random`, `greedy` (grinds small capture loops), and `safe_expander`.
+
+## Running it
+
+```bash
+pip install -e ".[dev,viewer]"      # numpy, pillow, matplotlib, pytest
+
+python -c "import paperio.demo as d; d.run_and_render(7, 'match.mp4')"   # play and encode a match
+open replay.html                                                         # watch it, speeds 0.5x to 4x
+```
+
+The viewer plays the match in real time at 1x, with speed controls up to 4x, and shows the final standings. `match.mp4` is a real H.264 video with one frame per engine tick, so 1x playback matches the real 180 second match.
+
+## Status
+
+The engine, the reference environment, the three baseline agents, and the replay viewer are done. Next: the agent sandbox (Docker-isolated match workers), downloadable JSONL logs and replay bundles, the parallel match runner, and the ladder scheduler and rating.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

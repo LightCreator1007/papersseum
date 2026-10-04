@@ -1,0 +1,20 @@
+[project]
+name = "enclave"
+version = "0.1.0"
+description = "Enclave, a multi-agent territory-capture tournament."
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26"]
+
+[project.optional-dependencies]
+viewer = ["pillow>=10", "matplotlib>=3.8"]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+include = ["paperio*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"

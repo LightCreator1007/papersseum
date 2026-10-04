@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.venv/
+venv/
+
+# OS
+.DS_Store
+
+# scratch / generated working files
+scratch_*
+*.tmp
+
+# keep match.mp4 and replay.html as a working demo (committed intentionally)
