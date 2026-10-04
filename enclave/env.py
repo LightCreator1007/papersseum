@@ -1,10 +1,10 @@
-import paperio.constants as C
-from paperio.engine import Engine
-from paperio.observation import observe
-from paperio.state import area_pct
+import enclave.constants as C
+from enclave.engine import Engine
+from enclave.observation import observe
+from enclave.state import area_pct
 
 
-class PaperIoEnv:
+class EnclaveEnv:
     def __init__(self, seed):
         self.seed = seed
         self.engine = None

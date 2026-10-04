@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 import numpy as np
-import paperio.constants as C
-import paperio.geometry as G
+import enclave.constants as C
+import enclave.geometry as G
 
 
 @dataclass

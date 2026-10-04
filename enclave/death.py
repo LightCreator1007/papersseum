@@ -1,6 +1,6 @@
-import paperio.constants as C
-from paperio.state import recount_areas
-from paperio.trail import is_outside_own_land
+import enclave.constants as C
+from enclave.state import recount_areas
+from enclave.trail import is_outside_own_land
 
 
 def classify_entry(state, pid, nr, nc):

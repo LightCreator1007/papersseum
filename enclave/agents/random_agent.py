@@ -1,4 +1,4 @@
-from paperio.agents.base import Agent
+from enclave.agents.base import Agent
 
 
 class RandomAgent(Agent):

@@ -182,8 +182,8 @@ def calibrate(n_matches=200, base_seed=0):
     """Run mixed-lobby matches, feed the online ladder by slot identity, and
     fit the batch Plackett-Luce verdict. Prints both rankings so RANK_BONUS,
     SIGMA_K and the margin scale can be sanity-checked against baselines."""
-    from paperio.match import run_match
-    import paperio.demo as d
+    from enclave.match import run_match
+    import enclave.demo as d
 
     labels = {0: "Greedy-0", 1: "SafeExp-1", 2: "Greedy-2", 3: "SafeExp-3", 4: "Random-4"}
     ladder = Ladder()

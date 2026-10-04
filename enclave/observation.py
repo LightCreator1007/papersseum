@@ -1,7 +1,7 @@
 import numpy as np
-import paperio.constants as C
-from paperio.movement import current_speed
-from paperio.state import area_pct
+import enclave.constants as C
+from enclave.movement import current_speed
+from enclave.state import area_pct
 
 CHANNELS = 16
 

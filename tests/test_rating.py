@@ -1,5 +1,5 @@
 import numpy as np
-import paperio.rating as R
+import enclave.rating as R
 
 
 def _scores(cov, deaths=None):

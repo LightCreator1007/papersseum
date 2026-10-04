@@ -29,6 +29,8 @@ Every decision, your agent gets a view built from its own point of view. There a
 
 ## Writing an agent
 
+Your file defines a class named `Agent` with `reset(config)` and `act(obs) -> int`:
+
 ```python
 class Agent:
     def reset(self, config: dict) -> None:
@@ -38,17 +40,27 @@ class Agent:
         """Called every decision. Return 0, 1 or 2."""
 ```
 
-Three baselines ship in [`paperio/agents/`](paperio/agents): `random`, `greedy` (grinds small capture loops), and `safe_expander`.
+A copy-ready starting point is in [`examples/my_agent.py`](examples/my_agent.py). Three baselines ship in [`enclave/agents/`](enclave/agents): `random`, `greedy` (grinds small capture loops), and `safe_expander`.
 
 ## Running it
 
 ```bash
-pip install -e ".[dev,viewer]"      # numpy, pillow, matplotlib, pytest
+pip install -e ".[dev,viewer]"      # numpy; pillow for the viewer (MP4 also needs ffmpeg on PATH)
 
-python -c "import paperio.demo as d; d.run_and_render(7, 'match.mp4')"   # play and encode a match
+enclave play examples/my_agent.py --vs greedy,safe_expander --seed 7 --render match.mp4
+enclave validate examples/my_agent.py    # the same scan + smoke match the server runs on submit
+enclave version                          # library + engine hash (must match the server)
 ```
 
-`match.mp4` is a real H.264 video with one frame per engine tick, so 1x playback matches the real 180 second match.
+Or from Python:
+
+```python
+import enclave
+result = enclave.play("examples/my_agent.py", vs=["greedy", "safe_expander"], seed=7, render="match.mp4")
+print(result["placements"])
+```
+
+`match.mp4` is a real H.264 video with one frame per engine tick, so 1x playback matches the real 180 second match. `enclave.ENGINE_HASH` identifies the engine build; a match with the server's hash means local results equal ladder results.
 
 ## Status
 

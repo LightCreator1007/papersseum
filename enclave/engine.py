@@ -1,10 +1,10 @@
-import paperio.constants as C
-from paperio.state import init_match, area_pct
-from paperio.movement import intended_moves, apply_decision, rotate, step_delta
-from paperio.trail import lay_trail, is_outside_own_land
-from paperio.capture import close_trail
-from paperio.death import resolve_headon, classify_entry, kill
-from paperio.respawn import tick_respawns
+import enclave.constants as C
+from enclave.state import init_match, area_pct
+from enclave.movement import intended_moves, apply_decision, rotate, step_delta
+from enclave.trail import lay_trail, is_outside_own_land
+from enclave.capture import close_trail
+from enclave.death import resolve_headon, classify_entry, kill
+from enclave.respawn import tick_respawns
 
 
 class Engine:

@@ -1,8 +1,8 @@
 import math
 import numpy as np
-import paperio.constants as C
-import paperio.geometry as G
-from paperio.state import stamp_start_patch
+import enclave.constants as C
+import enclave.geometry as G
+from enclave.state import stamp_start_patch
 
 _SAMPLE_BUDGET = 200
 

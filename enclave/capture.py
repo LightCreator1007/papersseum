@@ -1,6 +1,6 @@
 import numpy as np
-from paperio.geometry import flood_reachable
-from paperio.state import recount_areas
+from enclave.geometry import flood_reachable
+from enclave.state import recount_areas
 
 
 def close_trail(state, pid):

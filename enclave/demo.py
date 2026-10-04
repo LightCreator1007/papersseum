@@ -1,10 +1,10 @@
 import numpy as np
-import paperio.constants as C
-from paperio.match import run_match
-from paperio.render import render_replay_gif
-from paperio.agents.random_agent import RandomAgent
-from paperio.agents.greedy_agent import GreedyAgent
-from paperio.agents.safe_expander import SafeExpanderAgent
+import enclave.constants as C
+from enclave.match import run_match
+from enclave.render import render_replay_gif
+from enclave.agents.random_agent import RandomAgent
+from enclave.agents.greedy_agent import GreedyAgent
+from enclave.agents.safe_expander import SafeExpanderAgent
 
 
 def mixed_lobby(seed):

@@ -1,5 +1,5 @@
 import numpy as np
-from paperio.agents.base import Agent
+from enclave.agents.base import Agent
 
 
 class SafeExpanderAgent(Agent):
