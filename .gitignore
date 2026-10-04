@@ -16,4 +16,12 @@ venv/
 scratch_*
 *.tmp
 
-# keep match.mp4 and replay.html as a working demo (committed intentionally)
+# generated media and viewer (not tracked)
+*.mp4
+*.gif
+*.png
+replay.html
+
+# docs and spec (not tracked)
+docs/
+Paper.io Tournament Spec.md

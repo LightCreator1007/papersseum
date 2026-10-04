@@ -17,7 +17,7 @@ The name is the thing you fight over: an enclave, a bounded patch of land you ho
 - **Death.** Cut into your own trail and your land goes neutral. Get cut by a rival, or lose a head-on, and the killer takes your land. Either way you respawn with a small fresh patch on empty ground.
 - **Score.** Your share of the map at the end. Ties break on time-averaged coverage, then fewer deaths.
 
-The full specification is in [`Paper.io Tournament Spec.md`](Paper.io%20Tournament%20Spec.md). A few rules here (taking territory on a kill, the kill speed burst, solid walls) intentionally differ from that draft.
+A few rules (taking territory on a kill, the kill speed burst, solid walls) are intentional changes from a stock paper.io-style game.
 
 ## What your agent sees
 
@@ -46,15 +46,10 @@ Three baselines ship in [`paperio/agents/`](paperio/agents): `random`, `greedy` 
 pip install -e ".[dev,viewer]"      # numpy, pillow, matplotlib, pytest
 
 python -c "import paperio.demo as d; d.run_and_render(7, 'match.mp4')"   # play and encode a match
-open replay.html                                                         # watch it, speeds 0.5x to 4x
 ```
 
-The viewer plays the match in real time at 1x, with speed controls up to 4x, and shows the final standings. `match.mp4` is a real H.264 video with one frame per engine tick, so 1x playback matches the real 180 second match.
+`match.mp4` is a real H.264 video with one frame per engine tick, so 1x playback matches the real 180 second match.
 
 ## Status
 
 The engine, the reference environment, the three baseline agents, and the replay viewer are done. Next: the agent sandbox (Docker-isolated match workers), downloadable JSONL logs and replay bundles, the parallel match runner, and the ladder scheduler and rating.
-
-## License
-
-MIT. See [LICENSE](LICENSE).
