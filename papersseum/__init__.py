@@ -21,11 +21,12 @@ from papersseum.agents import BASELINES, RandomAgent
 from papersseum.env import PapersseumEnv
 from papersseum.match import run_match, replay_match
 from papersseum.loader import load_agent_from_file
-from papersseum import constants
+from papersseum import constants, channels
 
 __all__ = [
-    "Agent", "PapersseumEnv", "play", "run_match", "replay_match",
-    "load_agent_from_file", "constants", "__version__", "ENGINE_HASH",
+    "Agent", "PapersseumEnv", "play", "evaluate", "run_match", "replay_match",
+    "load_agent_from_file", "ascii_view", "ascii_obs", "constants", "channels",
+    "__version__", "ENGINE_HASH",
 ]
 
 __version__ = "0.1.0"
@@ -86,3 +87,8 @@ def play(agent, vs=None, seed=7, render=None):
         from papersseum.render import render_replay_mp4
         render_replay_mp4(seed, result["action_log"], render)
     return result
+
+
+# bound after `play` is defined to avoid import cycles
+from papersseum.render import ascii_view, ascii_obs   # noqa: E402
+from papersseum.benchmark import evaluate             # noqa: E402

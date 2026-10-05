@@ -1,6 +1,5 @@
 import subprocess
 import numpy as np
-from PIL import Image
 import papersseum.constants as C
 from papersseum.engine import Engine
 from papersseum.env import PapersseumEnv
@@ -91,6 +90,7 @@ def frame_rgb(state):
 
 
 def render_replay_gif(seed, action_log, path, stride=15):
+    from PIL import Image
     env = PapersseumEnv(seed)
     obs = env.reset()
     frames = [Image.fromarray(frame_rgb(env.engine.state)).resize((480, 480), Image.NEAREST)]
@@ -137,6 +137,45 @@ def render_replay_mp4(seed, action_log, path, scale=5, ffmpeg="ffmpeg"):
     proc.stdin.close()
     proc.wait()
     return path
+
+
+def ascii_view(planes, step=1):
+    """Collapse 16 observation channels into one char per cell, for debugging
+    what an agent sees. `planes` is a (16, H, W) array (obs["local"] or
+    obs["global"]). Legend: @ own head, M own land, t own trail, O opp land,
+    ~ opp trail, X opp head, . empty, # wall."""
+    import papersseum.channels as ch
+    _, h, w = planes.shape
+    opp_terr = [ch.opponent(i)["territory"] for i in range(ch.N_OPPONENTS)]
+    opp_trail = [ch.opponent(i)["trail"] for i in range(ch.N_OPPONENTS)]
+    opp_head = [ch.opponent(i)["head"] for i in range(ch.N_OPPONENTS)]
+    rows = []
+    for r in range(0, h, step):
+        line = []
+        for c in range(0, w, step):
+            if planes[ch.ARENA_MASK, r, c] < 0.5:
+                line.append("#")
+            elif planes[ch.OWN_HEAD, r, c] > 0.5:
+                line.append("@")
+            elif any(planes[k, r, c] > 0.5 for k in opp_head):
+                line.append("X")
+            elif planes[ch.OWN_TRAIL, r, c] > 0.5:
+                line.append("t")
+            elif any(planes[k, r, c] > 0.5 for k in opp_trail):
+                line.append("~")
+            elif planes[ch.OWN_TERRITORY, r, c] > 0.5:
+                line.append("M")
+            elif any(planes[k, r, c] > 0.5 for k in opp_terr):
+                line.append("O")
+            else:
+                line.append(".")
+        rows.append("".join(line))
+    return "\n".join(rows)
+
+
+def ascii_obs(obs, which="local", step=1):
+    """ASCII of obs["local"] or obs["global"]. See ascii_view for the legend."""
+    return ascii_view(obs[which], step=step)
 
 
 def ascii_frame(state, step=4):

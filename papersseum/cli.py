@@ -88,6 +88,29 @@ def cmd_validate(args):
     return 0
 
 
+def cmd_eval(args):
+    from papersseum.benchmark import evaluate
+    vs = [v for v in args.vs.split(",") if v] if args.vs else None
+
+    def progress(done, total):
+        print(f"\r  playing {done}/{total} matches...", end="", flush=True)
+
+    rep = evaluate(args.agent, vs=vs, games=args.games, seed0=args.seed, on_progress=progress)
+    print("\r" + " " * 40 + "\r", end="")
+
+    labels = ["1st", "2nd", "3rd", "4th", "5th"]
+    print(f"papersseum eval   {args.agent}   {rep['games']} games   engine {papersseum.ENGINE_HASH}")
+    print(f"field: {', '.join(rep['field'])}")
+    hist = "  ".join(f"{labels[i]} {rep['placements'][i]}" for i in range(5))
+    print(f"  placements   {hist}")
+    print(f"  win rate     {rep['win_rate'] * 100:.0f}%")
+    print(f"  coverage     mean {rep['coverage_mean']:.1f}%   best {rep['coverage_best']:.1f}%   worst {rep['coverage_worst']:.1f}%")
+    print(f"  deaths       mean {rep['deaths_mean']:.1f}")
+    print(f"  rating       {rep['rating_conservative']:.0f} conservative   ({rep['rating_elo']:.0f} elo vs this field)")
+    print(f"  strength     {rep['strength']:.2f}  (batch Plackett-Luce, field sums to 5)")
+    return 0
+
+
 def cmd_render(args):
     from papersseum.render import render_replay_mp4
     from papersseum.replay_io import load_replay
@@ -120,6 +143,13 @@ def build_parser():
     va.add_argument("--seed", type=int, default=7)
     va.add_argument("--decisions", type=int, default=200, help="how many decisions to smoke-test")
     va.set_defaults(func=cmd_validate)
+
+    ev = sub.add_parser("eval", help="benchmark your agent over many matches vs a baseline field")
+    ev.add_argument("agent", help="path to your agent .py")
+    ev.add_argument("--vs", default=None, help="comma-separated opponents (default: a varied field)")
+    ev.add_argument("--games", type=int, default=20)
+    ev.add_argument("--seed", type=int, default=0, help="first seed; games use seed..seed+games-1")
+    ev.set_defaults(func=cmd_eval)
 
     rn = sub.add_parser("render", help="render an MP4 from a replay.json")
     rn.add_argument("replay", help="path to replay.json (seed + action_log)")

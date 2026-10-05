@@ -62,6 +62,30 @@ print(result["placements"])
 
 `match.mp4` is a real H.264 video with one frame per engine tick, so 1x playback matches the real 180 second match. `papersseum.ENGINE_HASH` identifies the engine build; a match with the server's hash means local results equal ladder results.
 
+## Test and iterate locally
+
+Measure your agent against a field of baselines before you ever submit:
+
+```bash
+papersseum eval examples/my_agent.py --games 30     # placements, win rate, coverage, rating, strength
+```
+
+It plays your agent in slot 0 against a varied baseline field over many seeds and reports the same signals the ladder uses: how often you place 1st to 5th, mean coverage, and a rating (online Elo plus a batch Plackett-Luce strength).
+
+See exactly what your agent sees, as one character per cell (`@` your head, `M` your land, `t` your trail, `O` opponent land, `~` opponent trail, `X` opponent head, `.` empty, `#` wall):
+
+```python
+import papersseum
+from papersseum import channels as ch
+
+env = papersseum.PapersseumEnv(seed=7)
+obs = env.reset()
+print(papersseum.ascii_obs(obs[0], "local"))         # your agent's eyes
+on_own_land = obs[0]["local"][ch.OWN_TERRITORY, 15, 15] > 0.5
+```
+
+Use `papersseum.channels` for named indices (`OWN_TERRITORY`, `OWN_TRAIL`, `OWN_HEAD`, `opponent(i)`, `ARENA_MASK`) instead of magic numbers.
+
 ## Status
 
 The engine, the reference environment, the three baseline agents, and the replay viewer are done. Next: the agent sandbox (Docker-isolated match workers), downloadable JSONL logs and replay bundles, the parallel match runner, and the ladder scheduler and rating.
