@@ -1,5 +1,5 @@
-import enclave.constants as C
-from enclave.env import EnclaveEnv
+import papersseum.constants as C
+from papersseum.env import PapersseumEnv
 
 
 def _safe_act(agent, obs):
@@ -18,7 +18,7 @@ def _config(seed, pid):
 
 
 def run_match(seed, agents):
-    env = EnclaveEnv(seed)
+    env = PapersseumEnv(seed)
     obs = env.reset()
     for pid, ag in enumerate(agents):
         ag.reset(_config(seed, pid))
@@ -38,7 +38,7 @@ def run_match(seed, agents):
 
 
 def replay_match(seed, action_log):
-    env = EnclaveEnv(seed)
+    env = PapersseumEnv(seed)
     obs = env.reset()
     info = {"scores": env.engine.scores(), "tick": 0}
     for row in action_log:

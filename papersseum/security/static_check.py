@@ -17,7 +17,7 @@ ALLOWED_IMPORTS = {
     "heapq", "bisect", "typing", "dataclasses", "enum", "json", "copy",
     "operator", "statistics", "array", "re", "string", "time", "abc",
     "fractions", "decimal", "numbers", "contextlib",
-    "enclave", "torch",
+    "papersseum", "torch",
 }
 
 BANNED_CALLS = {

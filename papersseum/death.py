@@ -1,6 +1,6 @@
-import enclave.constants as C
-from enclave.state import recount_areas
-from enclave.trail import is_outside_own_land
+import papersseum.constants as C
+from papersseum.state import recount_areas
+from papersseum.trail import is_outside_own_land
 
 
 def classify_entry(state, pid, nr, nc):

@@ -1,4 +1,4 @@
-from enclave.agents.base import Agent
+from papersseum.agents.base import Agent
 
 
 class RandomAgent(Agent):

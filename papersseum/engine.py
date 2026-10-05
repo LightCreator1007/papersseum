@@ -1,10 +1,10 @@
-import enclave.constants as C
-from enclave.state import init_match, area_pct
-from enclave.movement import intended_moves, apply_decision, rotate, step_delta
-from enclave.trail import lay_trail, is_outside_own_land
-from enclave.capture import close_trail
-from enclave.death import resolve_headon, classify_entry, kill
-from enclave.respawn import tick_respawns
+import papersseum.constants as C
+from papersseum.state import init_match, area_pct
+from papersseum.movement import intended_moves, apply_decision, rotate, step_delta
+from papersseum.trail import lay_trail, is_outside_own_land
+from papersseum.capture import close_trail
+from papersseum.death import resolve_headon, classify_entry, kill
+from papersseum.respawn import tick_respawns
 
 
 class Engine:

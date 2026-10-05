@@ -1,6 +1,6 @@
 import math
-import enclave.constants as C
-from enclave.state import area_pct
+import papersseum.constants as C
+from papersseum.state import area_pct
 
 _DELTA = {0: (-1, 0), 1: (0, 1), 2: (1, 0), 3: (0, -1)}
 

@@ -1,7 +1,7 @@
 import math
 from collections import deque
 import numpy as np
-import enclave.constants as C
+import papersseum.constants as C
 
 
 def arena_mask():

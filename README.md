@@ -1,4 +1,4 @@
-# Enclave
+# Papersseum
 
 A real-time, multi-agent territory-capture tournament. Write an agent, submit it, and watch it fight four others for the map.
 
@@ -6,7 +6,7 @@ Five agents drop into a bounded circular arena for 180 seconds. Leave your land 
 
 Anyone can enter. Your agent can be a few lines of rules, a trained neural net, a search routine, or anything in between. The server runs ladder rounds of random 5-agent lobbies, rates agents by how they place, and a final round sets the leaderboard. Every match is deterministic from its seed and action log, so any game can be replayed and any dispute settled by running it again.
 
-The name is the thing you fight over: an enclave, a bounded patch of land you hold against everyone else.
+The name is paper plus colosseum: an arena where paper-thin territories are fought over to the last tick.
 
 ## The game
 
@@ -40,27 +40,27 @@ class Agent:
         """Called every decision. Return 0, 1 or 2."""
 ```
 
-A copy-ready starting point is in [`examples/my_agent.py`](examples/my_agent.py). Three baselines ship in [`enclave/agents/`](enclave/agents): `random`, `greedy` (grinds small capture loops), and `safe_expander`.
+A copy-ready starting point is in [`examples/my_agent.py`](examples/my_agent.py). Three baselines ship in [`papersseum/agents/`](papersseum/agents): `random`, `greedy` (grinds small capture loops), and `safe_expander`.
 
 ## Running it
 
 ```bash
 pip install -e ".[dev,viewer]"      # numpy; pillow for the viewer (MP4 also needs ffmpeg on PATH)
 
-enclave play examples/my_agent.py --vs greedy,safe_expander --seed 7 --render match.mp4
-enclave validate examples/my_agent.py    # the same scan + smoke match the server runs on submit
-enclave version                          # library + engine hash (must match the server)
+papersseum play examples/my_agent.py --vs greedy,safe_expander --seed 7 --render match.mp4
+papersseum validate examples/my_agent.py    # the same scan + smoke match the server runs on submit
+papersseum version                          # library + engine hash (must match the server)
 ```
 
 Or from Python:
 
 ```python
-import enclave
-result = enclave.play("examples/my_agent.py", vs=["greedy", "safe_expander"], seed=7, render="match.mp4")
+import papersseum
+result = papersseum.play("examples/my_agent.py", vs=["greedy", "safe_expander"], seed=7, render="match.mp4")
 print(result["placements"])
 ```
 
-`match.mp4` is a real H.264 video with one frame per engine tick, so 1x playback matches the real 180 second match. `enclave.ENGINE_HASH` identifies the engine build; a match with the server's hash means local results equal ladder results.
+`match.mp4` is a real H.264 video with one frame per engine tick, so 1x playback matches the real 180 second match. `papersseum.ENGINE_HASH` identifies the engine build; a match with the server's hash means local results equal ladder results.
 
 ## Status
 

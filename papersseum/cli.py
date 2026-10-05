@@ -1,19 +1,19 @@
-"""The `enclave` command-line tool for participants.
+"""The `papersseum` command-line tool for participants.
 
-    enclave play my_agent.py --vs greedy,safe_expander --seed 7 --render out.mp4
-    enclave validate my_agent.py
-    enclave render replay.json out.mp4
-    enclave version
+    papersseum play my_agent.py --vs greedy,safe_expander --seed 7 --render out.mp4
+    papersseum validate my_agent.py
+    papersseum render replay.json out.mp4
+    papersseum version
 """
 
 import argparse
 import sys
 import time
 
-import enclave
-from enclave import constants
-from enclave.loader import load_agent_from_file
-from enclave.security.static_check import scan_file
+import papersseum
+from papersseum import constants
+from papersseum.loader import load_agent_from_file
+from papersseum.security.static_check import scan_file
 
 
 def _names(scores):
@@ -22,15 +22,15 @@ def _names(scores):
 
 def cmd_play(args):
     vs = [v for v in args.vs.split(",") if v] if args.vs else None
-    result = enclave.play(args.agent, vs=vs, seed=args.seed, render=args.render)
-    print(f"seed {args.seed}   engine {enclave.ENGINE_HASH}")
+    result = papersseum.play(args.agent, vs=vs, seed=args.seed, render=args.render)
+    print(f"seed {args.seed}   engine {papersseum.ENGINE_HASH}")
     for rank, s in enumerate(_names(result["scores"]), 1):
         tag = "  <- you" if s["pid"] == 0 else ""
         print(f'  #{rank} slot{s["pid"]}  coverage={s["coverage"]:5.1f}%  deaths={s["deaths"]}{tag}')
     if args.render:
         print(f"wrote {args.render}")
     if args.save_replay:
-        from enclave.replay_io import write_replay
+        from papersseum.replay_io import write_replay
         write_replay(args.save_replay, args.seed, result)
         print(f"wrote {args.save_replay}")
     return 0
@@ -53,7 +53,7 @@ def cmd_validate(args):
         print(f"REJECTED: could not load Agent ({e})")
         return 1
 
-    env = enclave.EnclaveEnv(seed=args.seed)
+    env = papersseum.PapersseumEnv(seed=args.seed)
     obs = env.reset()
     agent = AgentCls()
     cfg = {k: getattr(constants, k) for k in dir(constants) if k.isupper()}
@@ -83,14 +83,14 @@ def cmd_validate(args):
     budget = constants.ACT_TIMEOUT_MS
     status = "ok" if max_ms <= budget else f"WARNING: slowest decision {max_ms:.1f} ms > {budget} ms budget"
     print(f"smoke match: {status} (slowest decision {max_ms:.1f} ms, budget {budget} ms)")
-    print(f"engine {enclave.ENGINE_HASH}")
+    print(f"engine {papersseum.ENGINE_HASH}")
     print("PASSED" if max_ms <= budget else "PASSED (but speed it up before submitting)")
     return 0
 
 
 def cmd_render(args):
-    from enclave.render import render_replay_mp4
-    from enclave.replay_io import load_replay
+    from papersseum.render import render_replay_mp4
+    from papersseum.replay_io import load_replay
     data = load_replay(args.replay)
     render_replay_mp4(data["seed"], data["action_log"], args.out)
     print(f"wrote {args.out} from seed {data['seed']}")
@@ -98,13 +98,13 @@ def cmd_render(args):
 
 
 def cmd_version(args):
-    print(f"enclave {enclave.__version__}")
-    print(f"engine  {enclave.ENGINE_HASH}")
+    print(f"papersseum {papersseum.__version__}")
+    print(f"engine  {papersseum.ENGINE_HASH}")
     return 0
 
 
 def build_parser():
-    p = argparse.ArgumentParser(prog="enclave", description="Enclave reference environment")
+    p = argparse.ArgumentParser(prog="papersseum", description="Papersseum reference environment")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     pl = sub.add_parser("play", help="play your agent against baselines")

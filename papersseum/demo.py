@@ -1,10 +1,10 @@
 import numpy as np
-import enclave.constants as C
-from enclave.match import run_match
-from enclave.render import render_replay_gif
-from enclave.agents.random_agent import RandomAgent
-from enclave.agents.greedy_agent import GreedyAgent
-from enclave.agents.safe_expander import SafeExpanderAgent
+import papersseum.constants as C
+from papersseum.match import run_match
+from papersseum.render import render_replay_gif
+from papersseum.agents.random_agent import RandomAgent
+from papersseum.agents.greedy_agent import GreedyAgent
+from papersseum.agents.safe_expander import SafeExpanderAgent
 
 
 def mixed_lobby(seed):

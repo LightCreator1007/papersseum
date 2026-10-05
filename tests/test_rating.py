@@ -1,5 +1,5 @@
 import numpy as np
-import enclave.rating as R
+import papersseum.rating as R
 
 
 def _scores(cov, deaths=None):

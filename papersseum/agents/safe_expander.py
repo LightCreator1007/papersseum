@@ -1,5 +1,5 @@
 import numpy as np
-from enclave.agents.base import Agent
+from papersseum.agents.base import Agent
 
 
 class SafeExpanderAgent(Agent):

@@ -1,7 +1,7 @@
 import numpy as np
-import enclave.constants as C
-from enclave.movement import current_speed
-from enclave.state import area_pct
+import papersseum.constants as C
+from papersseum.movement import current_speed
+from papersseum.state import area_pct
 
 CHANNELS = 16
 

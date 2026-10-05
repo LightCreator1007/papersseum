@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 import numpy as np
-import enclave.constants as C
-import enclave.geometry as G
+import papersseum.constants as C
+import papersseum.geometry as G
 
 
 @dataclass

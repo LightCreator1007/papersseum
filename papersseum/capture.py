@@ -1,6 +1,6 @@
 import numpy as np
-from enclave.geometry import flood_reachable
-from enclave.state import recount_areas
+from papersseum.geometry import flood_reachable
+from papersseum.state import recount_areas
 
 
 def close_trail(state, pid):

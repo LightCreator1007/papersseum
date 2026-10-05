@@ -1,11 +1,11 @@
-"""Example Enclave submission.
+"""Example Papersseum submission.
 
 Copy this file, change act(), and submit. Your file must define a class named
 Agent with reset(config) and act(obs) -> int (0 straight, 1 left, 2 right).
 
 Try it:
-    enclave play examples/my_agent.py --vs greedy,safe_expander --seed 7 --render out.mp4
-    enclave validate examples/my_agent.py
+    papersseum play examples/my_agent.py --vs greedy,safe_expander --seed 7 --render out.mp4
+    papersseum validate examples/my_agent.py
 """
 
 

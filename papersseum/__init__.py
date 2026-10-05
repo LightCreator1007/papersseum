@@ -1,8 +1,8 @@
-"""Enclave: the reference environment for the Enclave tournament.
+"""Papersseum: the reference environment for the Papersseum tournament.
 
 Public API for participants:
 
-    from enclave import Agent, EnclaveEnv, play
+    from papersseum import Agent, PapersseumEnv, play
 
     class MyAgent(Agent):
         def act(self, obs):
@@ -16,15 +16,15 @@ at match start, so a hash match guarantees local results equal ladder results.
 
 import hashlib
 
-from enclave.agents.base import Agent
-from enclave.agents import BASELINES, RandomAgent
-from enclave.env import EnclaveEnv
-from enclave.match import run_match, replay_match
-from enclave.loader import load_agent_from_file
-from enclave import constants
+from papersseum.agents.base import Agent
+from papersseum.agents import BASELINES, RandomAgent
+from papersseum.env import PapersseumEnv
+from papersseum.match import run_match, replay_match
+from papersseum.loader import load_agent_from_file
+from papersseum import constants
 
 __all__ = [
-    "Agent", "EnclaveEnv", "play", "run_match", "replay_match",
+    "Agent", "PapersseumEnv", "play", "run_match", "replay_match",
     "load_agent_from_file", "constants", "__version__", "ENGINE_HASH",
 ]
 
@@ -83,6 +83,6 @@ def play(agent, vs=None, seed=7, render=None):
 
     result = run_match(seed, lobby)
     if render:
-        from enclave.render import render_replay_mp4
+        from papersseum.render import render_replay_mp4
         render_replay_mp4(seed, result["action_log"], render)
     return result

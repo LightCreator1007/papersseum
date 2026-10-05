@@ -1,7 +1,7 @@
 [project]
-name = "enclave"
+name = "papersseum"
 version = "0.1.0"
-description = "Enclave, a multi-agent territory-capture tournament."
+description = "Papersseum, a multi-agent territory-capture tournament."
 requires-python = ">=3.11"
 dependencies = ["numpy>=1.26"]
 
@@ -10,10 +10,10 @@ viewer = ["pillow>=10"]       # MP4 encoding also needs ffmpeg on PATH
 dev = ["pytest>=8"]
 
 [project.scripts]
-enclave = "enclave.cli:main"
+papersseum = "papersseum.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["enclave*"]
+include = ["papersseum*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

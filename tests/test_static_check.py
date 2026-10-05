@@ -1,4 +1,4 @@
-from enclave.security.static_check import scan_source
+from papersseum.security.static_check import scan_source
 
 
 def _kinds(src):
@@ -7,7 +7,7 @@ def _kinds(src):
 
 def test_clean_agent_passes():
     src = ("import numpy as np\nimport math\n"
-           "from enclave import Agent\n"
+           "from papersseum import Agent\n"
            "class Agent(Agent):\n    def act(self, obs):\n        return int(np.argmax([1,2,3]) % 3)\n")
     assert scan_source(src)["ok"]
 

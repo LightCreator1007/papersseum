@@ -1,8 +1,8 @@
 import math
 import numpy as np
-import enclave.constants as C
-import enclave.geometry as G
-from enclave.state import stamp_start_patch
+import papersseum.constants as C
+import papersseum.geometry as G
+from papersseum.state import stamp_start_patch
 
 _SAMPLE_BUDGET = 200
 

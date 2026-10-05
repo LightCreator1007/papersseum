@@ -1,10 +1,10 @@
-import enclave.constants as C
-from enclave.engine import Engine
-from enclave.observation import observe
-from enclave.state import area_pct
+import papersseum.constants as C
+from papersseum.engine import Engine
+from papersseum.observation import observe
+from papersseum.state import area_pct
 
 
-class EnclaveEnv:
+class PapersseumEnv:
     def __init__(self, seed):
         self.seed = seed
         self.engine = None

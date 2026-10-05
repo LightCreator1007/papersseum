@@ -1,9 +1,9 @@
 import subprocess
 import numpy as np
 from PIL import Image
-import enclave.constants as C
-from enclave.engine import Engine
-from enclave.env import EnclaveEnv
+import papersseum.constants as C
+from papersseum.engine import Engine
+from papersseum.env import PapersseumEnv
 
 PLAYER_COLORS = [(255, 77, 94), (77, 157, 255), (53, 224, 127),
                  (255, 210, 63), (179, 107, 255)]
@@ -91,7 +91,7 @@ def frame_rgb(state):
 
 
 def render_replay_gif(seed, action_log, path, stride=15):
-    env = EnclaveEnv(seed)
+    env = PapersseumEnv(seed)
     obs = env.reset()
     frames = [Image.fromarray(frame_rgb(env.engine.state)).resize((480, 480), Image.NEAREST)]
     for i, row in enumerate(action_log):
