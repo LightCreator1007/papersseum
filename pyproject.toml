@@ -2,8 +2,23 @@
 name = "papersseum"
 version = "0.1.0"
 description = "Papersseum, a multi-agent territory-capture tournament."
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.11"
+authors = [{ name = "Dhairya Pandya" }]
+keywords = ["reinforcement-learning", "multi-agent", "game", "tournament", "paper.io"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Games/Entertainment",
+]
 dependencies = ["numpy>=1.26"]
+
+[project.urls]
+Homepage = "https://github.com/dhairya-pandya/papersseum"
+Repository = "https://github.com/dhairya-pandya/papersseum"
 
 [project.optional-dependencies]
 viewer = ["pillow>=10"]       # MP4 encoding also needs ffmpeg on PATH

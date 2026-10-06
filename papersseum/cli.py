@@ -120,6 +120,19 @@ def cmd_render(args):
     return 0
 
 
+def cmd_new(args):
+    import os
+    from papersseum.templates import STARTER_AGENT
+    if os.path.exists(args.path) and not args.force:
+        print(f"{args.path} already exists (use --force to overwrite)")
+        return 1
+    with open(args.path, "w") as fh:
+        fh.write(STARTER_AGENT)
+    print(f"wrote {args.path}")
+    print(f"next:  papersseum validate {args.path}   then   papersseum eval {args.path}")
+    return 0
+
+
 def cmd_version(args):
     print(f"papersseum {papersseum.__version__}")
     print(f"engine  {papersseum.ENGINE_HASH}")
@@ -155,6 +168,11 @@ def build_parser():
     rn.add_argument("replay", help="path to replay.json (seed + action_log)")
     rn.add_argument("out", help="output .mp4 path")
     rn.set_defaults(func=cmd_render)
+
+    nw = sub.add_parser("new", help="write a starter agent file")
+    nw.add_argument("path", nargs="?", default="my_agent.py", help="output path (default my_agent.py)")
+    nw.add_argument("--force", action="store_true", help="overwrite if it exists")
+    nw.set_defaults(func=cmd_new)
 
     ve = sub.add_parser("version", help="print library and engine versions")
     ve.set_defaults(func=cmd_version)

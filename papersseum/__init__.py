@@ -72,8 +72,12 @@ def play(agent, vs=None, seed=7, render=None):
 
     Returns the match result dict (scores, placements, action_log, final_owner).
     """
+    import os
     vs = vs or ["greedy", "safe_expander"]
     lobby = [_resolve_agent(agent)]
+    # your agent can load weights from config["weights_dir"] (its own folder)
+    agent_dir = os.path.dirname(os.path.abspath(agent)) if isinstance(agent, str) else None
+    weights_dirs = [agent_dir] + [None] * (constants.N_PLAYERS - 1)
     for name in vs:
         if name not in BASELINES:
             raise ValueError(f"unknown baseline {name!r}; choose from {sorted(BASELINES)}")
@@ -82,7 +86,7 @@ def play(agent, vs=None, seed=7, render=None):
         lobby.append(RandomAgent())
     lobby = lobby[:constants.N_PLAYERS]
 
-    result = run_match(seed, lobby)
+    result = run_match(seed, lobby, weights_dirs=weights_dirs)
     if render:
         from papersseum.render import render_replay_mp4
         render_replay_mp4(seed, result["action_log"], render)

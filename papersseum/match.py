@@ -10,18 +10,20 @@ def _safe_act(agent, obs):
         return 0
 
 
-def _config(seed, pid):
+def _config(seed, pid, weights_dir=None):
     cfg = {k: getattr(C, k) for k in dir(C) if k.isupper()}
     cfg["seed"] = seed
     cfg["pid"] = pid
+    cfg["weights_dir"] = weights_dir   # folder holding the agent + its weights, or None
     return cfg
 
 
-def run_match(seed, agents):
+def run_match(seed, agents, weights_dirs=None):
     env = PapersseumEnv(seed)
     obs = env.reset()
+    dirs = weights_dirs or [None] * len(agents)
     for pid, ag in enumerate(agents):
-        ag.reset(_config(seed, pid))
+        ag.reset(_config(seed, pid, dirs[pid]))
     action_log = []
     done = False
     while not done:

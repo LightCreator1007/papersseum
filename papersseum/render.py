@@ -108,6 +108,13 @@ def render_replay_gif(seed, action_log, path, stride=15):
 def render_replay_mp4(seed, action_log, path, scale=5, ffmpeg="ffmpeg"):
     """Encode a real-time H.264 video: one video frame per engine tick at
     TICK_HZ fps, so the clip runs exactly MATCH_SECONDS long at 1x playback."""
+    import shutil
+    if shutil.which(ffmpeg) is None:
+        raise RuntimeError(
+            "ffmpeg not found on PATH. Install it to render MP4 replays "
+            "(macOS: brew install ffmpeg, Debian/Ubuntu: apt install ffmpeg), "
+            "or skip --render."
+        )
     eng = Engine(seed)
     w = h = C.MAP_W * scale
     proc = subprocess.Popen(

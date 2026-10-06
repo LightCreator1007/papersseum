@@ -1,4 +1,6 @@
-"""My Papersseum agent.
+"""Starter content written by `papersseum new`."""
+
+STARTER_AGENT = '''"""My Papersseum agent.
 
 Your file must define a class named Agent with:
   reset(config) -> None   called once per match
@@ -37,3 +39,4 @@ class Agent:
         if self.out_steps % self.side == 0:
             return 2                        # curl right to close the loop back home
         return 0
+'''

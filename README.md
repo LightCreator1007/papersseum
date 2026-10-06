@@ -40,23 +40,32 @@ class Agent:
         """Called every decision. Return 0, 1 or 2."""
 ```
 
-A copy-ready starting point is in [`examples/my_agent.py`](examples/my_agent.py). Three baselines ship in [`papersseum/agents/`](papersseum/agents): `random`, `greedy` (grinds small capture loops), and `safe_expander`.
+Run `papersseum new my_agent.py` to drop a copy-ready starter next to you. Four baselines ship in [`papersseum/agents/`](papersseum/agents): `random`, `greedy` (grinds small capture loops), `safe_expander`, and `hunter` (chases and cuts exposed trails).
+
+If your agent uses trained weights, load them from your own folder via `config["weights_dir"]` in `reset`, using `numpy.load` or `torch.load` (the sandbox blocks `os` and `open`):
+
+```python
+def reset(self, config):
+    self.policy = __import__("numpy").load(config["weights_dir"] + "/policy.npy")
+```
 
 ## Running it
 
 ```bash
-pip install -e ".[dev,viewer]"      # numpy; pillow for the viewer (MP4 also needs ffmpeg on PATH)
+pip install papersseum             # or: pip install -e ".[dev,viewer]" from a clone
 
-papersseum play examples/my_agent.py --vs greedy,safe_expander --seed 7 --render match.mp4
-papersseum validate examples/my_agent.py    # the same scan + smoke match the server runs on submit
-papersseum version                          # library + engine hash (must match the server)
+papersseum new my_agent.py                         # write a starter agent
+papersseum play my_agent.py --vs greedy,hunter --seed 7 --render match.mp4
+papersseum eval my_agent.py --games 30             # benchmark vs a baseline field
+papersseum validate my_agent.py                    # the scan + smoke match the server runs on submit
+papersseum version                                 # library + engine hash (must match the server)
 ```
 
-Or from Python:
+MP4 rendering needs `ffmpeg` on PATH; everything else is pure Python plus NumPy. Or from Python:
 
 ```python
 import papersseum
-result = papersseum.play("examples/my_agent.py", vs=["greedy", "safe_expander"], seed=7, render="match.mp4")
+result = papersseum.play("my_agent.py", vs=["greedy", "hunter"], seed=7, render="match.mp4")
 print(result["placements"])
 ```
 

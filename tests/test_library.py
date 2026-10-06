@@ -41,6 +41,34 @@ def test_ascii_view_glyphs_and_shape():
     assert set(art) <= set("@MXt~O.#\n")
 
 
+def test_hunter_is_a_baseline_and_plays_valid():
+    from papersseum.agents import BASELINES, HunterAgent
+    assert "hunter" in BASELINES and BASELINES["hunter"] is HunterAgent
+    res = p.play(HunterAgent, vs=["greedy", "safe_expander", "random"], seed=1)
+    assert len(res["placements"]) == 5
+
+
+def test_weights_dir_reaches_agent():
+    seen = {}
+
+    class Probe(p.Agent):
+        def reset(self, config):
+            seen["dir"] = config.get("weights_dir", "MISSING")
+        def act(self, obs):
+            return 0
+
+    # instance agent -> weights_dir is None but the key must be present
+    p.run_match(0, [Probe()] + [p.BASELINES["random"]() for _ in range(4)])
+    assert seen["dir"] is None    # present, just no folder for an in-memory instance
+
+
+def test_starter_template_is_valid_and_passes_scan():
+    from papersseum.templates import STARTER_AGENT
+    from papersseum.security.static_check import scan_source
+    assert "class Agent" in STARTER_AGENT
+    assert scan_source(STARTER_AGENT)["ok"]
+
+
 def test_evaluate_report_shape():
     rep = p.evaluate("examples/my_agent.py", games=2, seed0=0)
     for k in ("games", "field", "placements", "win_rate", "coverage_mean",
