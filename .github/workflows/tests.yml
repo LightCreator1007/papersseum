@@ -1,0 +1,38 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  library:
+    name: Library (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+
+  database:
+    name: Database (pgTAP + advisors)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.120.0
+      # Applies every migration on a fresh local stack. Services the tests
+      # don't need are skipped to keep the job fast.
+      - name: Start Supabase
+        run: supabase start -x studio,imgproxy,edge-runtime,mailpit,postgres-meta,logflare,vector,supavisor
+      - name: Database tests
+        run: supabase test db
+      - name: Security and performance advisors
+        run: supabase db advisors --local --fail-on warn
