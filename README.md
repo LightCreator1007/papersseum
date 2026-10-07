@@ -123,3 +123,16 @@ Use `papersseum.channels` for named indices (`OWN_TERRITORY`, `OWN_TRAIL`, `OWN_
 ## Status
 
 The engine, reference environment, baselines, self-eval, JSONL replays and rating are done. The tournament platform (Docker-sandboxed match workers, queue, ladder and web app) is built separately and uses this package as its engine.
+
+## Running matches in a sandbox (platform operators)
+
+```python
+from papersseum.sandbox import run_sandboxed_match, validate_sandboxed, DockerBackend
+
+backend = DockerBackend(image="papersseum-sandbox")     # build with docker/Dockerfile
+check = validate_sandboxed("agent.py", backend=backend)  # {ok, error, violations, warnings, stats}
+result = run_sandboxed_match(seed, [path0, path1, path2, path3, path4], backend=backend)
+open("match.jsonl", "wb").write(result["replay"])
+```
+
+Each agent gets its own container (no network, no capabilities, read-only root, 512 MB, 1 CPU, 64 processes, code mounted read-only, no environment). Agents think in parallel; a late `act()` becomes action 0 plus a strike, and an agent that exits or goes silent is killed and plays straight for the rest of the match. `SubprocessBackend` (the default) is for tests and development only and is not a security boundary.
