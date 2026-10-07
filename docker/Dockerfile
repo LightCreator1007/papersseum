@@ -5,7 +5,7 @@ FROM python:3.11-slim
 
 # Pinned so every worker produces identical replays; keep in sync with the
 # numpy_version recorded in replay headers.
-ARG NUMPY_VERSION=2.5.1
+ARG NUMPY_VERSION=2.4.6
 ARG TORCH=0
 
 RUN pip install --no-cache-dir numpy==${NUMPY_VERSION}
