@@ -20,6 +20,16 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: pytest -q
 
+  worker:
+    name: Worker (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Worker tests
+        working-directory: worker
+        run: uv run --frozen pytest tests -q
+
   database:
     name: Database (pgTAP + advisors)
     runs-on: ubuntu-latest
