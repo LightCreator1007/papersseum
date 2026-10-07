@@ -100,7 +100,7 @@ class Ladder:
         deltas = {pid: 0.0 for pid in ids}
         for i, a in enumerate(ids):
             for b in ids:
-                if a is b:
+                if a == b:
                     continue
                 exp = _expected(self.elo[a], self.elo[b])
                 act = _actual(scores[a], scores[b])
@@ -174,6 +174,37 @@ def batch_ranking(rankings, n_players, **kw):
     gamma = fit_plackett_luce(rankings, n_players, **kw)
     order = sorted(range(n_players), key=lambda i: -gamma[i])
     return order, gamma
+
+
+# --- pure helpers for the platform worker (no global state) ---
+
+def elo_update(current, engine_scores, slot_ids):
+    """Apply one match to stored ratings and return the new ones.
+
+    current:       {bot_id: (elo, games)}; ids missing here start at ELO_START, 0 games.
+    engine_scores: the match's `scores` list (one dict per slot).
+    slot_ids:      bot id playing each slot, in slot order.
+    Returns {bot_id: (elo, games)} for the bots in this match only.
+    """
+    ladder = Ladder()
+    for bid in slot_ids:
+        if bid in current:
+            ladder.elo[bid], ladder.games[bid] = current[bid]
+    by_slot = match_scores(engine_scores)
+    ladder.update_match({slot_ids[slot]: sc for slot, sc in by_slot.items()})
+    return {bid: (ladder.elo[bid], ladder.games[bid]) for bid in slot_ids}
+
+
+def final_ranking(matches):
+    """Final-round verdict from finished matches.
+
+    matches: list of finishing orders, each a list of bot ids best-first.
+    Returns [(bot_id, strength)] best-first (batch Plackett-Luce).
+    """
+    ids = sorted({b for order in matches for b in order}, key=str)
+    index = {b: i for i, b in enumerate(ids)}
+    gamma = fit_plackett_luce([[index[b] for b in order] for order in matches], len(ids))
+    return sorted(((b, float(gamma[index[b]])) for b in ids), key=lambda t: -t[1])
 
 
 # --- calibration sim ---

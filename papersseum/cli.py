@@ -2,7 +2,7 @@
 
     papersseum play my_agent.py --vs greedy,safe_expander --seed 7 --render out.mp4
     papersseum validate my_agent.py
-    papersseum render replay.json out.mp4
+    papersseum render replay.jsonl out.mp4
     papersseum version
 """
 
@@ -148,7 +148,7 @@ def build_parser():
     pl.add_argument("--vs", default="greedy,safe_expander", help="comma-separated baseline names")
     pl.add_argument("--seed", type=int, default=7)
     pl.add_argument("--render", default=None, help="write an MP4 of the match")
-    pl.add_argument("--save-replay", default=None, help="write a replay.json (seed + action log)")
+    pl.add_argument("--save-replay", default=None, help="write a replay.jsonl (seed + action log, add .gz to compress)")
     pl.set_defaults(func=cmd_play)
 
     va = sub.add_parser("validate", help="run the server's scan + a smoke match locally")
@@ -164,8 +164,8 @@ def build_parser():
     ev.add_argument("--seed", type=int, default=0, help="first seed; games use seed..seed+games-1")
     ev.set_defaults(func=cmd_eval)
 
-    rn = sub.add_parser("render", help="render an MP4 from a replay.json")
-    rn.add_argument("replay", help="path to replay.json (seed + action_log)")
+    rn = sub.add_parser("render", help="render an MP4 from a replay.jsonl")
+    rn.add_argument("replay", help="path to replay.jsonl (seed + action_log)")
     rn.add_argument("out", help="output .mp4 path")
     rn.set_defaults(func=cmd_render)
 

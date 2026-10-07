@@ -62,3 +62,16 @@ def test_batch_handles_partial_and_mixed_rankings():
     rankings = [[0, 1, 2], [2, 0], [0, 1], [1, 2]]
     order, gamma = R.batch_ranking(rankings, 3)
     assert len(order) == 3 and abs(gamma.sum() - 3.0) < 1e-6
+
+
+def test_elo_update_pure_and_final_ranking():
+    from papersseum.rating import elo_update, final_ranking, ELO_START
+    scores = [{"pid": i, "coverage": 40.0 - 10 * i, "time_avg_coverage": 1.0, "deaths": 0}
+              for i in range(5)]
+    cur = {"a": (1000.0, 3)}
+    new = elo_update(cur, scores, ["a", "b", "c", "d", "e"])
+    assert cur == {"a": (1000.0, 3)}                       # input untouched
+    assert new["a"][1] == 4 and new["b"][1] == 1
+    assert new["a"][0] > ELO_START > new["e"][0]
+    order = [b for b, _ in final_ranking([["a", "b", "c"], ["a", "c", "b"], ["b", "a", "c"]])]
+    assert order[0] == "a" and order[-1] == "c"

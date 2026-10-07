@@ -42,11 +42,13 @@ class Agent:
 
 Run `papersseum new my_agent.py` to drop a copy-ready starter next to you. Four baselines ship in [`papersseum/agents/`](papersseum/agents): `random`, `greedy` (grinds small capture loops), `safe_expander`, and `hunter` (chases and cuts exposed trails).
 
-If your agent uses trained weights, load them from your own folder via `config["weights_dir"]` in `reset`, using `numpy.load` or `torch.load` (the sandbox blocks `os` and `open`):
+If your agent uses trained weights, load them from your own folder via `config["weights_dir"]` in `reset`, with `papersseum.load_weights(config, "policy.npy")` (`.npy`, `.npz`, `.pt`, `.pth`; raw `numpy.load` / `torch.load` are blocked by the scan):
 
 ```python
+from papersseum import load_weights
+
 def reset(self, config):
-    self.policy = __import__("numpy").load(config["weights_dir"] + "/policy.npy")
+    self.policy = load_weights(config, "policy.npy")
 ```
 
 ## Running it
@@ -70,6 +72,29 @@ print(result["placements"])
 ```
 
 `match.mp4` is a real H.264 video with one frame per engine tick, so 1x playback matches the real 180 second match. `papersseum.ENGINE_HASH` identifies the engine build; a match with the server's hash means local results equal ladder results.
+
+## Limits
+
+A submission is one `.py` file of at most 1 MB (weights live beside it). `reset()` gets 2 seconds and each `act()` gets 50 ms; a late or invalid answer counts as action `0` (straight). Only a curated set of imports is allowed (numpy, math, collections, and similar; `torch` for weights), and `open`, `eval`, `getattr`, `vars` and raw `numpy.load` / `torch.load` are blocked. `papersseum validate` runs the same scan locally.
+
+## Replays
+
+Every match is a JSONL file (add `.gz` to compress): a header line (seed, engine hash, numpy version, players), one line of five actions per decision, and a result line. A match is about 1 KB gzipped.
+
+```bash
+papersseum play my_agent.py --save-replay game.jsonl.gz
+papersseum render game.jsonl.gz game.mp4
+```
+
+```python
+from papersseum.replay_io import load_replay
+from papersseum import replay_match, iter_frames
+
+rep = load_replay("game.jsonl.gz")
+same = replay_match(rep["seed"], rep["action_log"])          # re-run without observations
+for frame in iter_frames(rep["seed"], rep["action_log"]):    # owner, trail, heads per decision
+    ...
+```
 
 ## Test and iterate locally
 
@@ -97,4 +122,4 @@ Use `papersseum.channels` for named indices (`OWN_TERRITORY`, `OWN_TRAIL`, `OWN_
 
 ## Status
 
-The engine, the reference environment, the three baseline agents, and the replay viewer are done. Next: the agent sandbox (Docker-isolated match workers), downloadable JSONL logs and replay bundles, the parallel match runner, and the ladder scheduler and rating.
+The engine, reference environment, baselines, self-eval, JSONL replays and rating are done. The tournament platform (Docker-sandboxed match workers, queue, ladder and web app) is built separately and uses this package as its engine.
