@@ -3,7 +3,11 @@
 WARNING: runs agent code inside this process with no isolation and no time
 limits. Local testing with your own bots only. The real sandbox replaces this
 file; keep the two function signatures.
+
+Fails closed: uploaded bots only run when PAPERSSEUM_UNSAFE_LOCAL=1 is set.
+Never set it on a worker connected to the production database.
 """
+import os
 import time
 
 import papersseum
@@ -14,8 +18,23 @@ from papersseum.match import run_match
 from papersseum.security.static_check import scan_file
 
 SMOKE_DECISIONS = 200
+UNSAFE_ENV = "PAPERSSEUM_UNSAFE_LOCAL"
+
+
+class SandboxMissing(RuntimeError):
+    """Raised instead of running uploaded code without a sandbox."""
+
+
+def check_allowed():
+    """Refuse to run uploaded code unless the unsafe local mode is switched on."""
+    if os.environ.get(UNSAFE_ENV) != "1":
+        raise SandboxMissing(
+            f"runner.py is the unsandboxed stand-in. Set {UNSAFE_ENV}=1 to run "
+            "uploaded bots on your own machine; never set it on a worker connected to prod.")
+
 
 def validate(path):
+    check_allowed()
     report = scan_file(path)
     if not report["ok"]:
         first = report["violations"][0]
@@ -45,6 +64,8 @@ def play(seed, players):
     """players: 5 dicts with "slot" and either "path" or "builtin".
     -> scores, placements, action_log, strikes, crashed (plain Python types only)"""
     agents = []
+    if any(not p.get("builtin") for p in players):
+        check_allowed()
     for p in sorted(players, key=lambda p: p["slot"]):     # engine player id == slot
         cls = BASELINES[p["builtin"]] if p.get("builtin") else load_agent_from_file(p["path"])
         agents.append(cls())

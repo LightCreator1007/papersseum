@@ -85,6 +85,10 @@ def run_one(conn):
 
 def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    try:
+        runner.check_allowed()          # refuse to start before claiming any job
+    except runner.SandboxMissing as e:
+        raise SystemExit(f"not starting: {e}")
     signal.signal(signal.SIGINT, lambda *_: stopping.set())     # Ctrl+C: finish the job, then stop
     signal.signal(signal.SIGTERM, lambda *_: stopping.set())    # docker stop: same
 

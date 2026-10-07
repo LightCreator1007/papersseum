@@ -7,7 +7,7 @@ database functions it calls.
 > **`runner.py` is a stand-in.** It runs agent code inside the worker process
 > with no sandbox and no time limits. Use it only locally with your own bots.
 > The Docker sandbox replaces `validate()` and `play()` in that file; nothing
-> else changes.
+> else changes. Until then it fails closed: see `PAPERSSEUM_UNSAFE_LOCAL` below.
 
 ## Run locally
 
@@ -18,7 +18,11 @@ DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
 SUPABASE_URL=http://127.0.0.1:54321
 SUPABASE_SECRET_KEY=<Secret key from `supabase status`>
 WORKER_ID=my-laptop
+PAPERSSEUM_UNSAFE_LOCAL=1
 ```
+
+`PAPERSSEUM_UNSAFE_LOCAL=1` allows the stand-in runner to execute uploaded bots.
+Without it the worker refuses to start. Never set it on a worker connected to prod.
 
 Start the worker (from `worker/`):
 
