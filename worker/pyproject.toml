@@ -9,6 +9,9 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.28.1",
+    # Same as docker/Dockerfile: the engine runs here, so this is the numpy
+    # that decides matches and gets written into replay headers.
+    "numpy==2.4.6",
     "papersseum",
     "psycopg[binary]>=3.3.6",
 ]
