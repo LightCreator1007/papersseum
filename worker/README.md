@@ -4,10 +4,8 @@ Claims jobs from the Supabase queue, validates uploads, plays matches, uploads
 replays and reports ratings. See `supabase/migrations/*_worker_api.sql` for the
 database functions it calls.
 
-> **`runner.py` is a stand-in.** It runs agent code inside the worker process
-> with no sandbox and no time limits. Use it only locally with your own bots.
-> The Docker sandbox replaces `validate()` and `play()` in that file; nothing
-> else changes. Until then it fails closed: see `PAPERSSEUM_UNSAFE_LOCAL` below.
+Uploaded bots run in the papersseum sandbox: one locked-down Docker container
+per bot (no network, read-only, 512 MB, 1 CPU). House bots run in-process.
 
 ## Run locally
 
@@ -18,11 +16,31 @@ DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
 SUPABASE_URL=http://127.0.0.1:54321
 SUPABASE_SECRET_KEY=<Secret key from `supabase status`>
 WORKER_ID=my-laptop
+```
+
+Build the sandbox image from the repo root (rebuild it whenever the library
+changes; the worker refuses to start if the image's engine differs from its own):
+
+```bash
+uv build --wheel --package papersseum && docker build -f docker/Dockerfile -t papersseum-sandbox .
+```
+
+No Docker? Add these two lines to `.env` to run uploaded bots as plain child
+processes instead. That is **not** a sandbox: only do it on your own machine,
+never on a worker connected to prod. Without the second line the worker
+refuses to start.
+
+```
+SANDBOX_BACKEND=subprocess
 PAPERSSEUM_UNSAFE_LOCAL=1
 ```
 
-`PAPERSSEUM_UNSAFE_LOCAL=1` allows the stand-in runner to execute uploaded bots.
-Without it the worker refuses to start. Never set it on a worker connected to prod.
+Other settings: `SANDBOX_IMAGE` (default `papersseum-sandbox`), `DOCKER` (the
+docker binary, default `docker`).
+
+If the worker itself runs in a container, give it the Docker socket and set
+`TMPDIR` to a directory mounted at the same path on the host: the sandbox mounts
+each bot's temp folder into its container by path.
 
 Start the worker (from `worker/`):
 
@@ -52,4 +70,5 @@ data so the seed script can run again.
 uv run pytest tests
 ```
 
-No database needed; storage and the database are faked.
+No database or Docker needed; storage and the database are faked, and bots
+run with the subprocess backend.

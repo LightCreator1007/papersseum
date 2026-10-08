@@ -7,7 +7,8 @@ os.environ.setdefault("DATABASE_URL", "postgresql://unused")
 os.environ.setdefault("SUPABASE_URL", "http://storage.test")
 os.environ.setdefault("SUPABASE_SECRET_KEY", "test-key")
 os.environ.setdefault("WORKER_ID", "test-worker")
-os.environ.setdefault("PAPERSSEUM_UNSAFE_LOCAL", "1")   # tests run the stand-in; test_guard.py removes it
+os.environ.setdefault("SANDBOX_BACKEND", "subprocess")  # no Docker in unit tests
+os.environ.setdefault("PAPERSSEUM_UNSAFE_LOCAL", "1")   # which needs the opt-in; test_guard.py removes it
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 EXAMPLE_AGENT = REPO_ROOT / "examples" / "my_agent.py"

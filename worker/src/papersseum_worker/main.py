@@ -7,7 +7,6 @@ import psycopg
 
 from papersseum_worker import config, db, runner, storage
 from papersseum_worker.ratings import new_ratings
-from papersseum_worker.replay import build_replay
 
 log = logging.getLogger("worker")
 stopping = threading.Event()
@@ -28,8 +27,7 @@ def handle_match(conn, job):
             p["path"] = storage.agent_file(p["storage_path"], p["sha256"])
 
     result = runner.play(job["seed"], players)
-    replay_path = storage.upload_replay(
-        job["match_id"], build_replay(job["seed"], players, result, config.ENGINE_HASH))
+    replay_path = storage.upload_replay(job["match_id"], result["replay"])
 
     score_of = {s["pid"]: s for s in result["scores"]}
     place_of = {pid: i + 1 for i, pid in enumerate(result["placements"])}
@@ -86,7 +84,7 @@ def run_one(conn):
 def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     try:
-        runner.check_allowed()          # refuse to start before claiming any job
+        runner.check_ready()            # refuse to start before claiming any job
     except runner.SandboxMissing as e:
         raise SystemExit(f"not starting: {e}")
     signal.signal(signal.SIGINT, lambda *_: stopping.set())     # Ctrl+C: finish the job, then stop

@@ -1,7 +1,7 @@
-"""The stand-in runner must never run uploaded code unless explicitly allowed."""
+"""The worker must never run uploaded code without a real sandbox, unless explicitly allowed."""
 import pytest
 
-from papersseum_worker import db, main, runner
+from papersseum_worker import config, db, main, runner
 
 from conftest import BUILTIN_LOBBY, EXAMPLE_AGENT
 
@@ -18,10 +18,38 @@ def test_only_exactly_1_opts_in(monkeypatch, value):
         runner.check_allowed()
 
 
+def test_unknown_backend_is_refused(monkeypatch):
+    monkeypatch.setattr(config, "SANDBOX_BACKEND", "none")
+    with pytest.raises(runner.SandboxMissing, match="unknown SANDBOX_BACKEND"):
+        runner.check_allowed()
+
+
+def test_docker_needs_no_opt_in(no_opt_in, monkeypatch):
+    monkeypatch.setattr(config, "SANDBOX_BACKEND", "docker")
+    runner.check_allowed()
+
+
+def test_docker_missing_stops_startup(monkeypatch):
+    monkeypatch.setattr(config, "SANDBOX_BACKEND", "docker")
+    monkeypatch.setattr(config, "DOCKER", "/nonexistent/docker")
+    with pytest.raises(runner.SandboxMissing, match="could not run docker"):
+        runner.check_ready()
+
+
 def test_validate_refuses_instead_of_rejecting(no_opt_in):
     # Raising (not returning ok=False) matters: a misconfigured worker must not
     # mark people's uploads as rejected. fail_job retries them elsewhere.
     with pytest.raises(runner.SandboxMissing):
+        runner.validate(str(EXAMPLE_AGENT))
+
+
+def test_sandbox_that_wont_start_does_not_reject_the_upload(monkeypatch):
+    class Broken:
+        def spawn(self, *args):
+            raise OSError("docker daemon is not running")
+
+    monkeypatch.setattr(runner, "_backend", Broken)
+    with pytest.raises(runner.SandboxMissing, match="docker daemon is not running"):
         runner.validate(str(EXAMPLE_AGENT))
 
 
