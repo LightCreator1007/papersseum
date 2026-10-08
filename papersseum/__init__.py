@@ -19,17 +19,18 @@ import hashlib
 from papersseum.agents.base import Agent
 from papersseum.agents import BASELINES, RandomAgent
 from papersseum.env import PapersseumEnv
-from papersseum.match import run_match, replay_match
+from papersseum.match import run_match, replay_match, iter_frames
 from papersseum.loader import load_agent_from_file
+from papersseum.weights import load_weights
 from papersseum import constants, channels
 
 __all__ = [
-    "Agent", "PapersseumEnv", "play", "evaluate", "run_match", "replay_match",
-    "load_agent_from_file", "ascii_view", "ascii_obs", "constants", "channels",
+    "Agent", "PapersseumEnv", "play", "evaluate", "run_match", "replay_match", "iter_frames",
+    "load_agent_from_file", "load_weights", "ascii_view", "ascii_obs", "constants", "channels",
     "__version__", "ENGINE_HASH",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 # modules whose source defines match behavior; their combined hash must match
 # the server's for local play to equal the ladder.

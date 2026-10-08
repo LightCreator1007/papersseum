@@ -1,4 +1,5 @@
 import papersseum.constants as C
+from papersseum.engine import Engine
 from papersseum.env import PapersseumEnv
 
 
@@ -40,18 +41,45 @@ def run_match(seed, agents, weights_dirs=None):
 
 
 def replay_match(seed, action_log):
-    env = PapersseumEnv(seed)
-    obs = env.reset()
-    info = {"scores": env.engine.scores(), "tick": 0}
+    """Re-run a match from its action log. Drives the engine directly, so it
+    skips building observations (about half the cost of a live match)."""
+    eng = Engine(seed)
     for row in action_log:
-        actions = {p: row[p] for p in range(C.N_PLAYERS)}
-        obs, _, done, info = env.step(actions)
-        if done:
+        for k in range(C.STEP_PER_DECISION):
+            eng.advance_tick({p: row[p] for p in range(C.N_PLAYERS)} if k == 0 else None)
+        if eng.is_over():
             break
     return {
         "seed": seed,
         "action_log": action_log,
-        "scores": info["scores"],
-        "placements": env.engine.placements(),
-        "final_owner": env.engine.state.owner.copy(),
+        "scores": eng.scores(),
+        "placements": eng.placements(),
+        "final_owner": eng.state.owner.copy(),
     }
+
+
+def iter_frames(seed, action_log):
+    """Yield one frame per decision (plus the opening frame) for viewers.
+
+    Each frame: {"tick", "owner" (int8 HxW, -1 = none), "trail" (int8 HxW),
+    "heads": [(row, col) or None if dead, per slot]}. Arrays are copies, safe
+    to keep. Needs no observations, so it is cheap enough for a browser.
+    """
+    eng = Engine(seed)
+
+    def frame():
+        st = eng.state
+        return {
+            "tick": st.tick,
+            "owner": st.owner.copy(),
+            "trail": st.trail.copy(),
+            "heads": [(p.r, p.c) if p.alive else None for p in st.players],
+        }
+
+    yield frame()
+    for row in action_log:
+        for k in range(C.STEP_PER_DECISION):
+            eng.advance_tick({p: row[p] for p in range(C.N_PLAYERS)} if k == 0 else None)
+        yield frame()
+        if eng.is_over():
+            break

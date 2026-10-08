@@ -77,3 +77,41 @@ def test_evaluate_report_shape():
     assert rep["games"] == 2
     assert sum(rep["placements"]) == 2          # each game yields one placement
     assert 0.0 <= rep["win_rate"] <= 1.0
+
+
+def test_replay_roundtrip_jsonl_and_gz(tmp_path):
+    from papersseum.replay_io import write_replay, load_replay
+    lobby = [p.BASELINES["greedy"]() for _ in range(5)]
+    res = p.run_match(3, lobby)
+    players = [{"slot": i, "bot_name": f"b{i}", "submission_id": f"s{i}"} for i in range(5)]
+    for name in ("r.jsonl", "r.jsonl.gz"):
+        path = tmp_path / name
+        write_replay(path, 3, res, players)
+        back = load_replay(path)
+        assert back["seed"] == 3 and back["engine_hash"] == p.ENGINE_HASH
+        assert back["action_log"] == res["action_log"] and back["players"] == players
+        assert back["placements"] == res["placements"]
+    assert (tmp_path / "r.jsonl").read_text().splitlines()[0].startswith('{"type":"header"')
+
+
+def test_replay_match_and_iter_frames_agree_with_live_match():
+    lobby = [p.BASELINES["safe_expander"]() for _ in range(5)]
+    res = p.run_match(5, lobby)
+    rep = p.replay_match(5, res["action_log"])
+    assert rep["placements"] == res["placements"] and rep["scores"] == res["scores"]
+    assert np.array_equal(rep["final_owner"], res["final_owner"])
+    frames = list(p.iter_frames(5, res["action_log"]))
+    assert len(frames) == len(res["action_log"]) + 1
+    assert np.array_equal(frames[-1]["owner"], res["final_owner"])
+    assert frames[0]["owner"].dtype == np.int8 and len(frames[0]["heads"]) == 5
+
+
+def test_load_weights(tmp_path):
+    np.save(tmp_path / "w.npy", np.arange(3))
+    assert list(p.load_weights({"weights_dir": str(tmp_path)}, "w.npy")) == [0, 1, 2]
+    for bad in ("../x.npy", "w.txt"):
+        try:
+            p.load_weights({"weights_dir": str(tmp_path)}, bad)
+            assert False
+        except ValueError:
+            pass
