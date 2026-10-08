@@ -12,15 +12,15 @@ Test it:
   papersseum validate my_agent.py
 """
 
-from papersseum import channels as ch
+from papersseum import channels as ch, load_weights  # noqa: F401
 
 
 class Agent:
     def reset(self, config):
         # config has the match constants, your per-match "seed" and "pid", and
         # "weights_dir": the folder holding this file. Load weights from there,
-        # e.g.  self.policy = __import__("numpy").load(config["weights_dir"] + "/policy.npy")
-        # (use torch.load / numpy.load; the sandbox blocks os and open()).
+        # e.g.  self.policy = load_weights(config, "policy.npy")
+        # (.npy/.npz/.pt/.pth; raw numpy.load / torch.load are blocked).
         self.side = 6
         self.out_steps = 0
 

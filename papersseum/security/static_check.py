@@ -22,7 +22,7 @@ ALLOWED_IMPORTS = {
 
 BANNED_CALLS = {
     "eval", "exec", "compile", "open", "__import__", "input", "breakpoint",
-    "execfile", "globals", "locals",
+    "execfile", "globals", "locals", "getattr", "setattr", "delattr", "vars",
 }
 
 BANNED_ATTRS = {
@@ -30,7 +30,12 @@ BANNED_ATTRS = {
     "__builtins__", "__reduce__", "__reduce_ex__", "__getattribute__",
 }
 
-MAX_BYTES = 2_000_000
+MAX_BYTES = 1_000_000
+
+# Direct loaders on these modules can execute pickled code or read arbitrary
+# paths. Weights go through `papersseum.load_weights` instead.
+LOADER_MODULES = {"numpy", "torch"}
+BANNED_LOADERS = {"load", "loadtxt", "genfromtxt", "fromfile", "hub"}
 
 
 def scan_source(src, filename="<submission>"):
@@ -44,9 +49,12 @@ def scan_source(src, filename="<submission>"):
     except SyntaxError as e:
         return {"ok": False, "violations": [{"line": e.lineno or 0, "kind": "syntax", "detail": str(e)}]}
 
+    aliases = {}   # local name -> top-level module, for LOADER_MODULES
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for a in node.names:
+                if a.name.split(".")[0] in LOADER_MODULES:
+                    aliases[(a.asname or a.name).split(".")[0]] = a.name.split(".")[0]
                 top = a.name.split(".")[0]
                 if top not in ALLOWED_IMPORTS:
                     violations.append((node.lineno, "import", f"import '{a.name}' is not allowed"))
@@ -61,6 +69,14 @@ def scan_source(src, filename="<submission>"):
             if isinstance(f, ast.Name) and f.id in BANNED_CALLS:
                 violations.append((node.lineno, "call", f"call to '{f.id}' is not allowed"))
         elif isinstance(node, ast.Attribute):
+            root = node.value
+            while isinstance(root, ast.Attribute):
+                root = root.value
+            if (node.attr in BANNED_LOADERS and isinstance(root, ast.Name)
+                    and aliases.get(root.id) in LOADER_MODULES):
+                violations.append((node.lineno, "call",
+                                   f"'{node.attr}' on {aliases[root.id]} is not allowed; "
+                                   "use papersseum.load_weights"))
             if node.attr in BANNED_ATTRS:
                 violations.append((node.lineno, "attr", f"attribute '{node.attr}' is not allowed"))
         elif isinstance(node, ast.Name):

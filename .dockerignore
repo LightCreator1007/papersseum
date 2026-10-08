@@ -1,0 +1,5 @@
+dist/*
+!dist/papersseum-*.whl
+.git
+.venv
+tests

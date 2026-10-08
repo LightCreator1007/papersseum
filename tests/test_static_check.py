@@ -34,3 +34,13 @@ def test_dunder_escape_rejected():
 
 def test_allowed_scientific_imports_ok():
     assert scan_source("import numpy\nimport math\nimport random\nimport collections\n")["ok"]
+
+
+def test_blocks_introspection_and_raw_loaders():
+    from papersseum.security.static_check import scan_source
+    for src in ('getattr(x, "a")', "vars(x)",
+                "import numpy as np\nnp.load('f')",
+                "import torch as t\nt.load('f')",
+                "import numpy\nnumpy.lib.npyio.fromfile('f')"):
+        assert not scan_source(src)["ok"], src
+    assert scan_source("import numpy as np\nnp.zeros(3)\nimport json\njson.loads('1')")["ok"]
