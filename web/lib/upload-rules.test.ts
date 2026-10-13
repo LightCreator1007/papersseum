@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { GENERIC_UPLOAD_ERROR, MAX_BYTES, checkFile, isUtf8, uploadErrorMessage, waitText } from "@/lib/upload-rules";
 
 describe("checkFile", () => {
+  it("uses the same 1,000,000-byte limit as the server's scan", () => {
+    expect(MAX_BYTES).toBe(1_000_000);
+  });
   it("accepts a .py file up to exactly 1 MB", () => {
     expect(checkFile("agent.py", 1)).toBeNull();
     expect(checkFile("Agent.PY", MAX_BYTES)).toBeNull();

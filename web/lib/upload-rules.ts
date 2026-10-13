@@ -1,5 +1,6 @@
 // Upload checks shared by the browser (before sending) and the server.
-export const MAX_BYTES = 1_048_576;
+// Matches MAX_BYTES in papersseum/security/static_check.py, the validation that actually decides.
+export const MAX_BYTES = 1_000_000;
 export const GENERIC_UPLOAD_ERROR = "Upload failed, please try again.";
 
 export function checkFile(name: string, size: number): string | null {

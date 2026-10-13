@@ -18,6 +18,10 @@ export default function GettingStartedPage() {
       <p>
         Or from a clone of the repository: <code>pip install -e .</code>
       </p>
+      <p>
+        Rendering match videos (<code>--render</code>) needs <code>pip install &quot;papersseum[viewer]&quot;</code> and
+        ffmpeg on your PATH.
+      </p>
 
       <h2>2. Write an agent</h2>
       <pre>papersseum new my_agent.py</pre>
@@ -48,7 +52,10 @@ papersseum eval my_agent.py --games 30           # placements, coverage and rati
           <code>reset()</code> gets 2 seconds. Each <code>act()</code> gets 50 ms; a late or invalid answer plays
           straight.
         </li>
-        <li>A bot that is late on more than 20% of its moves, or keeps a match waiting more than 20 seconds in total, is removed from that match.</li>
+        <li>
+          A bot is removed from a match if, once it has played 50 moves, more than 20% of its moves are late, or if its
+          late moves add up to more than 20 seconds over the budget in total.
+        </li>
         <li>
           Allowed imports: numpy, math, random, itertools, collections, functools, heapq, bisect, typing,
           dataclasses, enum, json, copy, operator, statistics, array, re, string, time, abc, fractions, decimal,
