@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Papersseum web
 
-## Getting Started
+The website: leaderboard, matches, bot pages, uploads and Google sign-in.
+Design: `specs/2026-10-13-web-app-design.md`.
 
-First, run the development server:
+## Run locally
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Start Supabase from the repo root: `supabase start`.
+2. Google sign-in (once):
+   - In Google Cloud Console create an OAuth consent screen (External, testing
+     mode; add your test accounts as test users) and a **Web application**
+     OAuth client with these authorised redirect URIs:
+     `http://127.0.0.1:54321/auth/v1/callback` and
+     `http://localhost:54321/auth/v1/callback`.
+   - Put the client's values in `supabase/.env` (git-ignored):
+     ```
+     SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID=...
+     SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET=...
+     ```
+   - Restart Supabase: `supabase stop && supabase start`.
+3. `web/.env.local` needs `NEXT_PUBLIC_SUPABASE_URL`,
+   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY` from
+   `supabase status`. The secret key is used only by the upload code.
+4. `npm install && npm run dev`, then open http://127.0.0.1:3000.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Use one host in the browser for the whole sign-in, either `127.0.0.1` or
+`localhost`, not both: the session cookie is per host, so signing in on one and
+then opening the other looks signed out. Supabase's site URL is `127.0.0.1`, so
+that is the one to use. The dev server accepts it through `allowedDevOrigins`
+in `next.config.ts`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+For data to look at, seed players and run a worker as described in
+`worker/README.md`. Uploads need the worker running: it checks each upload, so
+without it a new version stays on "Checking…" and never becomes Active or
+Rejected.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Command | What it does |
+|---|---|
+| `npm run dev` | Development server |
+| `npm test` | Unit tests |
+| `npm run test:int` | Upload tests against local Supabase (creates and deletes test users) |
+| `npm run typecheck` | Generates route types, then `tsc` |
+| `npm run lint` | ESLint |
+| `npm run gen:types` | Regenerates `lib/database.types.ts` after a migration |
