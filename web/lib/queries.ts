@@ -217,3 +217,81 @@ export async function getMatch(id: number): Promise<MatchDetail | null> {
 export function replayUrl(path: string): string {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/replays/${encodeURIComponent(path)}`;
 }
+
+export type BotProfile = {
+  id: string;
+  name: string;
+  owner: string | null;
+  isHouse: boolean;
+  banned: boolean;
+  elo: number;
+  games: number;
+  activeVersion: number | null;
+  activeSince: string | null;
+  rank: number | null;
+  rating: number | null;
+  sigma: number | null;
+};
+
+export async function getBot(name: string): Promise<BotProfile | null> {
+  const supabase = await createClient();
+  const bot = checkMaybe(
+    "this bot",
+    await supabase
+      .from("bots")
+      .select("id, name, is_house, banned, elo, games, active_version, active_since, profiles(handle)")
+      .eq("name", name)
+      .maybeSingle(),
+  );
+  if (!bot) return null;
+  const ladder = checkMaybe(
+    "this bot's rank",
+    await supabase.from("leaderboard").select("rank, conservative, sigma").eq("bot_id", bot.id).maybeSingle(),
+  );
+  return {
+    id: bot.id,
+    name: bot.name,
+    owner: bot.profiles?.handle ?? null,
+    isHouse: bot.is_house,
+    banned: bot.banned,
+    elo: bot.elo,
+    games: bot.games,
+    activeVersion: bot.active_version,
+    activeSince: bot.active_since,
+    rank: ladder?.rank ?? null,
+    rating: ladder?.conservative ?? null,
+    sigma: ladder?.sigma ?? null,
+  };
+}
+
+export type HistoryRow = {
+  matchId: number;
+  finishedAt: string | null;
+  placement: number | null;
+  coverage: number | null;
+  eloBefore: number | null;
+  eloAfter: number | null;
+};
+
+// Newest first.
+export async function getBotHistory(botId: string, limit: number): Promise<HistoryRow[]> {
+  const supabase = await createClient();
+  const rows = check(
+    "this bot's matches",
+    await supabase
+      .from("match_players")
+      .select("match_id, placement, coverage, elo_before, elo_after, matches!inner(status, finished_at)")
+      .eq("bot_id", botId)
+      .eq("matches.status", "done")
+      .order("match_id", { ascending: false })
+      .limit(limit),
+  );
+  return rows.map((r) => ({
+    matchId: r.match_id,
+    finishedAt: r.matches.finished_at,
+    placement: r.placement,
+    coverage: r.coverage,
+    eloBefore: r.elo_before,
+    eloAfter: r.elo_after,
+  }));
+}
