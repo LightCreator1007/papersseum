@@ -13,24 +13,25 @@ import { getUserId } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Your bot" };
 
-function Details({ sub }: { sub: MySubmission }) {
+function Details({ sub, banned }: { sub: MySubmission; banned: boolean }) {
   switch (sub.status) {
     case "pending":
     case "validating":
       return <span className="muted small">running a test match, usually a few minutes</span>;
     case "active":
-      return <span className="muted small">playing on the ladder</span>;
+      return <span className="muted small">{banned ? "not playing: this bot is banned" : "playing on the ladder"}</span>;
     case "superseded":
       return <span className="muted small">replaced by a newer version</span>;
     case "rejected": {
       const extra = sub.violations.map((v) => `line ${v.line}: ${v.detail}`).filter((t) => t !== sub.error);
+      if (!sub.error && extra.length === 0) return <span className="muted small">No reason was recorded.</span>;
       return (
         <>
           {sub.error && <div className="mono">{sub.error}</div>}
           {extra.length > 0 && (
             <ul className="list-plain mono">
-              {extra.map((t) => (
-                <li key={t}>{t}</li>
+              {extra.map((t, i) => (
+                <li key={`${i}:${t}`}>{t}</li>
               ))}
             </ul>
           )}
@@ -53,10 +54,11 @@ async function MyBotContent() {
     <>
       <p className="muted small" style={{ margin: "4px 0 20px" }}>
         <Link href={botHref(bot.name)}>{bot.name}</Link>
-        {bot.rank !== null && ` · rank ${bot.rank}`}
-        {bot.activeVersion
-          ? ` · version ${bot.activeVersion} is playing on the ladder`
-          : " · no version is playing yet; upload one below"}
+        {!bot.banned && bot.rank !== null && ` · rank ${bot.rank}`}
+        {!bot.banned &&
+          (bot.activeVersion
+            ? ` · version ${bot.activeVersion} is playing on the ladder`
+            : " · no version is playing yet; upload one below")}
       </p>
 
       {bot.banned ? (
@@ -90,7 +92,7 @@ async function MyBotContent() {
                     {s.status === "active" ? <b>{SUBMISSION_STATUS[s.status]}</b> : SUBMISSION_STATUS[s.status]}
                   </td>
                   <td>
-                    <Details sub={s} />
+                    <Details sub={s} banned={bot.banned} />
                   </td>
                 </tr>
               ))}
