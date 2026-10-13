@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Supabase's site_url and the Google sign-in flow use 127.0.0.1, so the dev
+  // server is opened on that host; without this Next blocks hydration there.
+  allowedDevOrigins: ["127.0.0.1"],
   experimental: {
     agentFeedback: true,
     // Uploads are capped at 1 MB by our own checks; the default 1 MB body
