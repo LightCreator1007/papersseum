@@ -28,7 +28,7 @@ Supabase project; nothing is mocked.
 | `/matches/[id]` | Round, finish time, duration, seed. One row per seat: slot colour, place, bot, coverage, deaths, strikes, finished/crashed, Elo before → after (+delta). Replay download link. Box saying the viewer isn't built yet | public |
 | `/bots/[name]` | Owner, active version and since; rank, rating, Elo ± σ, games; Elo line over the last 100 matches; recent matches | public |
 | `/me` | Own bot summary, upload form, list of own versions with live status | signed in, else redirect to `/sign-in?next=/me` |
-| `/getting-started` | Static: install `papersseum`, `papersseum new`, writing an agent, `validate` / `play` / `eval`, limits (1 MB, 50 ms per move, 2 s reset, allowed imports, `load_weights`), uploading, how ranking works | public |
+| `/getting-started` | Static: install `papersseum`, `papersseum new`, writing an agent, `validate` / `play` / `eval`, limits (1 MB, 50 ms per move, 2 s reset, allowed imports; weights files can't be uploaded through the website yet), uploading, how ranking works | public |
 | `/sign-in` | One "Sign in with Google" button and an optional one-line error | public |
 
 Every page has a header (Papersseum · Leaderboard · Matches · Getting started ·
@@ -158,10 +158,10 @@ browser session. The server action on `/me` gets the user from the session
 and calls it. `next.config.ts` sets `experimental.serverActions.bodySizeLimit`
 to `"2mb"` so a 1 MB file plus form overhead isn't rejected before our checks.
 
-1. In the browser: refuse files not ending in `.py` or over 1,048,576 bytes
+1. In the browser: refuse files not ending in `.py` or over 1,000,000 bytes (the library scan's limit)
    before sending. The Upload button is disabled while pending.
 2. On the server: require a signed-in user; re-check name, size (1 to
-   1,048,576 bytes) and that the bytes decode as UTF-8; compute SHA-256.
+   1,000,000 bytes) and that the bytes decode as UTF-8; compute SHA-256.
 3. Find the user's bot (`bots.owner_id`). Generate a submission id. Upload to
    `agents/<bot_id>/<submission_id>.py` with content type `text/x-python`, no
    upsert.
