@@ -1,13 +1,19 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { NavLinks } from "@/components/nav-links";
+import { NavLinks, StaticNavLinks } from "@/components/nav-links";
 import { getProfileHandle } from "@/lib/queries";
 import { getUserId } from "@/lib/supabase/server";
 
 async function AccountLink() {
   const userId = await getUserId();
   if (!userId) return <Link href="/sign-in">Sign in</Link>;
-  const handle = await getProfileHandle(userId);
+  let handle: string | null = null;
+  try {
+    handle = await getProfileHandle(userId);
+  } catch {
+    // getProfileHandle already logged it. A failed profile read must not take
+    // down every page, so fall back to the generic label.
+  }
   return <Link href="/me">{handle ?? "Your bot"}</Link>;
 }
 
@@ -19,7 +25,9 @@ export function SiteHeader() {
           Papersseum
         </Link>
         <nav className="nav">
-          <NavLinks />
+          <Suspense fallback={<StaticNavLinks />}>
+            <NavLinks />
+          </Suspense>
           <span className="account">
             <Suspense fallback={null}>
               <AccountLink />
