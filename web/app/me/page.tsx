@@ -13,6 +13,8 @@ import { getUserId } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Your bot" };
 
+const MAX_VIOLATION_LINES = 20;
+
 function Details({ sub, banned }: { sub: MySubmission; banned: boolean }) {
   switch (sub.status) {
     case "pending":
@@ -27,12 +29,19 @@ function Details({ sub, banned }: { sub: MySubmission; banned: boolean }) {
       if (!sub.error && extra.length === 0) return <span className="muted small">No reason was recorded.</span>;
       return (
         <>
-          {sub.error && <div className="mono">{sub.error}</div>}
+          {sub.error && (
+            <div className="mono">
+              {sub.error.startsWith("Validation could not run")
+                ? "Validation could not run. Try uploading again."
+                : sub.error}
+            </div>
+          )}
           {extra.length > 0 && (
             <ul className="list-plain mono">
-              {extra.map((t, i) => (
+              {extra.slice(0, MAX_VIOLATION_LINES).map((t, i) => (
                 <li key={`${i}:${t}`}>{t}</li>
               ))}
+              {extra.length > MAX_VIOLATION_LINES && <li>and {extra.length - MAX_VIOLATION_LINES} more</li>}
             </ul>
           )}
         </>
@@ -49,6 +58,7 @@ async function MyBotContent() {
     return <p className="muted">Your account has no bot. Contact the organisers.</p>;
   }
   const subs = await getMySubmissions(bot.id);
+  const canUpload = !bot.banned && !season.frozen;
 
   return (
     <>
@@ -58,7 +68,7 @@ async function MyBotContent() {
         {!bot.banned &&
           (bot.activeVersion
             ? ` · version ${bot.activeVersion} is playing on the ladder`
-            : " · no version is playing yet; upload one below")}
+            : ` · no version is playing yet${canUpload ? "; upload one below" : ""}`)}
       </p>
 
       {bot.banned ? (

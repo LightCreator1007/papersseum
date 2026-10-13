@@ -24,7 +24,13 @@ export async function createClient() {
 }
 
 export async function getUserId(): Promise<string | null> {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  return data?.claims?.sub ?? null;
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.getClaims();
+    if (error) console.error("auth: getClaims failed", error);
+    return data?.claims?.sub ?? null;
+  } catch (e) {
+    console.error("auth: could not read the session", e);
+    return null;
+  }
 }

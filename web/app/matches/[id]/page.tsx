@@ -145,9 +145,7 @@ async function MatchContent({ params }: { params: PageProps<"/matches/[id]">["pa
 
       {match.status === "failed" && (
         <>
-          <p className="notice">
-            This match couldn&apos;t be played{match.error ? `: ${match.error}` : "."}
-          </p>
+          <p className="notice">This match couldn&apos;t be played.</p>
           <SeatList match={match} />
         </>
       )}

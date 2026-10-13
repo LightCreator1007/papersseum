@@ -33,6 +33,7 @@ export async function createSubmission(
 
   const submissionId = crypto.randomUUID();
   const path = `${bot.id}/${submissionId}.py`;
+  const sha256 = await sha256Hex(file.bytes);
   const stored = await admin.storage
     .from("agents")
     .upload(path, file.bytes, { contentType: "text/x-python", upsert: false });
@@ -45,7 +46,7 @@ export async function createSubmission(
     p_user_id: userId,
     p_submission_id: submissionId,
     p_storage_path: path,
-    p_sha256: await sha256Hex(file.bytes),
+    p_sha256: sha256,
     p_size_bytes: file.bytes.byteLength,
   });
   if (error) {

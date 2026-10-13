@@ -14,6 +14,7 @@ try {
 const admin = createClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
+const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 const SOURCE = new TextEncoder().encode("class Agent:\n    def act(self, obs):\n        return 0\n");
 const users: string[] = [];
 const stored: string[] = [];
@@ -25,7 +26,23 @@ async function newPlayer() {
   users.push(data.user.id);
   const { data: bot, error: botError } = await admin.from("bots").select("id").eq("owner_id", data.user.id).single();
   if (botError) throw botError;
-  return { userId: data.user.id, botId: bot.id };
+  return { userId: data.user.id, botId: bot.id, email };
+}
+
+// A publishable-key client signed in as the user. Email sign-up is disabled, so the
+// session comes from an admin-issued magic link.
+async function signedInClient(email: string) {
+  const { data: link, error } = await admin.auth.admin.generateLink({ type: "magiclink", email });
+  if (error) throw error;
+  const client = createClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, PUBLISHABLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { error: otpError } = await client.auth.verifyOtp({
+    type: "magiclink",
+    token_hash: link.properties.hashed_token,
+  });
+  if (otpError) throw otpError;
+  return client;
 }
 
 async function filesOf(botId: string) {
@@ -90,5 +107,24 @@ describe("createSubmission", () => {
     const result = await createSubmission(admin, userId, { name: "agent.py", bytes: new Uint8Array([0xff, 0x00, 0x81]) });
     expect(result).toEqual({ ok: false, message: "That file isn't readable text. Upload the .py source file." });
     expect(await filesOf(botId)).toEqual([]);
+  });
+
+  it("hides one user's submissions from another signed-in user", async () => {
+    const a = await newPlayer();
+    const b = await newPlayer();
+    const result = await createSubmission(admin, a.userId, { name: "agent.py", bytes: SOURCE });
+    expect(result.ok).toBe(true);
+    const [name] = await filesOf(a.botId);
+    stored.push(`${a.botId}/${name}`);
+
+    const asB = await signedInClient(b.email);
+    const { data: seenByB, error } = await asB.from("submissions").select("id").eq("bot_id", a.botId);
+    expect(error).toBeNull();
+    expect(seenByB).toEqual([]);
+
+    // Sanity check: the rows exist, and the owner can read them.
+    const asA = await signedInClient(a.email);
+    const { data: seenByA } = await asA.from("submissions").select("id").eq("bot_id", a.botId);
+    expect(seenByA).toHaveLength(1);
   });
 });

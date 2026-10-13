@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { uploadBot, type UploadState } from "@/app/me/actions";
 import { checkFile } from "@/lib/upload-rules";
 
@@ -10,6 +10,13 @@ const INITIAL: UploadState = { ok: false, message: null };
 export function UploadForm({ activeVersion, cooldownMinutes }: { activeVersion: number | null; cooldownMinutes: number }) {
   const [state, action, pending] = useActionState(uploadBot, INITIAL);
   const [fileError, setFileError] = useState<string | null>(null);
+  // Server render and hydration see false, the client sees true afterwards, so the
+  // button stays disabled until the form action is wired up.
+  const hydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
 
@@ -36,6 +43,7 @@ export function UploadForm({ activeVersion, cooldownMinutes }: { activeVersion: 
         <input
           type="file"
           name="file"
+          aria-label="Bot file (.py)"
           accept=".py,text/x-python"
           required
           onChange={(e) => {
@@ -43,7 +51,7 @@ export function UploadForm({ activeVersion, cooldownMinutes }: { activeVersion: 
             setFileError(f ? checkFile(f.name, f.size) : null);
           }}
         />
-        <button type="submit" className="btn" disabled={pending || fileError !== null} style={{ marginLeft: "auto" }}>
+        <button type="submit" className="btn" disabled={!hydrated || pending || fileError !== null} style={{ marginLeft: "auto" }}>
           {pending ? "Uploading…" : "Upload"}
         </button>
       </div>

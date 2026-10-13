@@ -36,7 +36,8 @@ async function HeroStats() {
   const [season, stats] = await Promise.all([getSeason(), getLadderStats()]);
   return (
     <p className="muted small" style={{ marginTop: 28 }}>
-      {stats.bots} bots · {stats.matches.toLocaleString("en-IN")} matches played{" "}
+      {stats.bots} {stats.bots === 1 ? "bot" : "bots"} · {stats.matches.toLocaleString("en-IN")}{" "}
+      {stats.matches === 1 ? "match" : "matches"} played{" "}
       {!season.frozen && <>· <NextRound frozen={false} /></>}
     </p>
   );

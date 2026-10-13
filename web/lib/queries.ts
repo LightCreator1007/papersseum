@@ -325,6 +325,18 @@ export type MySubmission = {
 };
 
 // Row-level security returns only the signed-in user's own submissions.
+function parseViolations(raw: unknown): Violation[] {
+  if (!Array.isArray(raw)) return [];
+  const out: Violation[] = [];
+  for (const v of raw) {
+    if (typeof v !== "object" || v === null) continue;
+    const { line, kind, detail } = v as Record<string, unknown>;
+    if (typeof line !== "number" || typeof detail !== "string") continue;
+    out.push({ line, kind: typeof kind === "string" ? kind : "", detail });
+  }
+  return out;
+}
+
 export async function getMySubmissions(botId: string): Promise<MySubmission[]> {
   const supabase = await createClient();
   const rows = check(
@@ -341,7 +353,7 @@ export async function getMySubmissions(botId: string): Promise<MySubmission[]> {
     version: s.version,
     status: s.status,
     error: s.error,
-    violations: Array.isArray(s.violations) ? (s.violations as Violation[]) : [],
+    violations: parseViolations(s.violations),
     createdAt: s.created_at,
   }));
 }
