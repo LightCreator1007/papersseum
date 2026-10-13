@@ -78,6 +78,10 @@ web/
     supabase/server.ts  supabase/browser.ts  supabase/admin.ts
   public/board-light.svg  public/board-dark.svg     generated
   scripts/make_board.py
+  public/home-replay.dat                generated (Task 10)
+  scripts/make_replay.py
+  lib/replay-format.ts  replay-format.test.ts  replay-file.test.ts
+  components/board-replay.tsx
 supabase/config.toml                   modify: Google, email sign-up off, redirect URLs
 .github/workflows/tests.yml            modify: web job, upload tests in database job
 ```
@@ -3164,7 +3168,538 @@ git commit -m "Add the getting started page"
 
 ---
 
-### Task 10: CI, README and final check
+### Task 10: Animated home board
+
+Added 2026-10-14 at the owner's request: the home page board replays one real recorded match on a loop at real speed, with no caption. Runs after Task 9; the former Task 10 is now Task 11.
+
+**Files:**
+- Create: `web/scripts/make_replay.py`, `web/public/home-replay.dat` (generated), `web/lib/replay-format.ts`, `web/lib/replay-format.test.ts`, `web/lib/replay-file.test.ts`, `web/components/board-replay.tsx`
+- Modify: `web/app/page.tsx` (the `<figure className="board">` contents), `web/app/globals.css` (one `.board canvas` rule)
+
+**Interfaces:**
+- Consumes: `PLAYER_COLORS` (Task 1), the static `board-light.svg` / `board-dark.svg` (Task 5) as the fallback.
+- Produces:
+  - `replay-format.ts`: `OUTSIDE = 0xfe`, `type Replay = { height: number; width: number; frames: number; players: number; initial: Uint8Array; heads: Uint8Array; diffStart: Uint32Array; diffIndex: Uint16Array; diffValue: Uint8Array }`, `decodeReplay(bytes: Uint8Array): Replay`, `applyFrame(cells: Uint8Array, replay: Replay, frame: number): void`, `headsAt(replay: Replay, frame: number): ([number, number] | null)[]`, `type Theme = "light" | "dark"`, `THEMES: Record<Theme, { ground: string; head: string }>`, `buildColorTable(theme: Theme): Uint8ClampedArray` (256 × RGBA), `paintCells(out: Uint8ClampedArray, cells: Uint8Array, table: Uint8ClampedArray): void`
+  - `<BoardReplay />` (client component, no props)
+
+**File format** (`home-replay.dat` is gzip of this, little-endian):
+
+| Bytes | Meaning |
+|---|---|
+| 4 | `PSRP` |
+| 1 | version = 1 |
+| 2, 2, 2, 1 | height, width, frame count, players |
+| height × width | first frame's cells |
+| per frame | players × (row u8, col u8) heads, 255/255 = dead; then, for every frame after the first, u16 change count and that many (u16 cell index, u8 value) |
+
+Cell byte: `0xFE` outside the arena, `0xFF` empty, otherwise low nibble = owner (0-4, 15 none), high nibble = trail (0-4, 15 none). Owner wins over trail when drawing, as in `make_board.py`.
+
+- [ ] **Step 1: Write the failing format tests**
+
+`web/lib/replay-format.test.ts`:
+
+```ts
+import { describe, expect, it } from "vitest";
+import { OUTSIDE, applyFrame, buildColorTable, decodeReplay, headsAt, paintCells } from "@/lib/replay-format";
+
+// 2x2 board, 2 frames, 1 player.
+// Frame 0 cells: outside, empty, owner 0, trail 0; head at (1,1).
+// Frame 1: the player is dead and cell 1 becomes owner 0.
+function tiny(): number[] {
+  return [
+    ..."PSRP".split("").map((c) => c.charCodeAt(0)),
+    1, 2, 0, 2, 0, 2, 0, 1,
+    0xfe, 0xff, 0xf0, 0x0f,
+    1, 1,
+    255, 255,
+    1, 0, 1, 0, 0xf0,
+  ];
+}
+
+describe("decodeReplay", () => {
+  it("reads the header and first frame", () => {
+    const r = decodeReplay(Uint8Array.from(tiny()));
+    expect([r.height, r.width, r.frames, r.players]).toEqual([2, 2, 2, 1]);
+    expect(Array.from(r.initial)).toEqual([OUTSIDE, 0xff, 0xf0, 0x0f]);
+  });
+  it("reads heads, with 255/255 as dead", () => {
+    const r = decodeReplay(Uint8Array.from(tiny()));
+    expect(headsAt(r, 0)).toEqual([[1, 1]]);
+    expect(headsAt(r, 1)).toEqual([null]);
+  });
+  it("applies a frame's changes", () => {
+    const r = decodeReplay(Uint8Array.from(tiny()));
+    const cells = r.initial.slice();
+    applyFrame(cells, r, 1);
+    expect(Array.from(cells)).toEqual([OUTSIDE, 0xf0, 0xf0, 0x0f]);
+  });
+  it("rejects other files, truncation and trailing bytes", () => {
+    const bad = tiny();
+    bad[0] = 0x58;
+    expect(() => decodeReplay(Uint8Array.from(bad))).toThrow();
+    expect(() => decodeReplay(Uint8Array.from(tiny().slice(0, -1)))).toThrow();
+    expect(() => decodeReplay(Uint8Array.from([...tiny(), 0]))).toThrow();
+  });
+});
+
+describe("colours", () => {
+  const rgba = (t: Uint8ClampedArray, v: number) => Array.from(t.subarray(v * 4, v * 4 + 4));
+  it("leaves outside cells transparent and paints empty cells as ground", () => {
+    const t = buildColorTable("light");
+    expect(rgba(t, OUTSIDE)[3]).toBe(0);
+    expect(rgba(t, 0xff)).toEqual([0xef, 0xef, 0xec, 255]);
+  });
+  it("paints owners in their colour, trails 45% over ground, owner over trail", () => {
+    const t = buildColorTable("light");
+    expect(rgba(t, 0xf0)).toEqual([0xff, 0x4d, 0x5e, 255]); // owner 0
+    const trail = rgba(t, 0x0f); // trail 0, no owner
+    expect(trail).toEqual([
+      Math.round(0xef + (0xff - 0xef) * 0.45),
+      Math.round(0xef + (0x4d - 0xef) * 0.45),
+      Math.round(0xec + (0x5e - 0xec) * 0.45),
+      255,
+    ]);
+    expect(rgba(t, 0x10)).toEqual([0xff, 0x4d, 0x5e, 255]); // owner 0 with player 1's trail on it
+  });
+  it("uses the dark ground in dark mode", () => {
+    expect(rgba(buildColorTable("dark"), 0xff)).toEqual([0x1f, 0x1f, 0x1f, 255]);
+  });
+  it("paints every cell from the table", () => {
+    const t = buildColorTable("light");
+    const out = new Uint8ClampedArray(2 * 4);
+    paintCells(out, Uint8Array.from([0xff, 0xf0]), t);
+    expect(Array.from(out)).toEqual([0xef, 0xef, 0xec, 255, 0xff, 0x4d, 0x5e, 255]);
+  });
+});
+```
+
+`web/lib/replay-file.test.ts` (checks the committed recording):
+
+```ts
+import { readFileSync } from "node:fs";
+import { gunzipSync } from "node:zlib";
+import { describe, expect, it } from "vitest";
+import { OUTSIDE, applyFrame, decodeReplay, headsAt } from "@/lib/replay-format";
+
+const replay = decodeReplay(new Uint8Array(gunzipSync(readFileSync("public/home-replay.dat"))));
+
+describe("home-replay.dat", () => {
+  it("is a full five-player match on the 120x120 board", () => {
+    expect([replay.height, replay.width, replay.players, replay.frames]).toEqual([120, 120, 5, 1801]);
+  });
+  it("has the 11,304-cell arena", () => {
+    expect(replay.initial.filter((v) => v === OUTSIDE).length).toBe(120 * 120 - 11_304);
+  });
+  it("only ever holds valid cell values, and heads stay on the board", () => {
+    const cells = replay.initial.slice();
+    const valid = (v: number) => v === OUTSIDE || v === 0xff || ((v & 15) <= 4 || (v & 15) === 15) && ((v >> 4) <= 4 || (v >> 4) === 15);
+    for (let f = 1; f < replay.frames; f++) applyFrame(cells, replay, f);
+    expect(Array.from(cells).every(valid)).toBe(true);
+    for (let f = 0; f < replay.frames; f += 100) {
+      for (const h of headsAt(replay, f)) if (h) expect(h[0] < 120 && h[1] < 120).toBe(true);
+    }
+  });
+});
+```
+
+- [ ] **Step 2: Run them to see them fail**
+
+Run: `npm test`
+Expected: FAIL, cannot resolve `@/lib/replay-format` (and `public/home-replay.dat` missing).
+
+- [ ] **Step 3: Record the match**
+
+`web/scripts/make_replay.py`:
+
+```python
+"""Record one real match for the animated home-page board.
+
+    uv run --frozen python web/scripts/make_replay.py web/public/home-replay.dat   (from the repo root)
+
+Writes gzip of: b"PSRP", u8 version=1, u16 height, u16 width, u16 frames,
+u8 players, then height*width bytes (first frame's cells), then per frame:
+players*(u8 row, u8 col) heads (255,255 = dead) and, for every frame after the
+first, u16 n plus n*(u16 cell index, u8 value). Little-endian.
+Cell byte: 0xFE outside the arena, 0xFF empty, else low nibble = owner
+(0-4, 15 none), high nibble = trail (0-4, 15 none). See web/lib/replay-format.ts.
+"""
+import gzip
+import struct
+import sys
+
+import numpy as np
+
+from papersseum.agents import BASELINES
+from papersseum.geometry import arena_mask
+from papersseum.match import iter_frames, run_match
+
+SEED = 11                                                   # same match as board-*.svg
+NAMES = ["greedy", "safe_expander", "hunter", "greedy", "safe_expander"]
+
+
+def cells(frame, mask):
+    owner = frame["owner"].astype(np.int16)
+    trail = frame["trail"].astype(np.int16)
+    value = np.where(owner >= 0, owner, 15) | (np.where(trail >= 0, trail, 15) << 4)
+    return np.where(mask, value, 0xFE).astype(np.uint8).ravel()
+
+
+def main(out_path):
+    result = run_match(SEED, [BASELINES[n]() for n in NAMES])
+    frames = list(iter_frames(SEED, result["action_log"]))
+    mask = arena_mask()
+    height, width = frames[0]["owner"].shape
+    players = len(frames[0]["heads"])
+
+    out = bytearray(b"PSRP")
+    out += struct.pack("<BHHHB", 1, height, width, len(frames), players)
+    prev = cells(frames[0], mask)
+    out += prev.tobytes()
+    for i, frame in enumerate(frames):
+        for head in frame["heads"]:
+            out += struct.pack("<BB", *(head if head else (255, 255)))
+        if i == 0:
+            continue
+        cur = cells(frame, mask)
+        changed = np.flatnonzero(cur != prev)
+        out += struct.pack("<H", len(changed))
+        for index in changed:
+            out += struct.pack("<HB", int(index), int(cur[index]))
+        prev = cur
+    with open(out_path, "wb") as fh:
+        fh.write(gzip.compress(bytes(out), compresslevel=9, mtime=0))
+
+
+if __name__ == "__main__":
+    main(sys.argv[1])
+```
+
+Run from the repo root: `uv run --frozen python web/scripts/make_replay.py web/public/home-replay.dat`
+Expected: a file of roughly 120-140 KB. Running it twice gives identical bytes (`shasum` both).
+
+- [ ] **Step 4: Implement the format module**
+
+`web/lib/replay-format.ts`:
+
+```ts
+// Reader for the recorded match written by web/scripts/make_replay.py.
+import { PLAYER_COLORS } from "@/lib/colors";
+
+export const OUTSIDE = 0xfe;
+const NONE = 15;
+const TRAIL_ALPHA = 0.45;
+
+export type Replay = {
+  height: number;
+  width: number;
+  frames: number;
+  players: number;
+  initial: Uint8Array;
+  heads: Uint8Array;
+  diffStart: Uint32Array;
+  diffIndex: Uint16Array;
+  diffValue: Uint8Array;
+};
+
+export function decodeReplay(bytes: Uint8Array): Replay {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let off = 0;
+  const need = (n: number) => {
+    if (off + n > bytes.length) throw new Error("replay recording is truncated");
+  };
+  need(12);
+  if (String.fromCharCode(...bytes.subarray(0, 4)) !== "PSRP" || bytes[4] !== 1) {
+    throw new Error("not a Papersseum replay recording");
+  }
+  const height = view.getUint16(5, true);
+  const width = view.getUint16(7, true);
+  const frames = view.getUint16(9, true);
+  const players = bytes[11];
+  off = 12;
+
+  need(height * width);
+  const initial = bytes.slice(off, off + height * width);
+  off += height * width;
+
+  const heads = new Uint8Array(frames * players * 2);
+  const diffStart = new Uint32Array(frames + 1);
+  const index: number[] = [];
+  const value: number[] = [];
+  for (let f = 0; f < frames; f++) {
+    need(players * 2);
+    heads.set(bytes.subarray(off, off + players * 2), f * players * 2);
+    off += players * 2;
+    diffStart[f] = index.length;
+    if (f === 0) continue;
+    need(2);
+    const n = view.getUint16(off, true);
+    off += 2;
+    need(n * 3);
+    for (let k = 0; k < n; k++, off += 3) {
+      index.push(view.getUint16(off, true));
+      value.push(bytes[off + 2]);
+    }
+  }
+  diffStart[frames] = index.length;
+  if (off !== bytes.length) throw new Error("replay recording has trailing bytes");
+  return {
+    height, width, frames, players, initial, heads, diffStart,
+    diffIndex: Uint16Array.from(index), diffValue: Uint8Array.from(value),
+  };
+}
+
+export function applyFrame(cells: Uint8Array, replay: Replay, frame: number): void {
+  for (let k = replay.diffStart[frame]; k < replay.diffStart[frame + 1]; k++) {
+    cells[replay.diffIndex[k]] = replay.diffValue[k];
+  }
+}
+
+export function headsAt(replay: Replay, frame: number): ([number, number] | null)[] {
+  const out: ([number, number] | null)[] = [];
+  for (let p = 0; p < replay.players; p++) {
+    const at = (frame * replay.players + p) * 2;
+    const row = replay.heads[at];
+    const col = replay.heads[at + 1];
+    out.push(row === 255 && col === 255 ? null : [row, col]);
+  }
+  return out;
+}
+
+export type Theme = "light" | "dark";
+
+// Same ground and head colours as web/scripts/make_board.py.
+export const THEMES: Record<Theme, { ground: string; head: string }> = {
+  light: { ground: "#efefec", head: "#111111" },
+  dark: { ground: "#1f1f1f", head: "#f5f5f5" },
+};
+
+function rgb(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+// RGBA for every possible cell byte.
+export function buildColorTable(theme: Theme): Uint8ClampedArray {
+  const ground = rgb(THEMES[theme].ground);
+  const players = PLAYER_COLORS.map(rgb);
+  const table = new Uint8ClampedArray(256 * 4);
+  for (let v = 0; v < 256; v++) {
+    let color: [number, number, number] | null = ground;
+    const owner = v & 15;
+    const trail = v >> 4;
+    if (v === OUTSIDE) color = null;
+    else if (owner !== NONE && owner < players.length) color = players[owner];
+    else if (trail !== NONE && trail < players.length) {
+      const p = players[trail];
+      color = [0, 1, 2].map((i) => Math.round(ground[i] + (p[i] - ground[i]) * TRAIL_ALPHA)) as [number, number, number];
+    }
+    if (color) table.set([...color, 255], v * 4);
+  }
+  return table;
+}
+
+export function paintCells(out: Uint8ClampedArray, cells: Uint8Array, table: Uint8ClampedArray): void {
+  for (let i = 0; i < cells.length; i++) {
+    const t = cells[i] * 4;
+    out[i * 4] = table[t];
+    out[i * 4 + 1] = table[t + 1];
+    out[i * 4 + 2] = table[t + 2];
+    out[i * 4 + 3] = table[t + 3];
+  }
+}
+```
+
+- [ ] **Step 5: Run the tests to see them pass**
+
+Run: `npm test`
+Expected: PASS, including both new files. If the arena-size test disagrees with 11,304, check `arena_mask().sum()` in Python and report rather than changing the number.
+
+- [ ] **Step 6: The player**
+
+`web/components/board-replay.tsx`:
+
+```tsx
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import {
+  THEMES, applyFrame, buildColorTable, decodeReplay, headsAt, paintCells, type Replay, type Theme,
+} from "@/lib/replay-format";
+
+const STEP_MS = 100; // 10 decisions per second: real match speed
+const HOLD_MS = 3000; // pause on the final board before restarting
+const MAX_CATCH_UP = 5; // frames per animation tick after a hiccup
+
+async function loadReplay(): Promise<Replay> {
+  const res = await fetch("/home-replay.dat");
+  if (!res.ok || !res.body) throw new Error(`replay fetch failed: ${res.status}`);
+  const raw = await new Response(res.body.pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+  return decodeReplay(new Uint8Array(raw));
+}
+
+// Replays one real match on loop. Shows the static board until it is ready,
+// and keeps showing it without JavaScript or when reduced motion is preferred.
+export function BoardReplay() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (typeof DecompressionStream === "undefined") return;
+
+    let cancelled = false;
+    let stop = () => {};
+
+    loadReplay()
+      .then((replay) => {
+        const canvas = canvasRef.current;
+        const ctx = canvas?.getContext("2d");
+        if (cancelled || !canvas || !ctx) return;
+        canvas.width = replay.width;
+        canvas.height = replay.height;
+
+        const dark = window.matchMedia("(prefers-color-scheme: dark)");
+        let theme: Theme = dark.matches ? "dark" : "light";
+        let table = buildColorTable(theme);
+        const image = ctx.createImageData(replay.width, replay.height);
+        const cells = replay.initial.slice();
+        let frame = 0;
+        let last = performance.now();
+        let holdUntil = 0;
+        let raf = 0;
+        let onScreen = true;
+
+        const draw = () => {
+          paintCells(image.data, cells, table);
+          ctx.putImageData(image, 0, 0);
+          ctx.fillStyle = THEMES[theme].head;
+          for (const head of headsAt(replay, frame)) if (head) ctx.fillRect(head[1] - 1, head[0] - 1, 3, 3);
+        };
+
+        const tick = (now: number) => {
+          if (holdUntil) {
+            if (now >= holdUntil) {
+              holdUntil = 0;
+              cells.set(replay.initial);
+              frame = 0;
+              last = now;
+              draw();
+            }
+          } else {
+            let steps = 0;
+            while (now - last >= STEP_MS && frame < replay.frames - 1 && steps < MAX_CATCH_UP) {
+              frame++;
+              applyFrame(cells, replay, frame);
+              last += STEP_MS;
+              steps++;
+            }
+            if (steps === MAX_CATCH_UP) last = now;
+            if (steps) draw();
+            if (frame === replay.frames - 1) holdUntil = now + HOLD_MS;
+          }
+          raf = requestAnimationFrame(tick);
+        };
+
+        const running = () => raf !== 0;
+        const play = () => {
+          if (running() || !onScreen || document.hidden) return;
+          last = performance.now();
+          raf = requestAnimationFrame(tick);
+        };
+        const pause = () => {
+          cancelAnimationFrame(raf);
+          raf = 0;
+        };
+
+        const observer = new IntersectionObserver(([entry]) => {
+          onScreen = entry.isIntersecting;
+          if (onScreen) play();
+          else pause();
+        });
+        observer.observe(canvas);
+        const onVisibility = () => (document.hidden ? pause() : play());
+        document.addEventListener("visibilitychange", onVisibility);
+        const onTheme = () => {
+          theme = dark.matches ? "dark" : "light";
+          table = buildColorTable(theme);
+          draw();
+        };
+        dark.addEventListener("change", onTheme);
+
+        stop = () => {
+          pause();
+          observer.disconnect();
+          document.removeEventListener("visibilitychange", onVisibility);
+          dark.removeEventListener("change", onTheme);
+        };
+
+        draw();
+        setReady(true);
+        play();
+      })
+      .catch(() => {
+        // Keep the static board.
+      });
+
+    return () => {
+      cancelled = true;
+      stop();
+    };
+  }, []);
+
+  return (
+    <>
+      {!ready && (
+        <picture>
+          <source srcSet="/board-dark.svg" media="(prefers-color-scheme: dark)" />
+          <img src="/board-light.svg" alt="A Papersseum board mid-match: five players' territories in an arena" width={120} height={120} />
+        </picture>
+      )}
+      <canvas
+        ref={canvasRef}
+        width={120}
+        height={120}
+        hidden={!ready}
+        role="img"
+        aria-label="A recorded Papersseum match replaying: five players' territories in an arena"
+      />
+    </>
+  );
+}
+```
+
+If ESLint flags the `<img>` (`@next/next/no-img-element`), keep the plain `<img>` (a static SVG with a dark-mode `<source>`) and add a disable comment with that reason, as Task 5 originally planned.
+
+- [ ] **Step 7: Use it on the home page**
+
+In `web/app/page.tsx`, replace the contents of `<figure className="board">…</figure>` (the `<picture>` element) with `<BoardReplay />`, and add `import { BoardReplay } from "@/components/board-replay";`. Nothing else on the page changes.
+
+In `web/app/globals.css`, directly under the `.board img` rule, add:
+
+```css
+.board canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+```
+
+- [ ] **Step 8: Verify**
+
+Run: `npm run typecheck && npm run lint && npm test && npm run build` → all pass.
+
+With `npm run dev` in the background:
+- `curl -s -o /dev/null -w '%{http_code} %{size_download}\n' http://127.0.0.1:3000/home-replay.dat` → `200` and the file's size.
+- `/` server HTML still contains `board-light.svg` (the fallback) and `<canvas`.
+- In the browser pane on `/`: take a screenshot, wait 3 seconds, take another; the board area differs between them (the match is moving). Emulate dark mode (`resize_window` with `colorScheme: "dark"`), reload: the board uses the dark ground. Set it back to light afterwards.
+- Stop the dev server; `git checkout web/AGENTS.md` if `next dev` rewrote it (do not run the command it suggests).
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add scripts/make_replay.py public/home-replay.dat lib/replay-format.ts lib/replay-format.test.ts lib/replay-file.test.ts components/board-replay.tsx app/page.tsx app/globals.css
+git commit -m "Replay a recorded match on the home page board"
+```
+
+---
+
+### Task 11: CI, README and final check
 
 **Files:**
 - Modify: `.github/workflows/tests.yml`
@@ -3277,7 +3812,7 @@ For data to look at, seed players and run a worker as described in
 Run: `npm run typecheck && npm run lint && npm test && npm run test:int && npm run build`
 Expected: all pass, and the build output lists every route.
 
-Then walk every page once more in the browser pane in light, dark and at 375 px: `/`, `/leaderboard`, `/matches`, a match, a bot, `/me`, `/getting-started`, `/sign-in`, `/sign-in?error=domain`, a 404. Confirm: no gradients, no badges or icons, no sideways page scroll, no "NaN" or "undefined" anywhere.
+Then walk every page once more in the browser pane in light, dark and at 375 px: `/`, `/leaderboard`, `/matches`, a match, a bot, `/me`, `/getting-started`, `/sign-in`, `/sign-in?error=domain`, a 404. Confirm: no gradients, no badges or icons, no sideways page scroll, no "NaN" or "undefined" anywhere. On `/`, the board replays the recorded match (it changes between two screenshots a few seconds apart) in both colour schemes.
 
 - [ ] **Step 4: Commit**
 
