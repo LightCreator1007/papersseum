@@ -12,6 +12,13 @@ describe("home-replay.dat", () => {
   it("has the 11,304-cell arena", () => {
     expect(replay.initial.filter((v) => v === OUTSIDE).length).toBe(120 * 120 - 11_304);
   });
+  it("starts with no trails and the same non-empty patch for each owner", () => {
+    const inside = Array.from(replay.initial).filter((v) => v !== OUTSIDE);
+    expect(inside.every((v) => v >> 4 === 15)).toBe(true);
+    const owned = [0, 1, 2, 3, 4].map((p) => inside.filter((v) => (v & 15) === p).length);
+    expect(owned[0]).toBeGreaterThan(0);
+    expect(owned).toEqual([owned[0], owned[0], owned[0], owned[0], owned[0]]);
+  });
   it("only ever holds valid cell values, and heads stay on the board", () => {
     const cells = replay.initial.slice();
     const valid = (v: number) => v === OUTSIDE || v === 0xff || ((v & 15) <= 4 || (v & 15) === 15) && ((v >> 4) <= 4 || (v >> 4) === 15);

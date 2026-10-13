@@ -9,8 +9,8 @@ const STEP_MS = 100; // 10 decisions per second: real match speed
 const HOLD_MS = 3000; // pause on the final board before restarting
 const MAX_CATCH_UP = 5; // frames per animation tick after a hiccup
 
-async function loadReplay(): Promise<Replay> {
-  const res = await fetch("/home-replay.dat");
+async function loadReplay(signal: AbortSignal): Promise<Replay> {
+  const res = await fetch("/home-replay.dat", { signal });
   if (!res.ok || !res.body) throw new Error(`replay fetch failed: ${res.status}`);
   const raw = await new Response(res.body.pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
   return decodeReplay(new Uint8Array(raw));
@@ -26,14 +26,16 @@ export function BoardReplay() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     if (typeof DecompressionStream === "undefined") return;
 
-    let cancelled = false;
+    const controller = new AbortController();
     let stop = () => {};
 
-    loadReplay()
-      .then((replay) => {
+    const start = (replay: Replay) => {
+      const cleanups: (() => void)[] = [];
+      stop = () => cleanups.splice(0).forEach((cleanup) => cleanup());
+      try {
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext("2d");
-        if (cancelled || !canvas || !ctx) return;
+        if (!canvas || !ctx) throw new Error("the canvas is not available");
         canvas.width = replay.width;
         canvas.height = replay.height;
 
@@ -89,39 +91,50 @@ export function BoardReplay() {
           cancelAnimationFrame(raf);
           raf = 0;
         };
+        cleanups.push(pause);
 
-        const observer = new IntersectionObserver(([entry]) => {
-          onScreen = entry.isIntersecting;
+        const observer = new IntersectionObserver((entries) => {
+          // Several entries can arrive in one batch; the last one is the current state.
+          onScreen = entries[entries.length - 1].isIntersecting;
           if (onScreen) play();
           else pause();
         });
+        cleanups.push(() => observer.disconnect());
         observer.observe(canvas);
         const onVisibility = () => (document.hidden ? pause() : play());
         document.addEventListener("visibilitychange", onVisibility);
+        cleanups.push(() => document.removeEventListener("visibilitychange", onVisibility));
         const onTheme = () => {
           theme = dark.matches ? "dark" : "light";
           table = buildColorTable(theme);
           draw();
         };
         dark.addEventListener("change", onTheme);
-
-        stop = () => {
-          pause();
-          observer.disconnect();
-          document.removeEventListener("visibilitychange", onVisibility);
-          dark.removeEventListener("change", onTheme);
-        };
+        cleanups.push(() => dark.removeEventListener("change", onTheme));
 
         draw();
         setReady(true);
         play();
-      })
-      .catch(() => {
-        // Keep the static board.
-      });
+      } catch (error) {
+        // Release whatever was set up and keep the static board.
+        stop();
+        setReady(false);
+        console.warn("Board replay could not start; showing the static board.", error);
+      }
+    };
+
+    loadReplay(controller.signal).then(
+      (replay) => {
+        if (!controller.signal.aborted) start(replay);
+      },
+      (error) => {
+        if (controller.signal.aborted) return; // unmounted while loading
+        console.warn("Board replay could not be loaded; showing the static board.", error);
+      },
+    );
 
     return () => {
-      cancelled = true;
+      controller.abort();
       stop();
     };
   }, []);
