@@ -41,7 +41,7 @@ export default function GettingStartedPage() {
       </p>
 
       <h2>3. Test it locally</h2>
-      <pre>{`papersseum validate my_agent.py                 # the same checks the server runs
+      <pre>{`papersseum validate my_agent.py                 # the same scan and a short local test match; the server's check is stricter
 papersseum play my_agent.py --vs greedy,hunter --render match.mp4
 papersseum eval my_agent.py --games 30           # placements, coverage and rating`}</pre>
 
@@ -53,8 +53,9 @@ papersseum eval my_agent.py --games 30           # placements, coverage and rati
           straight.
         </li>
         <li>
-          A bot is removed from a match if, once it has played 50 moves, more than 20% of its moves are late, or if its
-          late moves add up to more than 20 seconds over the budget in total.
+          A bot that is too slow is stopped and plays straight for the rest of that match. That happens if, once it has
+          played 50 moves, more than 20% of its moves are late, or if its late moves add up to more than 20 seconds over
+          the budget in total.
         </li>
         <li>
           Allowed imports: numpy, math, random, itertools, collections, functools, heapq, bisect, typing,
@@ -62,10 +63,10 @@ papersseum eval my_agent.py --games 30           # placements, coverage and rati
           numbers, contextlib, papersseum and torch.
         </li>
         <li>
-          <code>open</code>, <code>eval</code>, <code>exec</code>, <code>getattr</code>, <code>vars</code> and raw{" "}
-          <code>numpy.load</code> / <code>torch.load</code> are blocked. Load weights with{" "}
-          <code>papersseum.load_weights(config, &quot;policy.npy&quot;)</code> (<code>.npy</code>, <code>.npz</code>,{" "}
-          <code>.pt</code>, <code>.pth</code>).
+          Blocked calls include, for example, <code>open</code>, <code>eval</code>, <code>exec</code>,{" "}
+          <code>getattr</code> and <code>vars</code>, and raw <code>numpy.load</code> / <code>torch.load</code>. The list
+          is not exhaustive. Weights files can&apos;t be uploaded through the website yet, so keep everything your agent
+          needs inside the one <code>.py</code> file.
         </li>
       </ul>
 
@@ -77,7 +78,7 @@ papersseum eval my_agent.py --games 30           # placements, coverage and rati
 
       <h2>How ranking works</h2>
       <p>
-        Every match updates each bot&apos;s Elo from where it placed. The leaderboard ranks by rating, which is Elo
+        Every match updates each bot&apos;s Elo from how it placed and how much land it held. The leaderboard ranks by rating, which is Elo
         minus twice its uncertainty: the uncertainty shrinks as a bot plays more games, so a new bot can&apos;t top
         the table after a few lucky wins.
       </p>
