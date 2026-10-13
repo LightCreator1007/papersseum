@@ -118,16 +118,24 @@ export type MatchSummary = {
   seats: SeatSummary[];
 };
 
-export async function getMatches({ page, pageSize }: { page: number; pageSize: number }) {
+export async function getMatches({
+  page,
+  pageSize,
+  finishedOnly = false,
+}: {
+  page: number;
+  pageSize: number;
+  finishedOnly?: boolean;
+}) {
   const supabase = await createClient();
   const from = (page - 1) * pageSize;
+  let query = supabase
+    .from("matches")
+    .select("id, round_id, status, created_at, finished_at, match_players(slot, placement, crashed, bots(name))");
+  if (finishedOnly) query = query.eq("status", "done");
   const rows = check(
     "matches",
-    await supabase
-      .from("matches")
-      .select("id, round_id, status, created_at, finished_at, match_players(slot, placement, crashed, bots(name))")
-      .order("id", { ascending: false })
-      .range(from, from + pageSize), // one extra row tells us whether there is another page
+    await query.order("id", { ascending: false }).range(from, from + pageSize), // one extra row tells us whether there is another page
   );
   const matches: MatchSummary[] = rows.slice(0, pageSize).map((m) => ({
     id: m.id,

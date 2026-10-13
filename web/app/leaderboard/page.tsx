@@ -26,9 +26,11 @@ export default function LeaderboardPage() {
           </p>
         </div>
         <span className="muted small">
-          <Suspense fallback={null}>
-            <RoundClock />
-          </Suspense>
+          <LoadBoundary what="the season" quiet>
+            <Suspense fallback={null}>
+              <RoundClock />
+            </Suspense>
+          </LoadBoundary>
         </span>
       </div>
       <LoadBoundary what="the leaderboard">

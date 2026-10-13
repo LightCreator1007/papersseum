@@ -14,8 +14,18 @@ function Seats({ seats }: { seats: SeatSummary[] }) {
   ));
 }
 
-export async function MatchList({ page = 1, pageSize = 50, compact = false }: { page?: number; pageSize?: number; compact?: boolean }) {
-  const { matches, hasMore } = await getMatches({ page, pageSize });
+export async function MatchList({
+  page = 1,
+  pageSize = 50,
+  compact = false,
+  finishedOnly = false,
+}: {
+  page?: number;
+  pageSize?: number;
+  compact?: boolean;
+  finishedOnly?: boolean;
+}) {
+  const { matches, hasMore } = await getMatches({ page, pageSize, finishedOnly });
   if (matches.length === 0) {
     return page === 1 ? (
       <p className="muted">

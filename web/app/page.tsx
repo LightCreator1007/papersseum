@@ -90,7 +90,7 @@ export default function Home() {
       <h2>Latest matches</h2>
       <LoadBoundary what="matches">
         <Suspense fallback={<Placeholder lines={3} />}>
-          <MatchList pageSize={3} compact />
+          <MatchList pageSize={3} compact finishedOnly />
         </Suspense>
       </LoadBoundary>
       <p className="small" style={{ marginTop: 10 }}>

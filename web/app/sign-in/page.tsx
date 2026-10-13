@@ -13,8 +13,13 @@ async function SignInPanel({ searchParams }: { searchParams: PageProps<"/sign-in
   const params = await searchParams;
   const next = safeNext(typeof params.next === "string" ? params.next : undefined);
   if (await getUserId()) redirect(next);
-  const season = await getSeason();
-  const message = signInErrorMessage(typeof params.error === "string" ? params.error : undefined, season.domain);
+  let domain: string | null = null;
+  try {
+    domain = (await getSeason()).domain;
+  } catch {
+    // getSeason already logged it. Sign-in works without the domain hint.
+  }
+  const message = signInErrorMessage(typeof params.error === "string" ? params.error : undefined, domain);
   return (
     <div className="stack">
       {message && (
@@ -23,7 +28,7 @@ async function SignInPanel({ searchParams }: { searchParams: PageProps<"/sign-in
         </p>
       )}
       <SignInButton next={next} />
-      {season.domain && <p className="muted small">Use your @{season.domain} Google account.</p>}
+      {domain && <p className="muted small">Use your @{domain} Google account.</p>}
     </div>
   );
 }
