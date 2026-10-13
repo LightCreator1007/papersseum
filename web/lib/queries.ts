@@ -149,3 +149,71 @@ export async function getMatches({
   }));
   return { matches, hasMore: rows.length > pageSize };
 }
+
+export type SeatResult = {
+  slot: number;
+  name: string | null;
+  isHouse: boolean;
+  placement: number | null;
+  coverage: number | null;
+  deaths: number | null;
+  strikes: number | null;
+  crashed: boolean | null;
+  eloBefore: number | null;
+  eloAfter: number | null;
+};
+
+export type MatchDetail = {
+  id: number;
+  roundId: number;
+  seed: number;
+  status: MatchStatus;
+  error: string | null;
+  replayPath: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  seats: SeatResult[];
+};
+
+export async function getMatch(id: number): Promise<MatchDetail | null> {
+  const supabase = await createClient();
+  const m = checkMaybe(
+    "this match",
+    await supabase
+      .from("matches")
+      .select("id, round_id, seed, status, error, replay_path, created_at, started_at, finished_at, match_players(slot, placement, coverage, deaths, strikes, crashed, elo_before, elo_after, bots(name, is_house))")
+      .eq("id", id)
+      .maybeSingle(),
+  );
+  if (!m) return null;
+  return {
+    id: m.id,
+    roundId: m.round_id,
+    seed: Number(m.seed),
+    status: m.status,
+    error: m.error,
+    replayPath: m.replay_path,
+    createdAt: m.created_at,
+    startedAt: m.started_at,
+    finishedAt: m.finished_at,
+    seats: m.match_players
+      .map((p) => ({
+        slot: p.slot,
+        name: p.bots?.name ?? null,
+        isHouse: !!p.bots?.is_house,
+        placement: p.placement,
+        coverage: p.coverage,
+        deaths: p.deaths,
+        strikes: p.strikes,
+        crashed: p.crashed,
+        eloBefore: p.elo_before,
+        eloAfter: p.elo_after,
+      }))
+      .sort((a, b) => (a.placement ?? 9) - (b.placement ?? 9) || a.slot - b.slot),
+  };
+}
+
+export function replayUrl(path: string): string {
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/replays/${encodeURIComponent(path)}`;
+}
