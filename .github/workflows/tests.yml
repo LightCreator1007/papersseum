@@ -30,9 +30,37 @@ jobs:
         working-directory: worker
         run: uv run --frozen pytest tests -q
 
+  web:
+    name: Web (types, lint, unit tests, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    env:
+      # The build never contacts Supabase: every data read happens at request time.
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder
+      SUPABASE_SECRET_KEY: ci-placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
   database:
     name: Database (pgTAP + advisors)
     runs-on: ubuntu-latest
+    env:
+      # Google is enabled in config.toml, which reads these.
+      SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID: ci-placeholder
+      SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET: ci-placeholder
     steps:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
@@ -46,3 +74,15 @@ jobs:
         run: supabase test db
       - name: Security and performance advisors
         run: supabase db advisors --local --fail-on warn
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Web upload tests against local Supabase
+        working-directory: web
+        run: |
+          npm ci
+          eval "$(supabase status -o env | sed 's/^/export /')"
+          export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY"
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" SUPABASE_SECRET_KEY="$SECRET_KEY" npm run test:int
