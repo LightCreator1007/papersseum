@@ -39,6 +39,9 @@ async function BotContent({ params }: { params: PageProps<"/bots/[name]">["param
         {bot.isHouse ? "House bot" : `Owned by ${bot.owner ?? "a deleted account"}`}
         {bot.activeVersion && bot.activeSince && ` · version ${bot.activeVersion}, active since ${shortDate(bot.activeSince)}`}
       </p>
+      {bot.activeVersion === null && !bot.banned && (
+        <p className="muted small">No version is playing on the ladder yet.</p>
+      )}
       {bot.banned && <p className="notice" style={{ marginTop: 16 }}>This bot is banned.</p>}
 
       <div className="stats">
@@ -56,40 +59,42 @@ async function BotContent({ params }: { params: PageProps<"/bots/[name]">["param
         <Stat label="Games" value={bot.games} />
       </div>
 
-      <h2>Elo over the last {Math.min(history.length, 100)} matches</h2>
-      <EloLine values={series} />
-
-      <h2>Recent matches</h2>
       {history.length === 0 ? (
         <p className="muted">No matches yet.</p>
       ) : (
-        <div className="table-scroll">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Match</th>
-                <th>When</th>
-                <th className="num">Place</th>
-                <th className="num">Coverage</th>
-                <th className="num">Elo change</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.slice(0, 15).map((h) => {
-                const change = eloChange(h.eloBefore, h.eloAfter);
-                return (
-                  <tr key={h.matchId}>
-                    <td><Link href={matchHref(h.matchId)}>{h.matchId}</Link></td>
-                    <td className="muted">{h.finishedAt ? relativeTime(h.finishedAt) : "—"}</td>
-                    <td className="num">{h.placement ?? "—"}</td>
-                    <td className="num">{percent(h.coverage)}</td>
-                    <td className={`num ${change && change.tone !== "none" ? change.tone : "muted"}`}>{change?.text ?? "—"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <h2>{`Elo over ${history.length} ${history.length === 1 ? "match" : "matches"}`}</h2>
+          <EloLine values={series} />
+
+          <h2>Recent matches</h2>
+          <div className="table-scroll">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Match</th>
+                  <th>When</th>
+                  <th className="num">Place</th>
+                  <th className="num">Coverage</th>
+                  <th className="num">Elo change</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.slice(0, 15).map((h) => {
+                  const change = eloChange(h.eloBefore, h.eloAfter);
+                  return (
+                    <tr key={h.matchId}>
+                      <td><Link href={matchHref(h.matchId)}>{h.matchId}</Link></td>
+                      <td className="muted">{h.finishedAt ? relativeTime(h.finishedAt) : "—"}</td>
+                      <td className="num">{h.placement ?? "—"}</td>
+                      <td className="num">{percent(h.coverage)}</td>
+                      <td className={`num ${change && change.tone !== "none" ? change.tone : "muted"}`}>{change?.text ?? "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
       <LiveRefresh table="bots" filter={`id=eq.${bot.id}`} />
     </>
