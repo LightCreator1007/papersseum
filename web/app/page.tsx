@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { BoardReplay } from "@/components/board-replay";
 import { LeaderboardTable } from "@/components/leaderboard-table";
 import { LiveRefresh } from "@/components/live-refresh";
 import { LoadBoundary } from "@/components/load-boundary";
@@ -70,10 +71,7 @@ export default function Home() {
           </LoadBoundary>
         </div>
         <figure className="board">
-          <picture>
-            <source srcSet="/board-dark.svg" media="(prefers-color-scheme: dark)" />
-            <img src="/board-light.svg" alt="A Papersseum board mid-match: five players' territories in an arena" width={120} height={120} />
-          </picture>
+          <BoardReplay />
         </figure>
       </section>
 
