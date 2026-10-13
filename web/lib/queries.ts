@@ -63,6 +63,7 @@ export async function getProfileHandle(userId: string): Promise<string | null> {
 }
 
 export type MatchStatus = Database["public"]["Enums"]["match_status"];
+export type SubmissionStatus = Database["public"]["Enums"]["submission_status"];
 
 export type LeaderRow = {
   rank: number;
@@ -293,5 +294,54 @@ export async function getBotHistory(botId: string, limit: number): Promise<Histo
     coverage: r.coverage,
     eloBefore: r.elo_before,
     eloAfter: r.elo_after,
+  }));
+}
+
+export type MyBot = { id: string; name: string; banned: boolean; activeVersion: number | null; rank: number | null };
+
+export async function getMyBot(userId: string): Promise<MyBot | null> {
+  const supabase = await createClient();
+  const bot = checkMaybe(
+    "your bot",
+    await supabase.from("bots").select("id, name, banned, active_version").eq("owner_id", userId).maybeSingle(),
+  );
+  if (!bot) return null;
+  const ladder = checkMaybe(
+    "your rank",
+    await supabase.from("leaderboard").select("rank").eq("bot_id", bot.id).maybeSingle(),
+  );
+  return { id: bot.id, name: bot.name, banned: bot.banned, activeVersion: bot.active_version, rank: ladder?.rank ?? null };
+}
+
+export type Violation = { line: number; kind: string; detail: string };
+
+export type MySubmission = {
+  id: string;
+  version: number;
+  status: SubmissionStatus;
+  error: string | null;
+  violations: Violation[];
+  createdAt: string;
+};
+
+// Row-level security returns only the signed-in user's own submissions.
+export async function getMySubmissions(botId: string): Promise<MySubmission[]> {
+  const supabase = await createClient();
+  const rows = check(
+    "your uploads",
+    await supabase
+      .from("submissions")
+      .select("id, version, status, error, violations, created_at")
+      .eq("bot_id", botId)
+      .order("version", { ascending: false })
+      .limit(50),
+  );
+  return rows.map((s) => ({
+    id: s.id,
+    version: s.version,
+    status: s.status,
+    error: s.error,
+    violations: Array.isArray(s.violations) ? (s.violations as Violation[]) : [],
+    createdAt: s.created_at,
   }));
 }
