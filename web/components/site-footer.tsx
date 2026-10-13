@@ -1,13 +1,23 @@
 import { Suspense } from "react";
+import { signOut } from "@/app/auth/actions";
 import { LoadBoundary } from "@/components/load-boundary";
+import { SubmitButton } from "@/components/submit-button";
 import { getSeason } from "@/lib/queries";
+import { getUserId } from "@/lib/supabase/server";
 
 async function FooterContent() {
-  const season = await getSeason();
+  const [season, userId] = await Promise.all([getSeason(), getUserId()]);
   return (
     <>
       <span>{season.name}</span>
       {season.engineHash && <span className="mono">engine {season.engineHash}</span>}
+      {userId && (
+        <form action={signOut}>
+          <SubmitButton className="link-button" pendingText="Signing out…">
+            Sign out
+          </SubmitButton>
+        </form>
+      )}
     </>
   );
 }
