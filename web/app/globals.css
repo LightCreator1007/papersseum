@@ -78,7 +78,7 @@ main a.btn, main a.btn-secondary { text-decoration: none; }
 
 /* boxes and notices */
 .box { background: var(--surface); border: 1px solid var(--rule); padding: 18px; }
-.notice { border: 1px solid var(--rule); padding: 14px 16px; background: var(--surface); }
+.notice { border: 1px solid var(--rule); padding: 14px 16px; background: var(--surface); overflow-wrap: anywhere; }
 
 /* tables */
 .table-scroll { overflow-x: auto; }

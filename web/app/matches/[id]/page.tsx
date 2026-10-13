@@ -79,16 +79,31 @@ function SeatList({ match }: { match: MatchDetail }) {
   );
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// "finished 14 Oct, 00:42, 4 min ago": the relative part is only added while the
+// time is under a day old; after that the date already says it.
+function stamp(verb: string, iso: string, now: number): string {
+  const recent = now - Date.parse(iso) < DAY_MS;
+  return `${verb} ${shortDateTime(iso)}${recent ? `, ${relativeTime(iso, now)}` : ""}`;
+}
+
 async function MatchContent({ params }: { params: PageProps<"/matches/[id]">["params"] }) {
   const { id } = await params;
   if (!/^\d{1,15}$/.test(id)) notFound();
   const match = await getMatch(Number(id));
   if (!match) notFound();
 
-  const when =
-    match.finishedAt &&
-    `finished ${shortDateTime(match.finishedAt)}, ${relativeTime(match.finishedAt)}` +
+  // eslint-disable-next-line react-hooks/purity -- server component, rendered fresh for each request
+  const now = Date.now();
+  let when: string | null = null;
+  if (match.status === "done" && match.finishedAt) {
+    when =
+      stamp("finished", match.finishedAt, now) +
       (match.startedAt ? ` · took ${duration(match.startedAt, match.finishedAt)}` : "");
+  } else if (match.status === "failed" && match.finishedAt) {
+    when = stamp("failed", match.finishedAt, now);
+  }
 
   return (
     <>
