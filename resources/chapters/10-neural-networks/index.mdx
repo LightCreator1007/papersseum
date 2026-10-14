@@ -91,7 +91,7 @@ For a real network, there are many layers and many neurons per layer, but the re
 
 How do you know your backpropagation code is right? There is a lovely test. The slope of the loss with respect to any one weight can also be found by brute force: nudge that weight up a tiny bit, nudge it down, and see how the loss changes. If backpropagation is correct, the two answers must agree.
 
-We ran this **gradient check** on a network with three layers (3, 5, 4 and 2 neurons) and checked every single weight and bias. The largest disagreement was about two parts in a hundred million. That is rounding error, so the backpropagation is correct. Whenever you write a network from scratch, run this check first. It catches almost every bug.
+We ran this **gradient check** on a network with three layers (3, 5, 4 and 2 neurons) and checked every single weight and bias. The largest disagreement was far smaller than one part in a million. That is rounding error, so the backpropagation is correct. Whenever you write a network from scratch, run this check first. It catches almost every bug.
 
 ## Why one neuron cannot learn XOR
 

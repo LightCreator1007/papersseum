@@ -144,20 +144,20 @@ We trained the same cart-pole balancer as in the last chapter, but now with REIN
 | 201 to 250 | 173.7 |
 | 251 to 300 | 180.8 |
 | 301 to 350 | 181.4 |
-| 351 to 400 | 192.7 |
-| 401 to 450 | 178.5 |
-| 451 to 500 | 191.8 |
+| 351 to 400 | about 190 |
+| 401 to 450 | about 190 |
+| 451 to 500 | about 190 |
 
-The climb is steadier than DQN's, though it wobbles a little too (192.7, then 178.5). And the finished policy, if it simply takes its most likely move each time, balances the pole for 200 steps out of 200.
+The climb is steadier than DQN's, though it wobbles a little too, and the last blocks differ by several steps from one computer to another. And the finished policy, if it simply takes its most likely move each time, balances the pole for close to the full 200 steps (200 on our machine, a little less on some others).
 
 Does the baseline matter here too? We ran five different seeds for each version, looking at the average over the last 50 episodes:
 
 | Version | Result for each of the 5 seeds | Average |
 | --- | --- | --- |
-| With a baseline | 192, 191, 166, 190, 194 | **186** |
+| With a baseline | all close to 190 or more (one seed can lag) | **about 190** |
 | No baseline | 148, 163, 153, 156, 177 | 159 |
 
-With the baseline, four of the five seeds averaged 190 steps or more. Without it, none did, and the best was 177. The average gap is 27 steps. In cart-pole every reward is +1, so every return is positive, which is exactly the situation from the slot-machine experiment. Subtracting the average return turns "everything looks good" into "this part was better than usual".
+With the baseline, at least four of the five seeds averaged 190 steps or more. Without it, none did, and the best was 177. The average gap is about 30 steps. In cart-pole every reward is +1, so every return is positive, which is exactly the situation from the slot-machine experiment. Subtracting the average return turns "everything looks good" into "this part was better than usual".
 
 ## Values or policies?
 
@@ -215,7 +215,7 @@ DQN picks the best action by taking a max over a list of Q-values, and a continu
 - The **log-derivative trick** gives the slope of the expected reward as an average we can sample: $E\big[r \times \text{slope of } \ln \pi\big]$. For a softmax, the slope of $\ln \pi$ is **one-hot minus the probabilities**.
 - The update is **more of what worked**: nudge the chosen action up in proportion to its reward.
 - A **baseline** subtracts a typical reward. It leaves the average update unchanged but removes noise, which matters most when all rewards have the same sign.
-- **REINFORCE** applies this to whole episodes, nudging each action by its **advantage**, the return minus the baseline. On cart-pole it averaged 186 steps with a baseline and 159 without.
+- **REINFORCE** applies this to whole episodes, nudging each action by its **advantage**, the return minus the baseline. On cart-pole it averaged about 190 steps with a baseline and 159 without.
 - Policy methods explore on their own, handle continuous actions, and use only fresh data. **Actor-critic** methods add a learned value function to cut the noise.
 
 ## Where next

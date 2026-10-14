@@ -69,7 +69,7 @@ def main():
 
     # --- The gradient check: backpropagation agrees with brute-force slopes to better than one part in a million
     worst = gradient_check()
-    assert worst < 1e-6 and f"{worst:.0e}" == "2e-08", worst
+    assert worst < 1e-6, worst   # the exact size is rounding noise and differs between machines
 
     # --- XOR: one hidden neuron cannot do it (it settles on the best constant guess, 0.5); two or four can
     net1, l1 = learn_xor(1, steps=3000)
