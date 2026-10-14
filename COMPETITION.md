@@ -207,7 +207,7 @@ All functions work on **one sample** in PyTorch layouts, so a state dict maps st
 - **Check parity first.** Run the same observation through your PyTorch model and your NumPy forward pass and compare the outputs before you embed anything.
 - **Bake in preprocessing.** Fold batch normalisation into the preceding convolution during export if you can, and keep any input normalisation inside `act`.
 - **Measure.** `papersseum validate` reports your slowest decision. Keep it well under 50 ms, and assume a modest single CPU: your bot gets one core, shared with nothing else but not a fast one.
-- **Use `reset()`** to unpack weights, precompute tables and allocate buffers.
+- **Use `reset()`** to unpack weights, precompute tables and allocate buffers, and **run one dummy forward pass there** to warm up: the first numpy call is slower than the rest, and you do not want it to be your first `act()`. Each bot also gets a single math thread, as on the platform (`papersseum validate` sets the same limit locally).
 - **Exploration noise.** Your bot's random stream is seeded by `config["seed"]` and `config["pid"]`.
 
 ---
