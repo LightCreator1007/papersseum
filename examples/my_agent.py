@@ -10,15 +10,15 @@ Test it:
   papersseum validate my_agent.py
 """
 
-from papersseum import channels as ch, load_weights  # noqa: F401
+from papersseum import channels as ch, nn, unpack_weights  # noqa: F401
 
 
 class Agent:
     def reset(self, config):
-        # config has the match constants, your per-match "seed" and "pid", and
-        # "weights_dir": the folder holding this file. Load weights from there,
-        # e.g.  self.policy = load_weights(config, "policy.npy")
-        # (.npy/.npz/.pt/.pth; raw numpy.load / torch.load are blocked).
+        # config has the match constants and your per-match "seed" and "pid".
+        # A submission is ONE .py file (max 1 MB), so trained weights travel inside it:
+        #   papersseum pack model.pt --into my_agent.py     (writes WEIGHTS = "..." below)
+        # then, here:  W = unpack_weights(WEIGHTS)  and run the net with papersseum.nn.
         self.side = 6
         self.out_steps = 0
 

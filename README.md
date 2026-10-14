@@ -42,14 +42,25 @@ class Agent:
 
 Run `papersseum new my_agent.py` to drop a copy-ready starter next to you. Four baselines ship in [`papersseum/agents/`](papersseum/agents): `random`, `greedy` (grinds small capture loops), `safe_expander`, and `hunter` (chases and cuts exposed trails).
 
-If your agent uses trained weights, load them from your own folder via `config["weights_dir"]` in `reset`, with `papersseum.load_weights(config, "policy.npy")` (`.npy`, `.npz`, `.pt`, `.pth`; raw `numpy.load` / `torch.load` are blocked by the scan):
+A submission is **one `.py` file, at most 1 MB**: no zip and no separate weight files. If your agent is a neural network, train it anywhere (PyTorch, JAX, ...) and embed the weights in the file:
+
+```bash
+papersseum pack model.pt --into my_agent.py         # writes WEIGHTS = "..." into your agent
+```
 
 ```python
-from papersseum import load_weights
+from papersseum import nn, unpack_weights
 
-def reset(self, config):
-    self.policy = load_weights(config, "policy.npy")
+class Agent:
+    def reset(self, config):
+        self.W = unpack_weights(WEIGHTS)             # {"conv1.weight": ndarray, ...}
+
+    def act(self, obs):
+        h = nn.relu(nn.conv2d(obs["local"], self.W["conv1.weight"], self.W["conv1.bias"], padding=1))
+        return int(nn.linear(nn.global_avg_pool(h), self.W["fc.weight"]).argmax())
 ```
+
+`papersseum.nn` is a small numpy-only toolkit (`conv2d`, `linear`, pooling, `batch_norm`, `relu`, `softmax`, ...) in PyTorch layouts. The sandbox has no PyTorch, so `import torch` is rejected on upload; inference runs in numpy. About 350k float16 or 700k int8 weights fit in 1 MB. See [`examples/nn_agent.py`](examples/nn_agent.py) for a complete example, and [COMPETITION.md](COMPETITION.md) for the full participant guide. (`papersseum.load_weights` reads files from your agent's folder and works for local experiments only; it is rejected on upload.)
 
 ## Running it
 
@@ -59,7 +70,8 @@ pip install papersseum             # or: pip install -e ".[dev,viewer]" from a c
 papersseum new my_agent.py                         # write a starter agent
 papersseum play my_agent.py --vs greedy,hunter --seed 7 --render match.mp4
 papersseum eval my_agent.py --games 30             # benchmark vs a baseline field
-papersseum validate my_agent.py                    # the scan + smoke match the server runs on submit
+papersseum validate my_agent.py                    # the platform's upload check: scan + a full match
+papersseum pack model.pt --into my_agent.py        # embed trained weights in your single-file agent
 papersseum version                                 # library + engine hash (must match the server)
 ```
 
@@ -75,7 +87,7 @@ print(result["placements"])
 
 ## Limits
 
-A submission is one `.py` file of at most 1 MB (weights live beside it). `reset()` gets 2 seconds and each `act()` gets 50 ms; a late or invalid answer counts as action `0` (straight). Only a curated set of imports is allowed (numpy, math, collections, and similar; `torch` for weights), and `open`, `eval`, `getattr`, `vars` and raw `numpy.load` / `torch.load` are blocked. `papersseum validate` runs the same scan locally.
+A submission is one `.py` file of at most 1 MB. `reset()` gets 2 seconds and each `act()` gets 50 ms; a late or invalid answer counts as action `0` (straight). Only a curated set of imports is allowed (numpy, math, collections, and similar; no `torch`), and `open`, `eval`, `getattr`, `vars` and raw `numpy.load` are blocked. `papersseum validate` runs the same check the platform runs on upload, locally. Full rules are in [COMPETITION.md](COMPETITION.md).
 
 ## Replays
 
