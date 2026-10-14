@@ -3,7 +3,7 @@ name: release
 # Publishes the library to PyPI using Trusted Publishing (no token stored anywhere).
 #   git tag v0.5.0 && git push origin v0.5.0     -> tests, build, publish to PyPI, GitHub release
 #   Actions > release > Run workflow             -> rehearsal: publish to TestPyPI only
-# One-time setup is in docs/RELEASING.md.
+# One-time setup is in deploy/RELEASING.md.
 
 on:
   push:
