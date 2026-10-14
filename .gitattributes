@@ -2,3 +2,5 @@
 *.png binary
 *.mp4 binary
 *.gif binary
+*.whl binary
+*.gz binary
