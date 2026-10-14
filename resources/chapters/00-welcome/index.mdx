@@ -1,0 +1,185 @@
+<Callout title="At a glance">
+**About 20 minutes, and no maths at all.** You will watch a program teach itself something nobody told it, meet the handful of words that every reinforcement learning problem uses, and see how this differs from other kinds of machine learning. You need nothing except curiosity.
+</Callout>
+
+## Watch something learn
+
+Let us start with a tiny puzzle instead of a definition.
+
+A little learner stands at the left end of a corridor. There is a piece of cheese at the right end. The learner does not know where the cheese is, and nobody tells it what to do. All it can do is step left or step right, and afterwards find out how that went.
+
+Press **One attempt** a few times and watch the numbers. Then press **Ten attempts** and keep going.
+
+<CheeseHunt />
+
+Did you spot the change? Early attempts wander about for dozens of steps. Later ones march straight to the cheese.
+
+## What just happened?
+
+The first few attempts took a long time, because the learner had no idea where to go. It stumbled around until it bumped into the cheese. A learner that wandered completely at random would need about **56 steps** on average to find it. (Do not worry about where that number comes from yet. We will work it out below.)
+
+After a few dozen attempts, the learner was reaching the cheese in about **8 or 9 steps**. The shortest possible trip is 7 steps, and the learner still tries a random move now and then, one time in five, which is why it is not always perfect.
+
+Here is the part that matters. **Nobody wrote a rule saying "go right".** We never told it where the cheese was. The only feedback it ever got was a reward when it reached the cheese. From that alone, over many attempts, it worked out which way to go.
+
+That is **reinforcement learning**: learning what to do by trying things and seeing what happens.
+
+## You have done this all your life
+
+Think about how you learned to ride a bicycle. Nobody could hand you a rulebook for balancing. Someone could give you tips, but in the end you wobbled, you fell, you wobbled less, and one day you were riding. You tried, saw what happened, and adjusted.
+
+It is the same when a dog learns "sit" because a treat follows, when you practise a cricket stroke until it starts to come off the bat properly, or when you work out which hostel mess queue moves fastest. In every case there is no answer key. There is only what happened after you acted.
+
+Reinforcement learning (RL for short) is that same idea, made precise enough for a computer to do it.
+
+## The loop every RL problem shares
+
+Every RL problem, from the cheese corridor to a robot learning to walk, has the same simple shape.
+
+<AgentLoop />
+
+Let us name the parts, using the cheese hunt as our example.
+
+- The **agent** is the learner, the one who makes decisions. (Our little cheese-seeker.)
+- The **environment** is everything the agent interacts with. (The corridor and its walls.)
+- An **action** is a choice the agent can make. (Step left or step right.)
+- The **reward** is a number telling the agent how things went. Positive is good, negative is bad, and zero means nothing special happened. (It got 1 for reaching the cheese and 0 otherwise.)
+
+After each action, the environment shows the agent its **new situation** along with the reward, and then the loop goes round again. Act, see what happened, repeat.
+
+The same four ideas turn up everywhere. Here they are side by side:
+
+| | Cheese hunt | A video game | Recommending videos |
+| --- | --- | --- | --- |
+| **Agent** | the learner | the bot | the app |
+| **Environment** | the corridor | the game world and its other players | the people watching |
+| **Action** | step left or right | turn, jump, shoot | pick a video to show |
+| **Reward** | 1 at the cheese | points scored | did they keep watching? |
+
+One thing deserves a special mention. **A reward is a score, not an instruction.** The agent is never told "the right move was to go right". It is only told how well it did. Working out which moves earned that score is the whole challenge.
+
+## A little vocabulary
+
+Three more words will keep coming back. We will make each one precise later, so for now just get the feel.
+
+- A **policy** is the agent's way of choosing an action in each situation. "Always go right" is a policy. The arrows in the demo above show the learner's current policy: the move it prefers from each cell.
+- An **episode** is one attempt from start to finish. Each trip down the corridor, from the start to the cheese, is one episode.
+- The **return** is the total reward collected during an episode.
+
+The goal of reinforcement learning, in one line: **find a policy that collects as much reward as possible.**
+
+## How is this different from other machine learning?
+
+You may have heard of a different style of machine learning, where you show a program thousands of photos, each labelled "cat" or "dog", and it learns to tell them apart. That is **supervised learning**. Every example comes with the right answer, so the program can check its guess and correct itself.
+
+Reinforcement learning has no answer key. That makes it harder, and more interesting, in three ways.
+
+1. **No teacher for each move.** There is no one saying "the correct action here was left". You only get a score.
+2. **Rewards can come late.** Imagine a game with 1,800 decisions in a single match. You only find out at the very end whether you won. Which of those 1,800 moves deserves the credit, or the blame? Sorting that out is a famous puzzle in RL, called the **credit assignment problem**.
+3. **Your actions decide what you see.** A learner that never tries the right-hand end of the corridor will never find the cheese. What you learn depends on what you try. You will meet this head-on in [the bandit chapter](/learn/03-bandits), as the tension between exploring and exploiting.
+
+A fair warning: if you have plenty of labelled examples, supervised learning is usually the easier tool. RL is for the problems where there is no answer to copy, but you *can* tell how well you did.
+
+## A peek at the maths: how long would a blind wanderer take?
+
+This part is optional, but it is a nice first taste of how maths and learning fit together. We promised to explain the number 56.
+
+Take the smallest interesting corridor: just **three cells**. The learner starts in cell 0, there is a middle cell 1, and the cheese is in cell 2. Suppose it wanders blindly: every step, it flips a fair coin to go left or right. If it tries to go left from cell 0, it bumps the wall and stays where it is, but the step still counts.
+
+Let $E_0$ be the average number of steps needed to reach the cheese starting from cell 0, and $E_1$ the same starting from cell 1.
+
+Start with cell 1. You take one step. Half the time you go right and you are done. Half the time you go left, landing in cell 0, with $E_0$ more steps to go on average. So
+
+$$
+E_1 = 1 + \tfrac{1}{2} E_0.
+$$
+
+Now cell 0. You take one step. Half the time you bump the wall and are still at cell 0, with $E_0$ more steps to go. Half the time you move to cell 1, with $E_1$ more steps to go. So
+
+$$
+E_0 = 1 + \tfrac{1}{2} E_0 + \tfrac{1}{2} E_1.
+$$
+
+That is two equations with two unknowns, which you can solve like any simultaneous equations. In the second one, move the $\tfrac{1}{2}E_0$ to the left side to get $\tfrac{1}{2}E_0 = 1 + \tfrac{1}{2}E_1$, which means $E_0 = 2 + E_1$. Put that into the first equation:
+
+$$
+E_1 = 1 + \tfrac{1}{2}(2 + E_1) = 2 + \tfrac{1}{2}E_1,
+$$
+
+so $\tfrac{1}{2}E_1 = 2$, giving $E_1 = 4$ and $E_0 = 6$.
+
+A blind wanderer needs 6 steps on average in a three-cell corridor. The same kind of working gives a neat rule for a corridor with any number of cells:
+
+$$
+\text{average steps} = \text{cells} \times (\text{cells} - 1).
+$$
+
+For 3 cells that is $3 \times 2 = 6$, matching what we just found. For our 8-cell corridor it is $8 \times 7 = 56$. Notice how quickly it grows: double the length and the blind wanderer takes about four times as long. A learner that finds the straight path needs only 7.
+
+This kind of reasoning, "what happens on average over everything that might happen", is called an **expected value**. It is the star of the next chapter.
+
+## Where is RL used?
+
+Reinforcement learning shows up wherever an agent makes a sequence of decisions and the results come back as a score:
+
+- **Games**, from board games to video games, where programs get good by playing a huge number of games against themselves.
+- **Robots**, learning to walk, balance or pick things up by trial and error.
+- **Recommendations**, deciding what to show next based on how people respond.
+- **Resource control**, such as deciding how to share or schedule limited resources.
+- **Language models**, which are often fine-tuned using feedback from people about which answers are better.
+
+RL is not magic. It often needs a great many attempts, and getting it to work can be fiddly. That is exactly why games make such a good place to learn it: attempts are cheap, the rules are clear, and you can see the result.
+
+## Where this course is going
+
+The course has five parts:
+
+- **Part A: Foundations.** You are here. We will cover the little maths and Python we need.
+- **Part B: Choices and consequences.** One decision at a time, then whole sequences of decisions, and how to plan when you know the rules.
+- **Part C: Learning from experience.** What to do when you do *not* know the rules and can only learn by playing.
+- **Part D: Deep reinforcement learning.** Replace the lookup table with a neural network.
+- **Part E: Many agents.** What changes when the other players are learning too.
+
+The last chapter pulls it all together: you will use what you learned to build a bot for **Papersseum**, a game on this site where five bots fight for control of a circular arena for 180 seconds. Everything before it is preparation for that moment, and everything in it is something you will already understand.
+
+## How to use this course
+
+- **Play with the demos.** They are there to build intuition, not to decorate the page.
+- **Run the code** if you can. Chapter 2 gets you set up, so do not worry if you are not ready yet.
+- **Try the questions** at the end of each chapter before you open the answers. Getting one wrong and finding out why teaches more than getting it right by luck.
+- **Do not memorise.** If you understand the idea, you can rebuild the formula. If you only memorised the formula, you are stuck the moment it changes shape.
+- **Go back when you are lost.** Every chapter leans on the one before it, and nobody learns this in one sitting.
+
+## Check yourself
+
+<Check q="In the cheese hunt, what are the agent, the environment, the action and the reward?">
+The **agent** is the learner. The **environment** is the corridor, with its walls and the cheese. The **action** is stepping left or right. The **reward** is 1 when the learner reaches the cheese and 0 on every other step.
+</Check>
+
+<Check q="Why was 'go right' never given to the learner as a rule? Where did it come from instead?">
+Nobody programmed it. The learner tried moves, got a reward only when it reached the cheese, and gradually worked out that heading right tends to lead to the reward. The preference for going right came from its own experience.
+</Check>
+
+<Check q="A coach says 'good shot!' after your cricket stroke. Is that more like a label, as in supervised learning, or a reward? Why?">
+It is more like a reward. It is a score about how things went, given after the fact. It does not tell you exactly which muscles to move or what the correct stroke was. A label, in supervised learning, would be the right answer to copy.
+</Check>
+
+<Check q="Why are delayed rewards hard to learn from?">
+Because when the reward arrives, many earlier decisions could have caused it. In a match with 1,800 decisions where you only learn at the end that you won, it is not obvious which of those moves were good and which were lucky or even bad. Working out who deserves the credit is called the credit assignment problem.
+</Check>
+
+<Check q="In the 8-cell corridor, a learner that always goes right takes how many steps to reach the cheese? How does that compare with the blind wanderer's average?">
+It takes 7 steps, one for each move from cell 0 to cell 7. The blind wanderer averages $8 \times 7 = 56$ steps, which is 8 times as long.
+</Check>
+
+## Recap
+
+- **Reinforcement learning** is learning what to do by trying things and seeing what happens, guided only by rewards.
+- Every RL problem has an **agent** that takes **actions** in an **environment** and gets a **reward** and a new situation back, round and round.
+- A **policy** is the agent's way of choosing actions. An **episode** is one attempt. The **return** is the total reward of an episode. The goal is to find a policy that collects as much reward as possible.
+- A reward is a **score, not an instruction**. Rewards can be **late**, and your actions decide **what you get to see**.
+- A blind wanderer needs 56 steps on average in an 8-cell corridor, while a learner needs about 8 or 9. Learning pays off.
+
+## Where next
+
+Next is the maths toolkit: sums, averages, expected value, slopes and a few friends. It is friendlier than it sounds, and it is the only maths this whole course needs.

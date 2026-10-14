@@ -56,6 +56,10 @@ function lintPage(slug, source, isChapter, readySlugs, problems) {
   for (const h of hs) {
     if (h.raw.includes("$")) problems.push(`${where}: heading "${h.raw}" contains maths; keep equations out of headings`);
   }
+  // <Check q="..."> is plain text, so an equation in it would show as raw $...$ instead of rendering.
+  for (const m of source.matchAll(/<Check\s+q="([^"]*)"/g)) {
+    if (m[1].includes("$")) problems.push(`${where}: a <Check q="..."> question contains $...$; write it in plain text (use unicode like x², γ, −)`);
+  }
   if (/\bTODO\b|\bFIXME\b|\bTBD\b/.test(source)) problems.push(`${where}: contains TODO/FIXME/TBD`);
   if (isChapter) {
     const h2 = hs.filter((h) => h.depth === 2).map((h) => h.text.toLowerCase());

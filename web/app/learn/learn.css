@@ -133,3 +133,24 @@
 .list-plain { list-style: none; padding: 0; margin: 8px 0 0; }
 .lesson-nav { display: flex; justify-content: space-between; gap: 16px; margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--rule); font-size: 14px; }
 .lesson-nav a { max-width: 48%; }
+
+/* cheese hunt */
+.corridor { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
+.cell { border: 1px solid var(--rule); border-radius: 4px; min-height: 58px; padding: 4px 2px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; font-size: 11px; color: var(--muted); text-align: center; }
+.cell-goal { border-color: var(--up); color: var(--up); }
+.cell-arrow { font-size: 20px; line-height: 1; color: var(--text); }
+
+/* slope explorer */
+.plot { display: block; width: 100%; max-width: 420px; border-bottom: 1px solid var(--rule); }
+.tangent { stroke: var(--callout-idea); stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+.tangent-flat { stroke: var(--up); }
+.plot-dot { fill: var(--text); }
+
+/* diagrams */
+.figure { margin: 4px 0; }
+.diagram { display: block; width: 100%; max-width: 440px; }
+.diagram-box { fill: var(--surface); stroke: var(--rule); stroke-width: 1.2; }
+.diagram-line { stroke: var(--muted); stroke-width: 1.4; }
+.diagram-arrow-head { fill: var(--muted); }
+.diagram-text { fill: var(--muted); font-size: 12px; font-family: var(--sans); }
+.diagram-strong { fill: var(--text); font-size: 14px; font-weight: 600; }

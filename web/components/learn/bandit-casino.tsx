@@ -1,23 +1,12 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { Spark } from "@/components/learn/spark";
 import { ARM_NAMES, bestArm, makeProbabilities, mulberry32, pull, runAgent, runningMean, type Rng } from "@/lib/learn/bandit";
 
 const BUDGET = 100;
 
 type Tally = { pulls: number; wins: number };
-
-function Spark({ values, reference }: { values: number[]; reference?: number }) {
-  const w = 300;
-  const h = 70;
-  const pts = values.map((v, i) => `${(i / Math.max(1, values.length - 1)) * w},${h - v * h}`).join(" ");
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="spark" role="img" aria-label="Average reward so far, over the pulls">
-      {reference !== undefined ? <line x1="0" x2={w} y1={h - reference * h} y2={h - reference * h} className="spark-ref" /> : null}
-      <polyline points={pts} className="spark-line" fill="none" />
-    </svg>
-  );
-}
 
 // Chapter 3's demo: play five slot machines yourself, then watch the learner play the same ones.
 export function BanditCasino() {
@@ -127,7 +116,7 @@ export function BanditCasino() {
               </span>
             ))}
           </p>
-          <Spark values={runningMean(agent.rewards)} reference={showTruth ? probs[best] : undefined} />
+          <Spark values={runningMean(agent.rewards)} reference={showTruth ? probs[best] : undefined} label="Average reward so far, over the pulls" />
           <p className="small muted">Its average reward so far, pull by pull{showTruth ? ". The dashed line is the best machine's true chance." : ". Reveal the true chances to see the target."}</p>
         </div>
       ) : null}

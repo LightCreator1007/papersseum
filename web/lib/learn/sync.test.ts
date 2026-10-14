@@ -69,6 +69,11 @@ describe("buildManifest", () => {
     expect(bad(GOOD + "\n## The value $q$\n")).toThrow(/maths/);
   });
 
+  it("rejects maths inside a Check question", () => {
+    expect(bad(GOOD + '\n<Check q="What is $x^2$?">Answer.</Check>\n')).toThrow(/Check q/);
+    expect(() => buildManifest(repo(GOOD + '\n<Check q="What is x²?">It is $x^2$.</Check>\n'), { write: false })).not.toThrow();
+  });
+
   it("rejects links to pages that are not ready", () => {
     expect(bad(GOOD + "\nSee [next](/learn/02-second).\n", { second: "planned" })).toThrow(/does not exist yet/);
     expect(() => buildManifest(repo(GOOD + "\nSee [next](/learn/02-second).\n", { second: "ready" }), { write: false })).toThrow(/does not exist/); // its file is missing

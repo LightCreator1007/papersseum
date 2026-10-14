@@ -1,0 +1,288 @@
+<Callout title="At a glance">
+**About 30 minutes.** You will set up Python on your computer, learn the small slice of the language this course uses, meet NumPy (the library that does maths on lists of numbers), and run your first experiment. You need no programming background. If you already write Python, skim the first half and jump to "Random numbers and seeds".
+</Callout>
+
+## Why Python?
+
+From here on, we will not just talk about ideas. We will build them and watch them work. For that we need a programming language, and the one used almost everywhere in machine learning is **Python**.
+
+There is no deep reason. Python reads almost like plain English, it has an enormous number of ready-made tools, and it is what the Papersseum game uses: the bots you will write for it are Python programs. Learn it once and you have it everywhere.
+
+You will not become a Python expert in this chapter, and you do not need to. We will learn exactly the pieces the course uses and nothing more.
+
+## Get set up
+
+You have two options. Pick whichever sounds easier.
+
+**Option 1: nothing to install.** Open [Google Colab](https://colab.research.google.com) in your browser and sign in with a Google account. It gives you a notebook where you can type Python and run it, and NumPy is already there. This is a perfectly good way to follow the course.
+
+**Option 2: Python on your own computer.** This is better in the long run, because it is what you will use for the Papersseum bot.
+
+1. Install a recent version of Python 3 (3.11 or newer) from [python.org](https://www.python.org/downloads/). On Linux it is usually already there.
+2. Open a terminal (Terminal on Mac, PowerShell on Windows) and check it works:
+
+```bash
+python3 --version
+```
+
+On Windows the command is usually `py --version`.
+
+3. Make a folder for the course, and create a **virtual environment** in it. This is a private box for the libraries you install, so different projects never get in each other's way:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate        # on Windows: .venv\Scripts\Activate.ps1
+pip install numpy
+```
+
+After `activate`, your terminal prompt usually shows `(.venv)`. That means you are inside the box.
+
+4. To run any of the code files from this course, save it and run:
+
+```bash
+python name_of_file.py
+```
+
+That is the whole setup. Each chapter has its code files at the bottom of the page, ready to download.
+
+## Python in ten minutes
+
+Here is the Python you need, with each idea on its own. Type them in as you read. Everything below is in `python_tour.py`, so you can run it all at once as well.
+
+### Values, lists and averages
+
+```python
+reward = 1
+rewards = [1, 0, 1, 1, 0]       # a list of numbers
+total = sum(rewards)            # 3
+average = total / len(rewards)  # 0.6
+print(total, average)
+```
+
+A **variable** is a name for a value: `reward` holds 1. A **list** is an ordered collection in square brackets. `sum` adds a list up, and `len` tells you how many items it has. Anything after a `#` is a comment that Python ignores, there for humans. This is the same calculation as in the last chapter.
+
+### Loops and decisions
+
+```python
+total = 0
+for r in rewards:
+    total += r          # same as: total = total + r
+print(total)            # 3
+
+for r in rewards:
+    if r == 1:
+        print("win")
+    else:
+        print("lose")
+```
+
+A **for loop** repeats a block once for each item in a list. The block is whatever is **indented** (shifted right) underneath. Python uses indentation to know where a block starts and ends, so it matters. An **if** runs its block only when the condition is true, and `else` covers the rest. Note the double equals sign: `==` asks "are these equal?", while a single `=` stores a value.
+
+### Functions
+
+```python
+def average(values):
+    return sum(values) / len(values)
+
+print(average([1, 0, 1, 1, 0]))   # 0.6
+```
+
+A **function** is a reusable recipe. `def` defines it, the names in brackets are its inputs, and `return` hands back the result. You write it once and use it as often as you like.
+
+### Dictionaries
+
+```python
+q = {"A": 0.6, "B": 0.4}       # names and their values
+best = max(q, key=q.get)       # the name with the biggest value
+print(best)                    # A
+```
+
+A **dictionary** stores values under names, in curly brackets. Here it maps each slot machine to its estimated value. `max(q, key=q.get)` finds the name whose value is largest.
+
+### Classes
+
+```python
+class Counter:
+    def __init__(self):
+        self.count = 0
+
+    def add(self, amount):
+        self.count += amount
+
+c = Counter()
+c.add(2)
+c.add(3)
+print(c.count)    # 5
+```
+
+A **class** bundles some data together with the things you can do to it. `__init__` runs when you create one, and `self` means "this particular object". Why does this matter? Because in Papersseum, a bot is a class. Everything it remembers lives in `self`, and what it can do are its methods. We will look at one in a moment.
+
+## NumPy: maths on whole lists at once
+
+Python's plain lists are fine, but when we want to do maths on thousands of numbers, we use **NumPy**. Its central idea is the **array**: like a list, but built for fast maths. By convention we import it with the short name `np`:
+
+```python
+import numpy as np
+
+a = np.array([1, 2, 3, 4])
+print(a * 2)          # [2 4 6 8]       every item doubled
+print(a.sum(), a.mean())   # 10 2.5
+print(a[1:3])         # [2 3]           items 1 and 2 (counting from 0, stopping before 3)
+print(a[a > 2])       # [3 4]           only the items bigger than 2
+```
+
+Notice what happened in the first line. We wrote `a * 2` and *every* item doubled. No loop needed. NumPy applies operations to the whole array at once.
+
+Two more tricks. Slicing `a[1:3]` takes a piece, and remember that Python counts from 0, so the first item is `a[0]`. And `a[a > 2]` is a **mask**: the comparison `a > 2` gives true or false for each item, and indexing with it keeps only the true ones.
+
+You met the **dot product** in the last chapter, and NumPy does it with the `@` symbol:
+
+```python
+b = np.array([10, 20, 30, 40])
+print(a @ b)          # 300   = 1*10 + 2*20 + 3*30 + 4*40
+```
+
+And the matrix times vector example from the same chapter:
+
+```python
+m = np.array([[1, 2], [3, 4]])
+print(m.shape)               # (2, 2)    2 rows, 2 columns
+print(m @ np.array([5, 6]))  # [17 39]
+```
+
+That is all the NumPy you need for now. More arrives as we need it.
+
+## Random numbers and seeds
+
+Learning agents run on randomness: random exploring, random starting positions, random opponents. Computers do not have real randomness, but they can produce a stream of numbers that behaves randomly. NumPy gives you one like this:
+
+```python
+rng = np.random.default_rng(42)
+rng.integers(1, 7)        # a die roll: a whole number from 1 to 6
+rng.random()              # a number between 0 and 1
+rng.integers(0, 2, size=5)   # five coin flips: 0 or 1
+```
+
+Notice the number 42 in the first line. That is a **seed**: a starting point for the random stream. **The same seed always gives exactly the same numbers.** Run the program tomorrow, or on a friend's laptop, and you get the identical results.
+
+That sounds like it defeats the purpose of randomness, but it is one of the most important habits in RL. When an experiment gives a surprising result, you must be able to run it again and see the same thing, to find out whether it was a real effect or just luck. So **always set a seed**. Change the seed whenever you want a different run.
+
+## Your first experiment
+
+Let us put this to work by checking something from the last chapter: that the average of many random things settles down to its expected value. We will flip a fair coin 100,000 times and watch the share of heads.
+
+```python
+rng = np.random.default_rng(0)
+flips = rng.integers(0, 2, size=100_000)   # 0 = tails, 1 = heads
+for n in (10, 100, 1_000, 10_000, 100_000):
+    print(n, flips[:n].mean())
+```
+
+Because the flips are 0s and 1s, the **mean** of the first $n$ flips is exactly the share of heads. Running this with seed 0 gives:
+
+| Flips | Share of heads |
+| --- | --- |
+| 10 | 0.4000 |
+| 100 | 0.5600 |
+| 1,000 | 0.5370 |
+| 10,000 | 0.5030 |
+| 100,000 | 0.4996 |
+
+Look at how it behaves. With 10 flips we are 10 percentage points off. With 100,000 flips we are within 0.0004 of one half. The average really does settle down.
+
+How fast does it settle? It turns out the typical size of the error follows a neat rule:
+
+$$
+\text{typical error} \approx \frac{0.5}{\sqrt{n}}.
+$$
+
+With $n = 100$ flips, that is $0.5 / 10 = 0.05$. With $n = 10{,}000$ flips, it is $0.5 / 100 = 0.005$. We checked this by repeating the experiment 2,000 times and measuring how far off each run was: the typical errors came out at about 0.050 and 0.005. So the rule works.
+
+Look at what it says. To make the error **10 times smaller**, you need **100 times as many flips**, because of that square root. Accuracy gets expensive. This single fact explains why RL needs so many attempts to learn well.
+
+## Reading real code
+
+Finally, let us read a small agent written the way Papersseum agents are written. It plays slot machines, a game you will meet properly in the bandit chapter. Do not worry about every detail. Just see how the pieces you have learned fit together.
+
+```python
+class TinyAgent:
+    def reset(self, config):
+        self.rng = np.random.default_rng(config["seed"])
+        self.epsilon = config.get("epsilon", 0.1)
+        self.q = np.zeros(config["arms"])   # running average for each machine
+        self.n = np.zeros(config["arms"])   # how many pulls each has had
+        self.last = None
+
+    def act(self, observation=None):
+        if observation is not None:
+            self._learn(self.last, observation)
+        if self.rng.random() < self.epsilon:
+            self.last = int(self.rng.integers(len(self.q)))        # explore
+        else:
+            best = np.flatnonzero(self.q == self.q.max())
+            self.last = int(self.rng.choice(best))                 # exploit
+        return self.last
+
+    def _learn(self, arm, reward):
+        self.n[arm] += 1
+        self.q[arm] += (reward - self.q[arm]) / self.n[arm]
+```
+
+Here is how to read it.
+
+- It is a **class** with two main methods. `reset` is called once to set things up. It stores the agent's random generator, its exploration rate, and two arrays of zeros, one entry per machine. `act` is called every time the agent must decide, and it **returns its choice**.
+- `act` starts by **learning** from the last reward, keeping a running average of what each machine has paid. (The bandit chapter explains this update properly: new = old + step × surprise.)
+- Then it decides. With probability `epsilon` it explores a random machine. Otherwise it picks the machine with the best average so far (`np.flatnonzero` finds which entries tie for the best, and `rng.choice` picks one of them).
+- The leading underscore in `_learn` is just a convention meaning "this is for internal use".
+
+Played against five machines for 1,000 pulls, this agent averages around 0.75 reward per pull. The best machine pays 0.80 on average, and picking at random would give 0.50. That is a working learning agent in about twenty lines.
+
+When you build a Papersseum bot at the end of this course, it will have exactly this shape: a class with a `reset` and an `act`.
+
+## Run it yourself
+
+Download these from the bottom of the page and run them with `python name.py`:
+
+- `python_tour.py` runs every snippet from this chapter.
+- `first_experiment.py` is the coin experiment, including the error check.
+- `tiny_agent.py` is the agent above, playing 1,000 pulls.
+- `check_numbers.py` checks every number quoted in this chapter.
+
+Try changing the seed in `first_experiment.py`. Do the exact numbers change? Does the overall pattern?
+
+## Check yourself
+
+Try to answer before you run anything.
+
+<Check q="What does np.array([1, 2, 3]) * 2 give?">
+It gives `[2 4 6]`. Multiplying an array by a number multiplies every item.
+</Check>
+
+<Check q="If a = np.array([5, 6, 7, 8, 9]), what are a[a > 6] and a[1:4]?">
+`a[a > 6]` keeps the items bigger than 6, so it is `[7 8 9]`. `a[1:4]` takes the items at positions 1, 2 and 3 (counting from 0, and stopping before 4), so it is `[6 7 8]`.
+</Check>
+
+<Check q="Why do we set a seed for the random number generator?">
+So the experiment is repeatable. The same seed always gives the same stream of random numbers, which means you can run it again and get identical results. That lets you tell a real effect from a lucky run, and lets other people reproduce what you did.
+</Check>
+
+<Check q="What is np.array([1, 2]) @ np.array([3, 4])?">
+It is the dot product: $1 \times 3 + 2 \times 4 = 3 + 8 = 11$.
+</Check>
+
+<Check q="In the coin experiment, 100 flips give a typical error of about 0.05. Roughly how many flips would you need for a typical error of about 0.005?">
+You need about 10,000 flips. The error shrinks like $0.5/\sqrt{n}$, so cutting it by a factor of 10 needs 100 times as many flips. That is $100 \times 100 = 10{,}000$.
+</Check>
+
+## Recap
+
+- You can run Python in **Google Colab** with nothing to install, or on your computer inside a **virtual environment**.
+- The Python we need is small: **variables and lists, for loops and if, functions, dictionaries and classes**.
+- **NumPy arrays** do maths on a whole list at once. You can **slice** them, **mask** them with a condition, and take **dot products** with `@`.
+- A **seed** makes random experiments repeatable. Always set one.
+- The average of many trials settles down, and the error shrinks like $0.5/\sqrt{n}$: **10 times more accuracy costs 100 times more flips**.
+- An agent is a **class** with `reset` and `act`.
+
+## Where next
+
+You are now ready for Part B. First up are bandits: five slot machines, a hundred coins, and your first learning agent. You have just seen a small version of that agent's code, and the bandit chapter explains the thinking behind it.
