@@ -44,6 +44,10 @@ export default function GettingStartedPage() {
       <pre>{`papersseum validate my_agent.py                 # the same scan and a short local test match; the server's check is stricter
 papersseum play my_agent.py --vs greedy,hunter --render match.mp4
 papersseum eval my_agent.py --games 30           # placements, coverage and rating`}</pre>
+      <p>
+        Add <code>--save-replay game.jsonl.gz</code> to <code>play</code> and watch the match in your browser on the{" "}
+        <Link href="/replay">replay page</Link>. The file isn&apos;t uploaded.
+      </p>
 
       <h2>4. Limits</h2>
       <ul>

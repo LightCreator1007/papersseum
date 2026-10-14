@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { LiveRefresh } from "@/components/live-refresh";
 import { LoadBoundary } from "@/components/load-boundary";
 import { Placeholder } from "@/components/placeholder";
+import { ReplayViewer } from "@/components/replay-viewer";
 import { Swatch } from "@/components/swatch";
 import { duration, elo, eloChange, percent, relativeTime, shortDateTime } from "@/lib/format";
 import { botHref } from "@/lib/links";
@@ -119,19 +120,26 @@ async function MatchContent({ params }: { params: PageProps<"/matches/[id]">["pa
       {match.status === "done" && (
         <>
           <Results match={match} />
-          <div className="box actions" style={{ marginTop: 20, justifyContent: "space-between" }}>
-            <span className="muted">The replay viewer isn&apos;t built yet.</span>
-            {match.replayPath && (
-              <span>
+          {match.replayPath ? (
+            <section style={{ marginTop: 28 }}>
+              <ReplayViewer
+                source={{ url: replayUrl(match.replayPath) }}
+                expected={match.seats.map((s) => ({
+                  slot: s.slot, name: s.name, placement: s.placement, coverage: s.coverage,
+                }))}
+              />
+              <p className="muted small" style={{ marginTop: 8 }}>
                 <a href={replayUrl(match.replayPath)} download>
                   Download replay
                 </a>{" "}
-                <span className="muted small">
-                  (.jsonl.gz, render it locally with <span className="mono">papersseum render</span>)
-                </span>
-              </span>
-            )}
-          </div>
+                (.jsonl.gz) · <Link href="/replay">open a replay file</Link>
+              </p>
+            </section>
+          ) : (
+            <p className="muted" style={{ marginTop: 20 }}>
+              This match has no replay.
+            </p>
+          )}
         </>
       )}
 

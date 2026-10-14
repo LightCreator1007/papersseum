@@ -108,6 +108,8 @@ for frame in iter_frames(rep["seed"], rep["action_log"]):    # owner, trail, hea
     ...
 ```
 
+On the tournament site every finished match plays in the browser: the page re-runs it with this engine (in Pyodide) and checks the result. Local files open on its `/replay` page and are not uploaded.
+
 ## Test and iterate locally
 
 Measure your agent against a field of baselines before you ever submit:
