@@ -17,51 +17,108 @@ export type Replay = {
   diffValue: Uint8Array;
 };
 
-export function decodeReplay(bytes: Uint8Array): Replay {
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  let off = 0;
-  const need = (n: number) => {
-    if (off + n > bytes.length) throw new Error("replay recording is truncated");
-  };
-  need(12);
+const FIXED = 12; // "PSRP", version, height, width, frames, players
+
+// Length of the header part: fixed fields, frame 0 cells and frame 0 heads.
+export function headerLength(bytes: Uint8Array): number {
+  if (bytes.length < FIXED) throw new Error("replay recording is truncated");
   if (String.fromCharCode(...bytes.subarray(0, 4)) !== "PSRP" || bytes[4] !== 1) {
     throw new Error("not a Papersseum replay recording");
   }
-  const height = view.getUint16(5, true);
-  const width = view.getUint16(7, true);
-  const frames = view.getUint16(9, true);
-  const players = bytes[11];
-  off = 12;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  return FIXED + view.getUint16(5, true) * view.getUint16(7, true) + bytes[11] * 2;
+}
 
-  need(height * width);
-  const initial = bytes.slice(off, off + height * width);
-  off += height * width;
+// A replay that arrives in pieces: the header first, then batches of whole
+// frame records (the engine worker streams them while it computes). Frames
+// [0, available) can be drawn.
+export class FrameStore implements Replay {
+  readonly height: number;
+  readonly width: number;
+  readonly frames: number;
+  readonly players: number;
+  readonly initial: Uint8Array;
+  readonly heads: Uint8Array;
+  readonly diffStart: Uint32Array;
+  diffIndex = new Uint16Array(4096);
+  diffValue = new Uint8Array(4096);
+  available = 1;
+  private diffCount = 0;
 
-  const heads = new Uint8Array(frames * players * 2);
-  const diffStart = new Uint32Array(frames + 1);
-  const index: number[] = [];
-  const value: number[] = [];
-  for (let f = 0; f < frames; f++) {
-    need(players * 2);
-    heads.set(bytes.subarray(off, off + players * 2), f * players * 2);
-    off += players * 2;
-    diffStart[f] = index.length;
-    if (f === 0) continue;
-    need(2);
-    const n = view.getUint16(off, true);
-    off += 2;
-    need(n * 3);
-    for (let k = 0; k < n; k++, off += 3) {
-      index.push(view.getUint16(off, true));
-      value.push(bytes[off + 2]);
+  constructor(header: Uint8Array) {
+    const length = headerLength(header);
+    if (header.length < length) throw new Error("replay recording is truncated");
+    if (header.length > length) throw new Error("replay recording has trailing bytes");
+    const view = new DataView(header.buffer, header.byteOffset, header.byteLength);
+    this.height = view.getUint16(5, true);
+    this.width = view.getUint16(7, true);
+    this.frames = view.getUint16(9, true);
+    this.players = header[11];
+    if (this.frames < 1) throw new Error("replay recording has no frames");
+    const cells = this.height * this.width;
+    this.initial = header.slice(FIXED, FIXED + cells);
+    this.heads = new Uint8Array(this.frames * this.players * 2);
+    this.heads.set(header.subarray(FIXED + cells), 0);
+    this.diffStart = new Uint32Array(this.frames + 1);
+  }
+
+  get complete(): boolean {
+    return this.available === this.frames;
+  }
+
+  append(bytes: Uint8Array): void {
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const headBytes = this.players * 2;
+    let off = 0;
+    while (off < bytes.length) {
+      if (this.complete) throw new Error("replay recording has trailing bytes");
+      if (off + headBytes + 2 > bytes.length) throw new Error("replay recording is truncated");
+      const frame = this.available;
+      this.heads.set(bytes.subarray(off, off + headBytes), frame * headBytes);
+      off += headBytes;
+      const n = view.getUint16(off, true);
+      off += 2;
+      if (off + n * 3 > bytes.length) throw new Error("replay recording is truncated");
+      this.reserve(this.diffCount + n);
+      this.diffStart[frame] = this.diffCount;
+      for (let k = 0; k < n; k++, off += 3) {
+        this.diffIndex[this.diffCount] = view.getUint16(off, true);
+        this.diffValue[this.diffCount] = bytes[off + 2];
+        this.diffCount++;
+      }
+      this.diffStart[frame + 1] = this.diffCount;
+      this.available = frame + 1;
     }
   }
-  diffStart[frames] = index.length;
-  if (off !== bytes.length) throw new Error("replay recording has trailing bytes");
-  return {
-    height, width, frames, players, initial, heads, diffStart,
-    diffIndex: Uint16Array.from(index), diffValue: Uint8Array.from(value),
-  };
+
+  private reserve(needed: number): void {
+    if (needed <= this.diffIndex.length) return;
+    let size = this.diffIndex.length;
+    while (size < needed) size *= 2;
+    const index = new Uint16Array(size);
+    index.set(this.diffIndex.subarray(0, this.diffCount));
+    const value = new Uint8Array(size);
+    value.set(this.diffValue.subarray(0, this.diffCount));
+    this.diffIndex = index;
+    this.diffValue = value;
+  }
+}
+
+export function decodeReplay(bytes: Uint8Array): Replay {
+  const length = headerLength(bytes);
+  if (bytes.length < length) throw new Error("replay recording is truncated");
+  const store = new FrameStore(bytes.subarray(0, length));
+  store.append(bytes.subarray(length));
+  if (!store.complete) throw new Error("replay recording is truncated");
+  return store;
+}
+
+export const DECISIONS_PER_SECOND = 10;
+
+// Frame (decision) index as match time: 835 -> "1:23".
+export function clock(frame: number): string {
+  const seconds = Math.floor(frame / DECISIONS_PER_SECOND);
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
 export function applyFrame(cells: Uint8Array, replay: Replay, frame: number): void {
