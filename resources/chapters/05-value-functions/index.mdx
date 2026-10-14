@@ -1,0 +1,197 @@
+<Callout title="At a glance">
+**About 45 minutes.** Last chapter we could only judge a policy by simulating it again and again. Here you learn to work out exactly how good any situation is, using a small system of equations you can solve by hand. This is the single most important idea in the course, and it is easier than it sounds. You need the return from the last chapter, and school-level simultaneous equations.
+</Callout>
+
+## How good is it to be here?
+
+Imagine two students in the evening from the last chapter. One is fresh and one is tired. Without doing any sums, who is better off?
+
+You probably said the fresh one. A fresh student can study well and earn more. But *how much* better off? Is the gap small, or big? And does the answer depend on what each student plans to do?
+
+Those questions are the heart of reinforcement learning. Instead of asking "what did I get just now?", we ask **"how good is it to be here, given what I will do from now on?"** The answer, as a number, is called a **value**.
+
+## The value of a state
+
+Let us define it carefully. Suppose the agent follows a policy $\pi$ (the Greek letter pi, here standing for "policy"). Start it in some state $s$. It will go on to collect a stream of rewards, and the total, with discounting, is the return $G$ you met last chapter. But that return is random, because transitions are random. Run the same plan twice and you can get different totals.
+
+So we take the **expected value** of the return, the average over everything that might happen:
+
+$$
+V^\pi(s) = E\left[ G_t \mid S_t = s \right].
+$$
+
+Read it aloud: "the value of state $s$ under policy $\pi$ is the expected return, given that we start in $s$." The little bar means "given that".
+
+Last chapter we estimated this by simulation: play thousands of evenings and average. Now we will see how to get the *exact* number without simulating anything.
+
+## The value of an action
+
+Sometimes we also want to know how good a particular *action* is. The **action value** $Q^\pi(s, a)$ is the expected return if you start in state $s$, take action $a$ **right now**, and *then* follow the policy $\pi$ from there on.
+
+The difference between $V$ and $Q$ is small but useful. $V$ asks "how good is this situation, if I follow my plan?" $Q$ asks "how good is this particular first move, and then my plan?" We will use $Q$ to compare moves, soon.
+
+## The Bellman equation
+
+Here is the key trick. Remember the backwards rule from last chapter:
+
+$$
+G_t = R_{t+1} + \gamma \, G_{t+1}.
+$$
+
+The return from now is the next reward plus the discounted return from the next step on. Now take the expected value of both sides. The expected return from now is the value of the current state, so the left side becomes $V^\pi(s)$. On the right, the expected reward is what the policy's action pays, and the expected future return is the *average of the values of the states we might land in*. In symbols, for a policy that takes action $a$ in state $s$:
+
+$$
+V^\pi(s) = R(s, a) + \gamma \sum_{s'} P(s' \mid s, a) \, V^\pi(s').
+$$
+
+This is the **Bellman equation**, named after the mathematician Richard Bellman. Let us read it in plain words:
+
+> **value of a state = the reward you get now + γ × the average value of the state you land in.**
+
+The sum $\sum_{s'}$ just means "add over every state $s'$ you might land in", and $P(s' \mid s, a)$ is the chance of landing in $s'$. So the sum is an average of the next states' values, weighted by how likely each one is.
+
+Why is this so powerful? Because it says a state's value is **consistent with its neighbours'**. You do not need to look infinitely far ahead. You only need the reward right now and the values of the next states. And those values are in turn consistent with theirs. Every state in the problem has one such equation, so if there are $n$ states, we have $n$ equations in $n$ unknowns.
+
+## Solving it by hand
+
+Let us do it for the student, following the policy "study when fresh, rest when tired", with $\gamma = 0.9$. Write $V_F$ for the value of being fresh, and $V_T$ for the value of being tired. Recall the table: studying while fresh pays 3 and leads to fresh with chance 0.6 and tired with chance 0.4. Resting while tired pays 0 and leads to fresh with chance 0.7 and tired with chance 0.3.
+
+The Bellman equation for each state is
+
+$$
+V_F = 3 + 0.9\,(0.6\,V_F + 0.4\,V_T),
+$$
+$$
+V_T = 0 + 0.9\,(0.7\,V_F + 0.3\,V_T).
+$$
+
+Multiply out the brackets and collect the unknowns on the left:
+
+$$
+0.46\,V_F - 0.36\,V_T = 3,
+$$
+$$
+-0.63\,V_F + 0.73\,V_T = 0.
+$$
+
+(For the first line: $V_F - 0.54\,V_F = 0.46\,V_F$ and $0.9 \times 0.4 = 0.36$. For the second: $0.9 \times 0.7 = 0.63$ and $V_T - 0.27\,V_T = 0.73\,V_T$.)
+
+That is just two simultaneous equations, which you have solved many times at school. **By substitution:** the second equation gives $V_T = \frac{0.63}{0.73} V_F \approx 0.863\,V_F$. Put that into the first:
+
+$$
+0.46\,V_F - 0.36 \times 0.863\,V_F = 0.1493\,V_F = 3,
+$$
+
+so $V_F \approx 20.09$, and then $V_T \approx 0.863 \times 20.09 \approx 17.34$.
+
+**Or with determinants (Cramer's rule).** The determinant of the coefficients is $0.46 \times 0.73 - 0.36 \times 0.63 = 0.3358 - 0.2268 = 0.109$. Then
+
+$$
+V_F = \frac{3 \times 0.73 - 0}{0.109} = \frac{2.19}{0.109} \approx 20.09, \qquad V_T = \frac{0 + 0.63 \times 3}{0.109} = \frac{1.89}{0.109} \approx 17.34.
+$$
+
+Same answer. Notice that these match what we found by simulating 4,000 evenings in the last chapter (about 20.09 from the fresh state). The equations gave us in a few lines what took thousands of simulated evenings.
+
+So a fresh student following this plan can expect a total, discounted, reward of about 20.1, and a tired student about 17.3. The fresh one is better off, but only by about 2.75 points: a good plan gets the tired student back on their feet fairly quickly.
+
+## It works for any policy
+
+The same method values any policy. Choose what the student does in each condition and see how much each state is worth.
+
+<ValueExplorer />
+
+Try the four combinations. "Study when fresh, rest when tired" gives about 20.1 and 17.3. "Always study" gives about 15.9 and 12.0, much worse when tired. "Always rest" gives about 8.9 and 7.7. And "rest when fresh, study when tired" is the worst of all, about 8.8 and 7.4: exactly the wrong way round. Notice the slider too: when $\gamma$ is near 0 the student only cares about now, and studying wins everywhere.
+
+## The matrix form
+
+When there are many states, writing out every equation by hand gets tedious, so we pack them into one. Collect the values into a list $V$, the rewards into a list $r$, and the transition probabilities into a grid $P$ (a matrix, as in the maths toolkit). The Bellman equations for all states at once are
+
+$$
+V = r + \gamma P V, \qquad\text{which rearranges to}\qquad (I - \gamma P)\, V = r.
+$$
+
+Here $I$ is the identity matrix, which is 1s down the diagonal and 0 elsewhere. For our student under the "study, then rest" policy,
+
+$$
+I - \gamma P = \begin{bmatrix} 0.46 & -0.36 \\ -0.63 & 0.73 \end{bmatrix}, \qquad r = \begin{bmatrix} 3 \\ 0 \end{bmatrix}.
+$$
+
+These are exactly the two equations we wrote above. In Python, one line solves them for any number of states:
+
+```python
+V = np.linalg.solve(np.eye(2) - gamma * P, r)
+```
+
+That is fine for a few thousand states. For the enormous problems RL really cares about, solving a giant system directly is impractical, which is why the next chapter shows a way to *approach* the answer step by step instead.
+
+## From values to better decisions
+
+Values do more than score a plan. They tell you how to **improve** it.
+
+Under the plan "study when fresh, rest when tired", we can work out the value of each action using $Q(s, a) = R(s, a) + \gamma \sum_{s'} P(s' \mid s, a)\, V(s')$. This takes one reward now plus the discounted values of where you could land. We found these:
+
+| Condition | Q if you study | Q if you rest |
+| --- | --- | --- |
+| Fresh | **20.09** | 18.83 |
+| Tired | 16.60 | **17.34** |
+
+Look at each row. When fresh, studying is worth 20.09 and resting 18.83, so the plan's choice (study) is the better one. When tired, resting is worth 17.34 and studying 16.60, so the plan's choice (rest) is again the better one. **In both conditions, the plan already picks the best-looking action.** No single change makes things better. (Notice that the Q of the plan's own action equals the state's value: 20.09 when fresh and 17.34 when tired. That is just the Bellman equation again.)
+
+Now try the same on the plan "always study", which had values 15.94 and 12.03. Its $Q$ when tired for resting works out higher than for studying, so switching to rest when tired improves it. That is the idea of **policy improvement**: **look at the values, and switch to any action that looks better than the one you are using.** The Value Explorer above does this check for you, and tells you when a plan can be improved.
+
+This is a big idea. Evaluate a plan, improve it, evaluate again, and repeat. It is how a whole family of RL methods works, and the next chapter turns it into an algorithm.
+
+## The best possible values
+
+So far the policy was fixed. What if we want the best value any policy can achieve? Call it $V^*$. Following the same logic, in each state we should take the action that leads to the highest expected return:
+
+$$
+V^*(s) = \max_a \left[ R(s, a) + \gamma \sum_{s'} P(s' \mid s, a)\, V^*(s') \right].
+$$
+
+This is the **Bellman optimality equation**. It looks like the one before, with a "pick the best action" step. For our student, the best values turn out to be exactly the ones for "study when fresh, rest when tired", about 20.09 and 17.34: you can check by looking at the table above, where the larger entry in each row equals the value.
+
+There is one catch: the $\max$ makes the equations no longer a plain system you can solve with matrices. So we need a different method, which is where the next chapter begins.
+
+## Run it yourself
+
+At the bottom of this page you can download:
+
+- `bellman.py` solves for the value of every policy, both with a direct solver and with Cramer's rule, then computes the $Q$ values and checks for improvements. It needs only NumPy.
+- `check_numbers.py` checks every number quoted in this chapter.
+
+Try changing the discount factor from 0.9 to 0.5, or to 0.99, and watch how the values and the best policy respond.
+
+## Check yourself
+
+<Check q="Write the Bellman equation for the tired state under the plan 'rest when tired', using the table from the last chapter. Then say in words what it means.">
+Resting while tired pays 0 and leads to fresh with chance 0.7 and tired with chance 0.3. So $V_T = 0 + 0.9\,(0.7\,V_F + 0.3\,V_T)$. In words: the value of being tired is the reward now (nothing) plus 0.9 times the average value of where you land, which is 70% likely to be the fresh state and 30% likely to be tired again.
+</Check>
+
+<Check q="Two states A and B. From A you get reward 1 and move to B. From B you get reward 0 and move back to A. With a discount factor of 0.5, what are the values of A and B?">
+The equations are $V_A = 1 + 0.5\,V_B$ and $V_B = 0 + 0.5\,V_A$. Substitute the second into the first: $V_A = 1 + 0.25\,V_A$, so $0.75\,V_A = 1$ and $V_A = \frac{4}{3} \approx 1.333$. Then $V_B = 0.5 \times \frac{4}{3} = \frac{2}{3} \approx 0.667$.
+</Check>
+
+<Check q="Under the plan 'study when fresh, rest when tired', the Q-value of resting when fresh is 18.83 and the value of the fresh state is 20.09. What does that tell you?">
+It says that following the plan is better than resting once and then following the plan: 20.09 is more than 18.83. So the plan's choice to study when fresh is the right one, and switching would make things worse.
+</Check>
+
+<Check q="If the discount factor is 0, what is the value of each state under 'study when fresh, rest when tired'?">
+With a discount factor of 0, nothing after the first step counts, so each value is just the immediate reward: 3 for the fresh state (studying pays 3) and 0 for the tired state (resting pays 0).
+</Check>
+
+<Check q="Why can we solve the Bellman equation for a fixed policy with matrices, but not the Bellman optimality equation?">
+For a fixed policy, each equation is a plain linear equation in the values, so we get a standard system of linear equations. The optimality equation contains a max over actions, and taking a max is not a linear operation, so it cannot be written as a simple matrix equation. We need an iterative method instead.
+</Check>
+
+## Recap
+
+- The **value** $V^\pi(s)$ of a state is the **expected return** from that state if you follow the policy $\pi$. It answers "how good is it to be here?"
+- The **action value** $Q^\pi(s, a)$ is the expected return if you take action $a$ now and follow $\pi$ afterwards.
+- The **Bellman equation** says: **value of a state = reward now + γ × average value of the next state.** One equation per state gives a small system you can solve by hand, or as $(I - \gamma P)V = r$.
+- Values tell you how to **improve** a policy: switch to any action whose $Q$ is higher than the one you use.
+- The **Bellman optimality equation** replaces "follow the policy" with "take the best action". It gives the best possible values, but it needs a new way of solving.
+
+## Where next
+
+Now we know what a value is, and how to get it exactly for small problems. Next we meet **dynamic programming**: a way of finding values, and the best policy, step by step, that works even when solving the equations directly would be too much.

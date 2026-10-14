@@ -63,7 +63,7 @@
           "maths": [
             "geometric series"
           ],
-          "status": "planned"
+          "status": "ready"
         },
         {
           "slug": "05-value-functions",
@@ -74,7 +74,7 @@
             "linear equations",
             "matrices"
           ],
-          "status": "planned"
+          "status": "ready"
         },
         {
           "slug": "06-dynamic-programming",
@@ -85,7 +85,7 @@
             "iteration",
             "convergence"
           ],
-          "status": "planned"
+          "status": "ready"
         }
       ]
     },
