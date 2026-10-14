@@ -7,7 +7,8 @@
 set -euo pipefail
 
 REPO_URL="${REPO_URL:-https://github.com/dhairya-pandya/papersseum.git}"
-BRANCH="${BRANCH:-main}"
+# branch to deploy: env var, else the VM's "papersseum-branch" metadata, else main
+BRANCH="${BRANCH:-$(curl -fs -m 3 -H 'Metadata-Flavor: Google' http://metadata.google.internal/computeMetadata/v1/instance/attributes/papersseum-branch 2>/dev/null || echo main)}"
 APP=/opt/papersseum
 STATE=/var/lib/papersseum
 export DEBIAN_FRONTEND=noninteractive

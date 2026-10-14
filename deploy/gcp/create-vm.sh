@@ -27,8 +27,6 @@ if [ "${YES:-0}" != "1" ]; then
   [ "$ok" = "y" ] || exit 1
 fi
 
-STARTUP="$(mktemp)"
-{ head -n 1 "$HERE/../vm/setup.sh"; echo "export BRANCH=$BRANCH"; tail -n +2 "$HERE/../vm/setup.sh"; } > "$STARTUP"
 
 gcloud services enable compute.googleapis.com iap.googleapis.com --project "$PROJECT"
 
@@ -51,7 +49,8 @@ gcloud compute instances create "$NAME" --project "$PROJECT" --zone "$ZONE" \
   --network papersseum-net --subnet papersseum-subnet \
   --no-service-account --no-scopes \
   --shielded-secure-boot --shielded-vtpm --shielded-integrity-monitoring \
-  --metadata-from-file startup-script="$STARTUP" \
+  --metadata-from-file startup-script="$HERE/../vm/setup.sh" \
+  --metadata papersseum-branch="$BRANCH" \
   ${extra[@]+"${extra[@]}"}
 
 cat <<MSG
