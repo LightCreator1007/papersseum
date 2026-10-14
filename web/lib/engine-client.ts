@@ -42,17 +42,26 @@ export function createEngineClient(makeWorker: () => WorkerLike): EngineClient {
     run(bytes, onMessage) {
       const id = nextId++;
       listeners.set(id, onMessage);
-      try {
-        getWorker().postMessage({ type: "run", id, bytes } satisfies WorkerIn);
-      } catch {
-        // No Worker support, or the post failed: report it as an error message
-        // (after run() has returned its cancel) and let a later run try afresh.
-        worker?.terminate();
-        worker = null;
+      const fail = () => {
+        // Report it as an error message (after run() has returned its cancel).
         listeners.delete(id);
         queueMicrotask(() =>
           onMessage({ type: "error", id, stage: "engine", message: "the replay engine could not start" }),
         );
+      };
+      let w: WorkerLike;
+      try {
+        w = getWorker();
+      } catch {
+        // No Worker support: nothing was created, so a later run tries afresh.
+        fail();
+        return () => {};
+      }
+      try {
+        w.postMessage({ type: "run", id, bytes } satisfies WorkerIn);
+      } catch {
+        // This run's message could not be sent; the worker and other runs are fine.
+        fail();
       }
       return () => {
         if (listeners.delete(id)) worker?.postMessage({ type: "cancel", id } satisfies WorkerIn);

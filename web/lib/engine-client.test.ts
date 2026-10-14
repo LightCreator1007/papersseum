@@ -110,4 +110,21 @@ describe("engine client", () => {
     expect(workers).toHaveLength(1);
     expect(workers[0].sent).toEqual([{ type: "run", id: 2, bytes }]);
   });
+
+  it("fails only the run whose message cannot be posted", async () => {
+    const { client, workers } = setup();
+    const a: WorkerOut[] = [];
+    const b: WorkerOut[] = [];
+    client.run(bytes, (m) => a.push(m));
+    workers[0].postMessage = () => {
+      throw new Error("DataCloneError");
+    };
+    expect(() => client.run(bytes, (m) => b.push(m))).not.toThrow();
+    await Promise.resolve();
+    expect(b).toEqual([{ type: "error", id: 2, stage: "engine", message: "the replay engine could not start" }]);
+    workers[0].reply({ type: "status", id: 1, stage: "computing" });
+    expect(a).toEqual([{ type: "status", id: 1, stage: "computing" }]);
+    expect(workers).toHaveLength(1);
+    expect(workers[0].terminated).toBe(false);
+  });
 });
