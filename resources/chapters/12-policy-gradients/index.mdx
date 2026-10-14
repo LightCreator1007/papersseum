@@ -1,0 +1,223 @@
+<Callout title="At a glance">
+**About 55 minutes.** Every method so far learned how *good* things are, and then chose the best-looking option. Here we try something different: skip the values altogether, and learn **what to do** directly, by nudging the probability of each action toward whatever worked. You will derive the central formula with a trick from school (the derivative of a logarithm), and see why a small change called a baseline matters so much. You need logarithms, exponentials and the chain rule.
+</Callout>
+
+## Nudge what worked
+
+Below are three slot machines, the same idea as the bandit chapter. But this learner is different. It does not keep estimates of how good each machine is. It only keeps a **probability** of choosing each one. Every pull, it picks a machine at random using those probabilities, sees what it earned, and nudges the probabilities: **a good result makes that machine a bit more likely next time.**
+
+Press **A hundred** a few times and watch the bars. Then do something sneaky: raise the **bonus on every reward** to 10 and switch off **subtract a baseline**. Press **Start over** and try again a few times. Then switch the baseline back on.
+
+<PolicyNudge />
+
+With no bonus, the learner heads for the best machine (C, which pays 80% of the time). With a bonus of 10 and no baseline, it usually does something strange. By the end of this chapter you will know why, and the fix is a single subtraction.
+
+## Learn what to do, not how good things are
+
+There are two broad ways to build a learning agent.
+
+- **Value-based** methods, like Q-learning and DQN, learn how good each action is, and then pick the best one. The policy is a by-product.
+- **Policy-based** methods learn the **policy itself**: a rule that says how likely each action is in each situation. There is no Q-table and no Q-values.
+
+A policy that works with probabilities has a built-in perk: because it picks actions *at random*, according to those probabilities, it explores on its own. It does not need a separate "try something random with probability $\varepsilon$" rule.
+
+Where do the probabilities come from? The agent computes a **score** for each action, using a formula such as a neural network, and then turns scores into probabilities with the **softmax**:
+
+$$
+\pi(a) = \frac{e^{\theta_a}}{e^{\theta_1} + e^{\theta_2} + e^{\theta_3}}.
+$$
+
+Here $\pi(a)$ (pi, the policy) is the probability of choosing action $a$, and $\theta_a$ (theta) is its score. The exponentials make every number positive, and dividing by the total makes them add up to 1. Take scores $[2, 1, 0]$. Then $e^2 \approx 7.389$, $e^1 \approx 2.718$ and $e^0 = 1$, which add up to 11.107, so the probabilities are $[0.665,\ 0.245,\ 0.090]$. A higher score means a higher probability, and equal scores give equal chances.
+
+## What are we trying to improve?
+
+We want a policy that earns a lot. Its **expected reward** is the average reward it earns, weighted by how likely each action is:
+
+$$
+J(\theta) = \sum_a \pi(a)\, r(a).
+$$
+
+(If machine A pays 0.2 on average, B 0.5 and C 0.8, and the policy picks each with probability $\pi$, then $J$ is the weighted average.) To improve the policy, we want the **slope of $J$ with respect to each score**, so we can nudge the scores uphill. That is gradient ascent: gradient descent in reverse. But here is the catch. We do not know $r(a)$ in advance, and the slope of a sum over probabilities does not look easy to estimate from a single pull. There is a neat trick.
+
+## The log-derivative trick
+
+Start with the slope of $J$ with respect to a score $\theta$. Only the probabilities depend on $\theta$:
+
+$$
+\frac{\partial J}{\partial \theta} = \sum_a r(a) \, \frac{\partial \pi(a)}{\partial \theta}.
+$$
+
+Now use a fact from school about logarithms: the derivative of $\ln f$ is $f'/f$. Rearranged, that says $f' = f \times \frac{d \ln f}{d\theta}$. Apply it to $\pi(a)$:
+
+$$
+\frac{\partial \pi(a)}{\partial \theta} = \pi(a) \, \frac{\partial \ln \pi(a)}{\partial \theta}.
+$$
+
+Put that back in:
+
+$$
+\frac{\partial J}{\partial \theta} = \sum_a \pi(a)\, r(a)\, \frac{\partial \ln \pi(a)}{\partial \theta} = E\!\left[ r(A)\, \frac{\partial \ln \pi(A)}{\partial \theta} \right].
+$$
+
+Look at what happened. The sum "each action, weighted by its probability $\pi(a)$" is *exactly an expected value*. So the slope of $J$ is the **average, over the actions we actually pick, of the reward times the slope of the log-probability**. And we can estimate an average by sampling! Pull a machine, see the reward $r$, and compute $r \times (\text{slope of } \ln \pi \text{ for that machine})$. Over many pulls, those samples average out to the true slope.
+
+We checked this numerically: for a policy with scores $[0.4, -0.7, 1.1]$ and machines paying $[0.2, 0.5, 0.8]$, the slope of the expected reward found by nudging each score matched the trick's formula to six decimal places.
+
+## The slope of the log of a softmax
+
+All we need now is the slope of $\ln \pi(a)$ with respect to each score $\theta_k$. With the softmax, $\ln \pi(a) = \theta_a - \ln\!\left(e^{\theta_1} + e^{\theta_2} + e^{\theta_3}\right)$. The first part has slope 1 for $\theta_a$ itself and 0 for the others. The second part, by the chain rule, has slope $\frac{e^{\theta_k}}{e^{\theta_1} + e^{\theta_2} + e^{\theta_3}} = \pi(k)$. So:
+
+$$
+\frac{\partial \ln \pi(a)}{\partial \theta_k} = \begin{cases} 1 - \pi(k) & \text{if } k = a, \\ -\pi(k) & \text{if } k \neq a. \end{cases}
+$$
+
+In words: **one-hot of the chosen action, minus the probabilities.** ("One-hot" means a list with a 1 for the chosen action and 0s elsewhere.) The update is therefore
+
+$$
+\theta_k \leftarrow \theta_k + \alpha \,(r - b)\,\big( [k = a] - \pi(k) \big),
+$$
+
+where $a$ is the machine we pulled, $r$ is the reward and $\alpha$ is the step size. (The $b$ is a baseline, which we come to in a moment. For now, think of it as 0.)
+
+Let us do one by hand. All three scores start at 0, so the probabilities are $\tfrac{1}{3}$ each. We pull machine B and get a reward of 1. With $\alpha = 0.5$:
+
+- The bracket is $[0, 1, 0] - [\tfrac{1}{3}, \tfrac{1}{3}, \tfrac{1}{3}] = [-\tfrac{1}{3}, \tfrac{2}{3}, -\tfrac{1}{3}]$.
+- Multiply by $0.5 \times 1$: the scores change by $[-\tfrac{1}{6}, +\tfrac{1}{3}, -\tfrac{1}{6}]$.
+- The new scores are $[-0.167, 0.333, -0.167]$. The exponentials are $0.8465$, $1.3956$, $0.8465$, which add up to 3.0886, so the new probabilities are $[0.274, 0.452, 0.274]$.
+
+Machine B went from 33% to 45%, and the others fell to 27%. The good result made the chosen action more likely. Had the reward been *low*, the nudge would have been smaller. A reward of zero would not have moved anything, and a **negative** reward would have pushed B down. That is the whole idea in one line: **more of what worked, less of what did not.**
+
+## The trouble with all-positive rewards, and the baseline
+
+Now we can see why the sneaky experiment broke things. Suppose every reward is shifted up by 10, so each pull pays 10 or 11. Machine C is still the best, but *every* reward is large and positive. Look at the update again: $(r - b)$ multiplies the nudge, and with $b = 0$, a reward of 10 or 11 is a *huge, positive* push toward whichever machine was just pulled. Whichever machine happens to get pulled early on gets boosted massively, even if it is a bad one. The learner chases noise.
+
+The cure is the **baseline** $b$: subtract a typical reward before nudging. We use the running average reward. Now a reward of 11 when the average is 10.5 gives a small push *up*, and a reward of 10 gives a small push *down*. The big shared bonus cancels out, and only the **differences between actions** are left. Notice this means the shift of 10 simply stops mattering.
+
+You might worry that subtracting something changes the answer. It does not, on average. The reason is neat. The slopes of $\ln \pi$, weighted by their probabilities, add up to zero, because
+
+$$
+\sum_a \pi(a)\, \frac{\partial \ln \pi(a)}{\partial \theta} = \sum_a \frac{\partial \pi(a)}{\partial \theta} = \frac{\partial}{\partial \theta} \sum_a \pi(a) = \frac{\partial}{\partial \theta}(1) = 0.
+$$
+
+So subtracting a constant $b$ from the reward removes a term that averages to zero. **The baseline does not change what the learner learns on average, but it can greatly reduce the noise.**
+
+We measured it: 200 runs of 300 pulls each, step size 0.1. With **no bonus**, the learner ends up with an average probability of 0.91 on the best machine either way. With a **bonus of 10 and no baseline**, the average falls to **0.39**, and in **61%** of runs the best machine ended up with less than a 50% chance of being picked. With a **bonus of 10 and a baseline**, the result is **0.90**, essentially unaffected, and in 95.5% of runs the best machine has over an 80% chance.
+
+## From one pull to a whole episode: REINFORCE
+
+Real problems are sequences of decisions. The same trick extends: for an episode, nudge each action by how good the *return that followed it* was:
+
+$$
+\theta \leftarrow \theta + \alpha \sum_t \big( G_t - b \big)\, \frac{\partial \ln \pi(A_t \mid S_t)}{\partial \theta}.
+$$
+
+Here $G_t$ is the return from step $t$ (the discounted total of rewards from that step on, as in the Markov decision process chapter), and $b$ is a baseline, such as the average return of the episode. The quantity $G_t - b$ is called the **advantage**: how much better than average this step's outcome turned out to be. This method is called **REINFORCE**.
+
+Now the policy is a **neural network** that takes the state and outputs one score per action. The recipe is:
+
+1. **Play an episode**, choosing each action at random using the softmax probabilities.
+2. Work out the **return** after every step, backwards from the end.
+3. Subtract the **baseline** to get the advantage.
+4. For each step, compute the slope $[\text{taken}] - \pi$ on the scores, multiplied by its advantage, and **push it back through the network** with backpropagation.
+
+In code, the key lines are tiny:
+
+```python
+d_scores = probs.copy()
+d_scores[np.arange(len(actions)), actions] -= 1.0      # probabilities minus one-hot
+d_scores *= (advantage / len(actions))[:, None]        # scaled by how good each step turned out
+policy.learn(d_scores, lr)                             # backpropagation, then a small step
+```
+
+(The sign is flipped from the formula above because the network code takes a gradient *descent* step, and we want gradient *ascent* on the return.)
+
+## Does it work?
+
+We trained the same cart-pole balancer as in the last chapter, but now with REINFORCE. Here is one run, showing the average steps the pole stayed up per block of 50 episodes:
+
+| Episodes | Average steps |
+| --- | --- |
+| 1 to 50 | 30.2 |
+| 51 to 100 | 49.4 |
+| 101 to 150 | 71.6 |
+| 151 to 200 | 122.0 |
+| 201 to 250 | 173.7 |
+| 251 to 300 | 180.8 |
+| 301 to 350 | 181.4 |
+| 351 to 400 | 192.7 |
+| 401 to 450 | 178.5 |
+| 451 to 500 | 191.8 |
+
+The climb is steadier than DQN's, though it wobbles a little too (192.7, then 178.5). And the finished policy, if it simply takes its most likely move each time, balances the pole for 200 steps out of 200.
+
+Does the baseline matter here too? We ran five different seeds for each version, looking at the average over the last 50 episodes:
+
+| Version | Result for each of the 5 seeds | Average |
+| --- | --- | --- |
+| With a baseline | 192, 191, 166, 190, 194 | **186** |
+| No baseline | 148, 163, 153, 156, 177 | 159 |
+
+With the baseline, four of the five seeds averaged 190 steps or more. Without it, none did, and the best was 177. The average gap is 27 steps. In cart-pole every reward is +1, so every return is positive, which is exactly the situation from the slot-machine experiment. Subtracting the average return turns "everything looks good" into "this part was better than usual".
+
+## Values or policies?
+
+Both families work on cart-pole. Which should you reach for?
+
+| | Value-based (DQN) | Policy-based (REINFORCE) |
+| --- | --- | --- |
+| **Learns** | how good each action is | the probability of each action |
+| **Actions** | a list to take a max over | works with a list, and can also handle smooth, continuous actions |
+| **Exploration** | needs a separate rule ($\varepsilon$) | built in, since it chooses at random |
+| **Reuses old data** | yes, through the replay buffer | no: learns from each fresh episode, then discards it |
+| **Noise** | moderate | high, which the baseline helps with |
+
+The last point is the price of policy gradients: they learn from fresh experience only, so they can be wasteful, and each update is noisy.
+
+There is a way to get the best of both. **Actor-critic** methods keep two things: a policy (the **actor**) and a learned estimate of the value of each state (the **critic**). The critic replaces the crude "average return" baseline with a much better one, and gives an advantage after every step using the temporal-difference error from the TD chapter, so the actor can learn without waiting for the episode to end. Most modern RL algorithms are in this family. We will not build one here, but you now know every ingredient.
+
+## Run it yourself
+
+At the bottom of this page you can download:
+
+- `bandit_policy.py` is the three-machine example, with and without a baseline and a bonus. It needs only NumPy.
+- `cartpole.py` is the same cart-pole task as the last chapter.
+- `reinforce_cartpole.py` is the full REINFORCE learner, with a small network and the Adam optimiser. Add `--baseline` to repeat the comparison.
+- `check_numbers.py` checks every number quoted in this chapter, including a numerical check of the log-derivative trick.
+
+Try changing the step size in `bandit_policy.py`. How large can it get before the learner goes wrong, even with a baseline?
+
+## Check yourself
+
+<Check q="Compute the softmax probabilities for the scores [2, 1, 0].">
+$e^2 \approx 7.389$, $e^1 \approx 2.718$ and $e^0 = 1$. They add up to about 11.107. The probabilities are $7.389/11.107 \approx 0.665$, $2.718/11.107 \approx 0.245$ and $1/11.107 \approx 0.090$.
+</Check>
+
+<Check q="Two actions with scores [0, 0]. Action 2 is taken, the reward is 2, the baseline is 0.5 and the step size is 0.1. By how much does each score change?">
+The probabilities are $[0.5, 0.5]$, so the slope of the log-probability is $[0, 1] - [0.5, 0.5] = [-0.5, 0.5]$. The advantage is $2 - 0.5 = 1.5$. The change is $0.1 \times 1.5 \times [-0.5, 0.5] = [-0.075, +0.075]$.
+</Check>
+
+<Check q="An episode's returns after steps 1, 2 and 3 are 5, 3 and 1. Using the average return as the baseline, what are the advantages? What does an advantage of zero mean?">
+The average is 3, so the advantages are $5 - 3 = 2$, $3 - 3 = 0$ and $1 - 3 = -2$. An advantage of zero means that step did exactly as well as average, so it gets no nudge either way.
+</Check>
+
+<Check q="Why does subtracting a baseline help when every reward is positive?">
+Without it, every action that gets taken is pushed up, because every reward is positive, so the learner reinforces whichever actions it happened to try, even bad ones. Subtracting a typical reward leaves only the differences: better-than-usual results push their action up, and worse-than-usual results push it down. On average it changes nothing, but it removes a lot of noise.
+</Check>
+
+<Check q="Why can a policy-gradient method handle continuous actions, like a steering angle, when DQN cannot?">
+DQN picks the best action by taking a max over a list of Q-values, and a continuous action has no finite list to take a max over. A policy can instead output the parameters of a probability distribution over the actions, such as the average and spread of a bell curve, and choose by sampling from it. The same log-derivative trick works for that distribution.
+</Check>
+
+## Recap
+
+- **Policy-based** methods learn the policy directly, as a probability of each action, instead of learning values and then picking the best.
+- The softmax turns scores into probabilities: $\pi(a) = e^{\theta_a} / \sum e^{\theta_j}$.
+- The **log-derivative trick** gives the slope of the expected reward as an average we can sample: $E\big[r \times \text{slope of } \ln \pi\big]$. For a softmax, the slope of $\ln \pi$ is **one-hot minus the probabilities**.
+- The update is **more of what worked**: nudge the chosen action up in proportion to its reward.
+- A **baseline** subtracts a typical reward. It leaves the average update unchanged but removes noise, which matters most when all rewards have the same sign.
+- **REINFORCE** applies this to whole episodes, nudging each action by its **advantage**, the return minus the baseline. On cart-pole it averaged 186 steps with a baseline and 159 without.
+- Policy methods explore on their own, handle continuous actions, and use only fresh data. **Actor-critic** methods add a learned value function to cut the noise.
+
+## Where next
+
+That completes the toolkit for a single learner. But Papersseum has five players, and each is learning at the same time. That changes everything: the world your agent faces keeps shifting as the others improve. Next, we look at what happens when the other players are learning too.
