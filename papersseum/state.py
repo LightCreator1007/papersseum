@@ -17,6 +17,7 @@ class Player:
     deaths: int = 0
     respawn_timer: int = 0
     boost_timer: int = 0
+    respawn_retry: int = 0      # no respawn search before this tick (set after a failed search)
 
 
 @dataclass
