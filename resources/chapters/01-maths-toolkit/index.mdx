@@ -1,0 +1,246 @@
+<Callout title="At a glance">
+**About 40 minutes.** You will meet six small tools: sums, chance and averages, a future that counts for less, powers and logarithms, slopes, and lists of numbers. That is *all* the maths this course uses. Each tool is introduced from scratch and used straight away. If maths has felt scary before, this chapter is written for you.
+</Callout>
+
+## Maths is just a way to be exact
+
+Let us calm one thing down first. The maths in this course is not a wall to climb. It is a handful of tools, and every one of them is something you have met in school. A learning agent does very ordinary things: it keeps score, it works out averages, it asks "which way is better?", and it nudges its choices a little. Maths is simply the language for saying those things precisely, so that a computer can do them.
+
+We will go through six tools. For each one you will see what it means in plain words, a small example worked by hand, and a hint of where it shows up later. You will not need to memorise anything. If you understand the example, you have the tool.
+
+## Tool 1: adding things up
+
+Reinforcement learning is full of totals: total reward, total score, total number of wins. So we need a tidy way to write "add these up".
+
+That tidy way is the Greek capital letter **sigma**, written $\sum$, which just means "sum". Here is how to read it:
+
+$$
+\sum_{i=1}^{5} r_i = r_1 + r_2 + r_3 + r_4 + r_5.
+$$
+
+In words: "add up $r_i$, with $i$ going from 1 up to 5". The little number underneath is where $i$ starts, and the one on top is where it stops. Here $r_i$ could stand for the reward you got on pull number $i$.
+
+A small example. Suppose five pulls gave the rewards 1, 0, 1, 1, 0. Then the sum is $1 + 0 + 1 + 1 + 0 = 3$, and the **average** is the sum divided by how many there are: $3 / 5 = 0.6$. You will do exactly this in [the bandit chapter](/learn/03-bandits).
+
+Here is a famous one for fun. What is $1 + 2 + 3 + \dots + 100$? A schoolboy named Gauss is said to have noticed that you can pair the numbers from the two ends: $1 + 100$, then $2 + 99$, then $3 + 98$, and so on. Every pair makes 101, and there are 50 pairs, so the total is $50 \times 101 = 5050$. For the first $n$ whole numbers the same trick gives
+
+$$
+1 + 2 + \dots + n = \frac{n(n+1)}{2}.
+$$
+
+You may remember this as the sum of an arithmetic progression. Check it with $n = 100$: $100 \times 101 / 2 = 5050$.
+
+## Tool 2: chance and expected value
+
+**Probability** is a number between 0 and 1 that says how likely something is. A probability of 0 means impossible, and 1 means certain. A fair die shows each face with probability $1/6$. The probabilities of everything that could happen always add up to 1: six faces, each $1/6$, make $6 \times 1/6 = 1$.
+
+Two rules will carry us a long way.
+
+- **Independent events multiply.** Two events are independent when one does not affect the other, like two separate die rolls. The chance of rolling a six *and then* another six is $\frac{1}{6} \times \frac{1}{6} = \frac{1}{36}$, which is about 0.028.
+- **"At least one" is easiest through the opposite.** What is the chance of at least one six in two rolls? Counting all the ways is messy. Instead, find the chance of *no* sixes, which is $\frac{5}{6} \times \frac{5}{6} = \frac{25}{36}$, and subtract it from 1: $1 - \frac{25}{36} = \frac{11}{36}$, about 0.306.
+
+Now the star of the show: **expected value**. It is the long-run average of something random. Roll a die many times and average the results. What does the average head toward?
+
+Weight each outcome by its probability, then add:
+
+$$
+E = 1 \cdot \tfrac{1}{6} + 2 \cdot \tfrac{1}{6} + 3 \cdot \tfrac{1}{6} + 4 \cdot \tfrac{1}{6} + 5 \cdot \tfrac{1}{6} + 6 \cdot \tfrac{1}{6} = \frac{21}{6} = 3.5.
+$$
+
+In general, if the outcomes are $x_1, x_2, \dots$ with probabilities $p_1, p_2, \dots$, then
+
+$$
+E[X] = \sum_i x_i \, p_i.
+$$
+
+Notice that 3.5 is not a face of the die. You will never roll it. Expected value is not "what will happen". It is "what happens on average, over a very long run".
+
+Let us use it for a decision. A slot machine costs 1 coin to play. It pays 5 coins with probability 0.1 and nothing otherwise. Is it worth playing? The expected result of one play is
+
+$$
+5 \times 0.1 + 0 \times 0.9 - 1 = -0.5.
+$$
+
+On average you *lose* half a coin every play. Some plays you will win big, but over many plays the average wins. You will meet slot machines like this in [the bandit chapter](/learn/03-bandits), where each machine's hidden "true value" is exactly its expected payout.
+
+<Callout title="A handy fact" kind="maths">
+**Expected values add.** If you roll two dice, the expected total is $3.5 + 3.5 = 7$. In general $E[X + Y] = E[X] + E[Y]$, and this holds even when $X$ and $Y$ are not independent. It will save us a lot of work later.
+</Callout>
+
+An average of a few random things can be far from the expected value, but an average of many settles down. We rolled a die 10,000 times on a computer. The average of the first 10 rolls was 2.8. The average of the first 100 was 3.62. The average of all 10,000 was about 3.50. The more you roll, the closer you get to 3.5. This is called the **law of large numbers**, and it is why running many attempts works.
+
+## Tool 3: a future that counts for less
+
+In RL, a reward now is usually worth more than the same reward later. That is how people feel about it too: you would rather have 100 rupees today than 100 rupees next year. Later rewards are less certain, and it also encourages the agent to be quick.
+
+We capture this with a **discount factor**, written $\gamma$ (the Greek letter gamma), a number between 0 and 1. Let us use $\gamma = 0.9$. A reward you get one step later counts for 0.9 of its value. Two steps later, it counts for $0.9 \times 0.9 = 0.81$. Three steps later, $0.729$. Each step into the future multiplies by another 0.9.
+
+Now suppose you get a reward of 1 every single step, forever. What is that whole stream worth? It is
+
+$$
+S = 1 + \gamma + \gamma^2 + \gamma^3 + \cdots
+$$
+
+This is a **geometric series** (the "GP" you know from school), and there is a lovely trick for adding it up. Multiply $S$ by $\gamma$:
+
+$$
+\gamma S = \gamma + \gamma^2 + \gamma^3 + \cdots
+$$
+
+Now subtract the second line from the first. Almost everything cancels, leaving just the 1:
+
+$$
+S - \gamma S = 1 \quad\Longrightarrow\quad S = \frac{1}{1 - \gamma}.
+$$
+
+With $\gamma = 0.9$, that is $S = \frac{1}{0.1} = 10$. Even though the rewards go on forever, their total value is only 10, because each one counts for a bit less than the last. In fact you are nearly there already after 50 steps: the first 50 terms add up to $\frac{1 - 0.9^{50}}{1 - 0.9}$, which is about 9.95.
+
+So a discount factor of 0.9 means the agent effectively cares about the next 10 steps or so. A bigger $\gamma$, like 0.99, makes it far-sighted (its horizon is $1/(1-0.99) = 100$ steps). A smaller one makes it short-sighted. We will use this in the chapter on Markov decision processes.
+
+## Tool 4: powers, e and logarithms
+
+You know powers: $2^3 = 2 \times 2 \times 2 = 8$, and powers add when you multiply, $a^m \times a^n = a^{m+n}$.
+
+There is a special number, written $e$, which is about 2.718. Like $\pi$, it turns up naturally, in this case whenever something grows or shrinks in proportion to its own size. The function $e^x$ grows very fast as $x$ gets bigger, and $e^{-x}$ shrinks quickly toward 0.
+
+A **logarithm** is the opposite of a power. The **natural logarithm**, written $\ln$, undoes $e^x$:
+
+$$
+\ln(e^2) = 2.
+$$
+
+Two rules are all we will use:
+
+$$
+\ln(a \times b) = \ln a + \ln b, \qquad \ln(a^k) = k \, \ln a.
+$$
+
+The first says that **logarithms turn multiplication into addition**. Let us see why that is handy. The chance of three heads in a row is $0.5 \times 0.5 \times 0.5 = 0.125$. Taking logs, $\ln 0.125 = 3 \times \ln 0.5 \approx 3 \times (-0.693) = -2.079$. A long chain of multiplied probabilities becomes a plain sum, which is far easier to work with. Here is another: $\ln 6 = \ln 2 + \ln 3 \approx 0.693 + 1.099 = 1.792$.
+
+Two more facts to keep: the log of a number between 0 and 1 is negative, and $\ln 10 \approx 2.30$ (it appears in the bandit chapter's UCB formula). Logarithms will come back when an agent learns to pick its actions with probabilities.
+
+## Tool 5: slopes
+
+A **function** is a machine: put a number $x$ in, get a number $f(x)$ out. For example, $f(x) = x^2 - 4x + 5$. Put in 3 and you get $9 - 12 + 5 = 2$.
+
+The **slope** of a curve tells you how steeply it is rising or falling. Between two points, the slope is "rise over run": how much it climbed, divided by how far across you went.
+
+The **derivative** is the slope *at a single point*. Here is how you find it, by squeezing. Take the curve $y = x^2$ at $x = 3$, and measure the slope to a nearby point, making the gap smaller each time:
+
+| Gap | Slope between $x = 3$ and the nearby point |
+| --- | --- |
+| 1 | $(16 - 9)/1 = 7$ |
+| 0.1 | $(9.61 - 9)/0.1 = 6.1$ |
+| 0.01 | $(9.0601 - 9)/0.01 = 6.01$ |
+
+The slopes head toward 6. So the slope of $x^2$ at $x = 3$ is exactly 6. We write that $f'(3) = 6$. You know the shortcut from school: the derivative of $x^n$ is $n x^{n-1}$, so for $x^2$ it is $2x$, and $2 \times 3 = 6$. Constants disappear, and sums and constant multiples work term by term, so the derivative of $f(x) = x^2 - 4x + 5$ is $f'(x) = 2x - 4$.
+
+Try it yourself. Slide the point along the curves below and watch the slope.
+
+<SlopeExplorer />
+
+Did you see the line go flat? On the parabola, that happens at $x = 2$, where the slope is $2 \times 2 - 4 = 0$. And that is the very lowest point, where $f(2) = 4 - 8 + 5 = 1$. This is the maxima and minima idea from school: **at the top of a hill or the bottom of a valley, the slope is zero.** To find the lowest point, set the derivative to zero and solve.
+
+Why does RL care? Because learning is largely about **making a mistake smaller**. The slope tells you which direction is "downhill". If you nudge your numbers a little way downhill, the mistake shrinks, and you repeat. That idea is called gradient descent, and it is the engine inside nearly all modern machine learning. We build it in a later chapter.
+
+One last rule, the **chain rule**, for functions inside functions. Take $(3x + 1)^2$. It is a square (the outer part) of $3x + 1$ (the inner part). Its derivative is the derivative of the outer part, evaluated at the inner part, times the derivative of the inner part:
+
+$$
+\frac{d}{dx}(3x+1)^2 = 2(3x+1) \times 3 = 6(3x+1).
+$$
+
+At $x = 1$ that is $6 \times 4 = 24$. Neural networks are long chains of functions inside functions, and the chain rule is how they work out how to adjust each piece.
+
+## Tool 6: lists and grids of numbers
+
+A **vector** is just an ordered list of numbers, like $[1, 2, 3]$. A computer agent might describe what it sees as a list of numbers, such as how far away the nearest opponent is.
+
+The **dot product** of two vectors of the same length multiplies matching entries and adds them up:
+
+$$
+[1, 2, 3] \cdot [4, 5, 6] = 1 \times 4 + 2 \times 5 + 3 \times 6 = 32.
+$$
+
+It is a **weighted sum**: each input multiplied by how much it matters, then added. That is exactly what one artificial neuron does.
+
+A **matrix** is a grid of numbers. To multiply a matrix by a vector, take the dot product of each row with the vector:
+
+$$
+\begin{bmatrix} 1 & 2 \\ 3 & 4 \end{bmatrix}
+\begin{bmatrix} 5 \\ 6 \end{bmatrix}
+=
+\begin{bmatrix} 1 \times 5 + 2 \times 6 \\ 3 \times 5 + 4 \times 6 \end{bmatrix}
+=
+\begin{bmatrix} 17 \\ 39 \end{bmatrix}.
+$$
+
+A whole layer of a neural network is little more than this, which is why computers do it so quickly. In Python, the symbol `@` does it for you.
+
+## Putting the tools together
+
+Let us finish with a small question that uses two of the tools at once. A lucky slot machine pays 1 coin with probability 0.7 on each pull. You pull it once every step, forever, and later rewards are discounted by $\gamma = 0.9$. How much is that whole stream of pulls worth, on average?
+
+Each pull is worth 0.7 on average (expected value, tool 2). The discounting turns the stream into a geometric series that adds up to a factor of 10 (tool 3). Since expected values add, the total is
+
+$$
+0.7 \times (1 + 0.9 + 0.9^2 + \cdots) = 0.7 \times 10 = 7.
+$$
+
+That small calculation is the seed of an idea we will grow for several chapters: the **value** of a situation is the expected total of the discounted rewards that follow it.
+
+Here is where each tool will come back:
+
+| Tool | Where you will use it |
+| --- | --- |
+| Sums | everywhere: totals, averages, returns |
+| Expected value | bandits, value functions, Q-learning |
+| Geometric series | discounting, in Markov decision processes |
+| Logarithms | exploration bonuses, policy gradients |
+| Slopes and the chain rule | gradient descent and neural networks |
+| Dot products and matrices | neural networks |
+
+## Run it yourself
+
+Every example above is in a small Python file you can download at the bottom of this page.
+
+- `toolkit_examples.py` runs each example and prints the results, including the dice-rolling experiment. It needs only NumPy.
+- `check_numbers.py` checks every number quoted in this chapter, so the text and the code cannot quietly disagree.
+
+If you have not used Python before, do not worry. The next chapter gets you set up.
+
+## Check yourself
+
+Work each one out on paper first.
+
+<Check q="Compute the sum of the squares of the first four whole numbers: 1² + 2² + 3² + 4².">
+It is $1^2 + 2^2 + 3^2 + 4^2 = 1 + 4 + 9 + 16 = 30$.
+</Check>
+
+<Check q="A game costs 3 coins to play. It pays 10 coins with probability 0.2 and nothing otherwise. What is the expected profit per play?">
+The expected payout is $10 \times 0.2 + 0 \times 0.8 = 2$. Subtract the cost of 3: the expected profit is $2 - 3 = -1$. You lose one coin per play on average, so it is not worth playing.
+</Check>
+
+<Check q="With a discount factor γ = 0.5, what is 1 + γ + γ² + ...? What does a small γ like this say about the agent?">
+The sum is $\frac{1}{1 - 0.5} = 2$. A small $\gamma$ makes the future count for very little, so the agent is short-sighted: it cares almost only about the next step or two.
+</Check>
+
+<Check q="Find the lowest point of f(x) = x² − 6x + 10.">
+The slope is $f'(x) = 2x - 6$. Set it to zero: $2x - 6 = 0$ gives $x = 3$. Then $f(3) = 9 - 18 + 10 = 1$. So the lowest point is at $x = 3$, where the value is 1.
+</Check>
+
+<Check q="Compute the dot product of [2, 0, 1] and [3, 5, 4].">
+Multiply matching entries and add: $2 \times 3 + 0 \times 5 + 1 \times 4 = 6 + 0 + 4 = 10$.
+</Check>
+
+## Recap
+
+- **Sums** ($\sum$) add things up, and an **average** is a sum divided by the count.
+- **Expected value** is the long-run average, found by weighting each outcome by its probability. Expected values add. Averages of many trials settle near it.
+- A **discount factor** $\gamma$ makes later rewards count less, and the geometric series gives $1 + \gamma + \gamma^2 + \cdots = \frac{1}{1-\gamma}$.
+- **Logarithms** turn multiplication into addition, and $\ln$ undoes $e^x$.
+- The **derivative** is the slope at a point. It is zero at the bottom of a valley, and it tells you which way is downhill. The **chain rule** handles functions inside functions.
+- A **dot product** is a weighted sum, and a **matrix** times a vector is a bunch of dot products.
+
+## Where next
+
+You now have every maths tool the course needs. Next we get you running real code: a short, gentle tour of Python and NumPy, ending with your first experiment.
