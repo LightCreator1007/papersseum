@@ -32,3 +32,7 @@ PLATFORM.md
 planning-chat.md
 
 .env
+
+# generated from resources/ by web/scripts/sync-learn.mjs
+web/generated/
+web/public/learn/

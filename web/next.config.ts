@@ -1,6 +1,9 @@
+import createMDX from "@next/mdx";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Lessons are .mdx files (generated into generated/learn/ from ../resources).
+  pageExtensions: ["ts", "tsx", "md", "mdx"],
   // Supabase's site_url and the Google sign-in flow use 127.0.0.1, so the dev
   // server is opened on that host; without this Next blocks hydration there.
   allowedDevOrigins: ["127.0.0.1"],
@@ -22,4 +25,17 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Turbopack takes plugins by name (strings), with options that can be serialised.
+// throwOnError makes a broken equation fail the build instead of showing red text.
+const withMDX = createMDX({
+  options: {
+    remarkPlugins: ["remark-gfm", "remark-math"],
+    rehypePlugins: [
+      "rehype-slug",
+      ["rehype-katex", { throwOnError: true, strict: "error" }],
+      ["rehype-highlight", { detect: false, ignoreMissing: true }],
+    ],
+  },
+});
+
+export default withMDX(nextConfig);

@@ -1,0 +1,60 @@
+{
+  "title": "Learn RL from zero",
+  "tagline": "How machines learn by trying things, explained for anyone who has done JEE Mains maths. No machine learning needed. By the end you can train a bot of your own.",
+  "parts": [
+    {
+      "id": "A",
+      "title": "Foundations",
+      "blurb": "What reinforcement learning is, the little maths it leans on, and just enough Python.",
+      "chapters": [
+        { "slug": "00-welcome", "title": "Welcome to RL", "summary": "Watch a clumsy agent learn a game by trial and error, and meet the loop that every RL problem shares.", "minutes": 20, "maths": [], "status": "planned" },
+        { "slug": "01-maths-toolkit", "title": "The maths toolkit", "summary": "Sums, averages, expected value, slopes and a few friends. The only maths we need, rebuilt from the ground up.", "minutes": 40, "maths": ["summation", "probability", "expected value", "derivatives"], "status": "planned" },
+        { "slug": "02-python-numpy", "title": "Python and NumPy, just enough", "summary": "Arrays, random numbers with seeds, and your first tiny experiment.", "minutes": 30, "maths": [], "status": "planned" }
+      ]
+    },
+    {
+      "id": "B",
+      "title": "Choices and consequences",
+      "blurb": "From one decision to a whole sequence of them, and how to plan when you know the rules.",
+      "chapters": [
+        { "slug": "03-bandits", "title": "Bandits: try the unknown or stick with what works?", "summary": "Five slot machines and a hundred coins. Your first learning agent, and the exploration versus exploitation trade-off.", "minutes": 45, "maths": ["expected value", "running averages", "logarithms"], "status": "ready" },
+        { "slug": "04-mdps", "title": "Markov decision processes", "summary": "States, actions, rewards and why the future is worth a little less than now.", "minutes": 40, "maths": ["geometric series"], "status": "planned" },
+        { "slug": "05-value-functions", "title": "Value functions and the Bellman equation", "summary": "How good is it to be here? Answered with a small system of equations you can solve by hand.", "minutes": 45, "maths": ["linear equations", "matrices"], "status": "planned" },
+        { "slug": "06-dynamic-programming", "title": "Dynamic programming: planning when you know the rules", "summary": "Policy evaluation, policy iteration and value iteration, with a grid world you can poke at.", "minutes": 45, "maths": ["iteration", "convergence"], "status": "planned" }
+      ]
+    },
+    {
+      "id": "C",
+      "title": "Learning from experience",
+      "blurb": "What to do when you do not know the rules and can only learn by playing.",
+      "chapters": [
+        { "slug": "07-monte-carlo", "title": "Monte Carlo: learn from whole games", "summary": "Play a lot, average what happened, get better.", "minutes": 40, "maths": ["averages", "law of large numbers"], "status": "planned" },
+        { "slug": "08-td-learning", "title": "Temporal-difference learning and Q-learning", "summary": "Do not wait until the end to learn. The idea behind most of modern RL.", "minutes": 50, "maths": ["running averages"], "status": "planned" },
+        { "slug": "09-function-approximation", "title": "When tables get too big", "summary": "Why we need to guess about states we have never seen, and gradient descent built up from a single variable.", "minutes": 50, "maths": ["derivatives", "slopes", "minima"], "status": "planned" }
+      ]
+    },
+    {
+      "id": "D",
+      "title": "Deep reinforcement learning",
+      "blurb": "Replace the table with a neural network, and learn what to do directly.",
+      "chapters": [
+        { "slug": "10-neural-networks", "title": "Neural networks from scratch", "summary": "A neuron is a weighted sum. Stack them, measure the error, and let the chain rule do the learning.", "minutes": 60, "maths": ["chain rule", "matrices"], "status": "planned" },
+        { "slug": "11-dqn", "title": "Deep Q-networks", "summary": "A network in place of the Q-table, and the two tricks that stop it from falling apart.", "minutes": 50, "maths": [], "status": "planned" },
+        { "slug": "12-policy-gradients", "title": "Policy gradients", "summary": "Do not learn values at all. Learn what to do, and nudge it toward what worked.", "minutes": 55, "maths": ["logarithms", "derivatives of probabilities"], "status": "planned" }
+      ]
+    },
+    {
+      "id": "E",
+      "title": "Many agents",
+      "blurb": "What changes when the other players are learning too, and how to put it all to work.",
+      "chapters": [
+        { "slug": "13-multi-agent", "title": "Multi-agent RL and self-play", "summary": "A moving target, learning by playing yourself, and how rating systems like Elo work.", "minutes": 45, "maths": ["probability", "logistic curve"], "status": "planned" },
+        { "slug": "14-papersseum", "title": "Bridge: build a Papersseum bot", "summary": "The game as an RL problem, a training recipe, and how to pack your policy into one file and submit it.", "minutes": 60, "maths": [], "status": "planned" }
+      ]
+    }
+  ],
+  "reference": [
+    { "slug": "glossary", "title": "Glossary", "summary": "Every term in the course, in one sentence.", "status": "planned" },
+    { "slug": "cheatsheet", "title": "Maths cheat sheet", "summary": "Every symbol and formula on one page.", "status": "planned" }
+  ]
+}

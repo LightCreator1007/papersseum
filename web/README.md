@@ -34,6 +34,12 @@ For data to look at, seed players and run a worker as described in
 without it a new version stays on "Checking…" and never becomes Active or
 Rejected.
 
+## The Learn section
+
+`/learn` is a free course on reinforcement learning. Its lessons live in `../resources/` (plain Markdown, LaTeX and Python), not in this folder: see `../resources/README.md`. `scripts/sync-learn.mjs` copies them in before `dev` and `build` (it also checks them, and fails the build on a broken lesson), and the pages are generated statically from the copy in `generated/` (git-ignored). Demos are components in `components/learn/` with their logic in `lib/learn/`.
+
+On Vercel the project's root directory is `web/`, so turn on *Project Settings > General > Include source files outside of the Root Directory in the Build Step*, or the build cannot see `resources/`.
+
 ## Scripts
 
 | Command | What it does |
