@@ -1,6 +1,6 @@
 [project]
 name = "papersseum"
-version = "0.3.0"
+version = "0.4.0"
 description = "Papersseum, a multi-agent territory-capture tournament."
 readme = "README.md"
 license = "MIT"
