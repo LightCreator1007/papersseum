@@ -87,4 +87,27 @@ describe("engine client", () => {
     expect(workers).toHaveLength(2);
     expect(workers[1].sent).toEqual([{ type: "run", id: 2, bytes }]);
   });
+
+  it("reports a worker that cannot start as an error, then retries", async () => {
+    const workers: FakeWorker[] = [];
+    let calls = 0;
+    const client = createEngineClient(() => {
+      if (++calls === 1) throw new Error("no module workers");
+      const w = new FakeWorker();
+      workers.push(w);
+      return w as unknown as Worker;
+    });
+    const got: WorkerOut[] = [];
+    let cancel = () => {};
+    expect(() => {
+      cancel = client.run(bytes, (m) => got.push(m));
+    }).not.toThrow();
+    expect(got).toEqual([]);
+    await Promise.resolve();
+    expect(got).toEqual([{ type: "error", id: 1, stage: "engine", message: "the replay engine could not start" }]);
+    cancel(); // harmless no-op
+    client.run(bytes, () => {});
+    expect(workers).toHaveLength(1);
+    expect(workers[0].sent).toEqual([{ type: "run", id: 2, bytes }]);
+  });
 });
