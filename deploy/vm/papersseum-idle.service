@@ -1,0 +1,9 @@
+[Unit]
+Description=Power off when the platform is idle (see idle-stop.py)
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/papersseum/worker.env
+# Runs as root (it must power the machine off) using the worker's own virtualenv,
+# which already has psycopg. Does nothing if the worker has never started.
+ExecStart=/var/lib/papersseum/venv/bin/python /opt/papersseum/deploy/vm/idle-stop.py
