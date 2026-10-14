@@ -48,6 +48,8 @@ log "systemd units"
 install -m 0644 "$APP/deploy/vm/papersseum-worker.service" /etc/systemd/system/
 install -m 0644 "$APP/deploy/vm/papersseum-ping.service"   /etc/systemd/system/
 install -m 0644 "$APP/deploy/vm/papersseum-ping.timer"     /etc/systemd/system/
+install -m 0644 "$APP/deploy/vm/papersseum-idle.service"   /etc/systemd/system/
+install -m 0644 "$APP/deploy/vm/papersseum-idle.timer"     /etc/systemd/system/
 install -d -m 0750 -o root -g papersseum /etc/papersseum
 [ -f /etc/papersseum/worker.env ] || install -m 0640 -o root -g papersseum "$APP/deploy/vm/worker.env.example" /etc/papersseum/worker.env.example
 systemctl daemon-reload
@@ -57,8 +59,8 @@ bash "$APP/deploy/vm/build-image.sh"
 
 if [ -f /etc/papersseum/worker.env ]; then
   log "starting worker"
-  systemctl enable --now papersseum-worker.service papersseum-ping.timer
+  systemctl enable --now papersseum-worker.service papersseum-ping.timer papersseum-idle.timer
 else
   log "DONE, but no /etc/papersseum/worker.env yet. Create it from worker.env.example, then:"
-  log "  sudo systemctl enable --now papersseum-worker.service papersseum-ping.timer"
+  log "  sudo systemctl enable --now papersseum-worker.service papersseum-ping.timer papersseum-idle.timer"
 fi

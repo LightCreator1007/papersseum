@@ -12,7 +12,7 @@ On your own machine:
 ```bash
 gcloud auth login
 gcloud config set project <your-project-id>
-SPOT=0 MACHINE=e2-standard-2 bash deploy/gcp/create-vm.sh     # asks before creating anything
+SPOT=0 MACHINE=e2-standard-4 bash deploy/gcp/create-vm.sh     # asks before creating anything
 ```
 
 This creates a private network where SSH is only reachable through Google's
@@ -27,7 +27,7 @@ gcloud compute ssh papersseum-worker-1 --zone asia-south1-a --tunnel-through-iap
 sudo journalctl -u google-startup-scripts -f       # wait for "[setup] DONE"
 sudo cp /etc/papersseum/worker.env.example /etc/papersseum/worker.env
 sudo nano /etc/papersseum/worker.env               # fill in the secrets
-sudo systemctl enable --now papersseum-worker papersseum-ping.timer
+sudo systemctl enable --now papersseum-worker papersseum-ping.timer papersseum-idle.timer
 journalctl -u papersseum-worker -f
 ```
 
@@ -61,7 +61,32 @@ start or to claim jobs.
 
 ## Cost control
 
-- `e2-standard-2` is about $50 a month if left running; `SPOT=1` is far
+What bills, and when:
+
+| State | Compute | Disk (30 GB) | Address |
+|---|---|---|---|
+| Running | about $0.15/h | about $4/month | about $0.005/h |
+| Stopped | nothing | about $4/month | released (ephemeral address) |
+| Deleted (`delete-vm.sh`) | nothing | nothing | nothing |
+
+Guardrails already in place:
+
+- **Idle auto-stop.** With `IDLE_STOP_MINUTES=60` in the env file, the VM powers
+  itself off when no job is queued or running anywhere for an hour (so after the
+  season ends or is frozen). Start it again with
+  `gcloud compute instances start papersseum-worker-1 --zone asia-south1-a`.
+- **Budget alert.** A ₹6000 budget emails the billing admins at 50%, 90% and
+  100%. It only warns; Google Cloud has no built-in hard cap. A free-trial
+  account stops on its own when the credit runs out, but only if you never
+  upgrade it to a paid account.
+- **No hidden costs.** No static IP, no load balancer, no NAT gateway, no
+  snapshots. Check with `gcloud compute instances list`, `disks list` and
+  `addresses list`.
+- **Between events**, run `bash deploy/gcp/delete-vm.sh` to remove everything.
+
+Rough numbers:
+
+- `e2-standard-4` is about $100 a month if left running; `SPOT=1` is far
   cheaper but Google can stop it (the queue copes: the lease expires and
   another worker takes the match).
 - Set a budget alert under Billing > Budgets (for example at 50% and 90% of
