@@ -1,4 +1,6 @@
 """The worker must never run uploaded code without a real sandbox, unless explicitly allowed."""
+import subprocess
+
 import pytest
 
 from papersseum_worker import config, db, main, runner
@@ -71,3 +73,42 @@ def test_worker_refuses_to_start_before_touching_the_database(no_opt_in, monkeyp
     monkeypatch.setattr(db, "connect", connect)
     with pytest.raises(SystemExit, match="not starting"):
         main.main()
+
+
+def fake_image(monkeypatch, stdout):
+    """Make `docker run <image> python -c ...` print `stdout`."""
+    monkeypatch.setattr(config, "SANDBOX_BACKEND", "docker")
+    ran = []
+
+    def run(cmd, **kwargs):
+        ran.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, stdout=stdout, stderr="")
+
+    monkeypatch.setattr(runner.subprocess, "run", run)
+    return ran
+
+
+def test_matching_image_passes(monkeypatch):
+    ran = fake_image(monkeypatch, f"{config.ENGINE_HASH}\n{config.LIBRARY_VERSION}\n")
+    runner.check_ready()
+    assert len(ran) == 1        # hash and version come from one docker run
+
+
+def test_image_with_another_engine_stops_startup(monkeypatch):
+    fake_image(monkeypatch, f"0000000000000000\n{config.LIBRARY_VERSION}\n")
+    with pytest.raises(runner.SandboxMissing, match="sandbox image engine 0000000000000000"):
+        runner.check_ready()
+
+
+def test_image_with_same_engine_but_older_library_stops_startup(monkeypatch):
+    # 0.4.0 and 0.5.0 share an engine hash, but only 0.5.0 has papersseum.nn.
+    monkeypatch.setattr(config, "LIBRARY_VERSION", "0.5.0")
+    fake_image(monkeypatch, f"{config.ENGINE_HASH}\n0.4.0\n")
+    with pytest.raises(runner.SandboxMissing, match="papersseum 0.4.0 but the worker has 0.5.0"):
+        runner.check_ready()
+
+
+def test_image_that_prints_no_version_stops_startup(monkeypatch):
+    fake_image(monkeypatch, f"{config.ENGINE_HASH}\n")
+    with pytest.raises(runner.SandboxMissing, match="papersseum unknown"):
+        runner.check_ready()

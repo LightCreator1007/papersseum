@@ -15,6 +15,7 @@ SANDBOX_IMAGE = os.environ.get("SANDBOX_IMAGE", "papersseum-sandbox")
 DOCKER = os.environ.get("DOCKER", "docker")
 
 ENGINE_HASH = papersseum.ENGINE_HASH
+LIBRARY_VERSION = papersseum.__version__
 WORKER_VERSION = "0.1.0"
 POLL_SECONDS = 5
 HEARTBEAT_SECONDS = 60

@@ -102,3 +102,47 @@ def test_heartbeat_reconnects_after_losing_the_connection(monkeypatch):
     assert conn is opened[1] and beats == [(1, 9)]
     assert main.heartbeat_once(conn) is conn and beats == [(1, 9), (1, 9)]
     assert len(opened) == 2
+
+
+class FakeStopping:
+    """Stands in for main.stopping: records each wait and stops the loop after `rounds`."""
+    def __init__(self, rounds):
+        self.rounds = rounds
+        self.waits = []
+
+    def is_set(self):
+        return len(self.waits) >= self.rounds
+
+    def wait(self, seconds):
+        self.waits.append(seconds)
+
+
+def test_engine_mismatch_waits_instead_of_crashing(monkeypatch, calls, caplog):
+    claims = []
+
+    def claim_job(conn):
+        claims.append(conn)
+        raise psycopg.errors.RaiseException("Engine hash mismatch: worker has aaa, season expects bbb")
+
+    monkeypatch.setattr(db, "claim_job", claim_job)
+    stopping = FakeStopping(rounds=2)
+    monkeypatch.setattr(main, "stopping", stopping)
+    main.loop("conn")
+
+    assert len(claims) == 2
+    assert stopping.waits == [main.ENGINE_MISMATCH_SECONDS] * 2
+    assert calls == []
+    errors = [r for r in caplog.records if r.levelname == "ERROR"]
+    assert len(errors) == 2 and all(r.exc_info is None for r in errors)    # one line each, no traceback
+    assert "worker has aaa, season expects bbb" in errors[0].getMessage()
+    assert "update.sh" in errors[0].getMessage()
+
+
+def test_other_database_errors_still_stop_the_worker(monkeypatch, calls):
+    def claim_job(conn):
+        raise psycopg.errors.RaiseException("something else broke")
+
+    monkeypatch.setattr(db, "claim_job", claim_job)
+    monkeypatch.setattr(main, "stopping", FakeStopping(rounds=5))
+    with pytest.raises(psycopg.errors.RaiseException, match="something else"):
+        main.loop("conn")
