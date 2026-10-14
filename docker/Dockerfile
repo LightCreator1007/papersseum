@@ -14,7 +14,8 @@ RUN pip install --no-cache-dir /tmp/papersseum-*.whl && rm /tmp/papersseum-*.whl
 RUN if [ "$TORCH" = "1" ]; then \
       pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu; fi
 
-ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0 \
+# the base image exports the (public) Python release key; blank it so bots see nothing of ours
+ENV GPG_KEY="" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0 \
     OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
 USER 65534:65534
 WORKDIR /tmp

@@ -77,3 +77,14 @@ start or to claim jobs.
 - The service user is in the `docker` group, which is root-equivalent on the
   VM. That is acceptable because only the worker (our code) uses it; do not
   run anything else on this machine.
+
+## Testing the sandbox on a Mac
+
+Docker Desktop works; so does Colima (no GUI, no admin password):
+
+```bash
+brew install colima docker && colima start --cpu 4 --memory 6
+uv build --wheel --package papersseum && docker build -f docker/Dockerfile -t papersseum-sandbox .
+mkdir -p ~/.cache/papersseum-tmp        # Colima only shares your home folder
+TMPDIR=~/.cache/papersseum-tmp PAPERSSEUM_DOCKER_TESTS=1 pytest tests/test_sandbox.py
+```
