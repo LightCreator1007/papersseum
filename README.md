@@ -40,7 +40,7 @@ class Agent:
         """Called every decision. Return 0, 1 or 2."""
 ```
 
-Run `papersseum new my_agent.py` to drop a copy-ready starter next to you. Four baselines ship in [`papersseum/agents/`](papersseum/agents): `random`, `greedy` (grinds small capture loops), `safe_expander`, and `hunter` (chases and cuts exposed trails).
+Run `papersseum new my_agent.py` to drop a copy-ready starter next to you. Four baselines ship in [`papersseum/agents/`](https://github.com/dhairya-pandya/papersseum/tree/main/papersseum/agents): `random`, `greedy` (grinds small capture loops), `safe_expander`, and `hunter` (chases and cuts exposed trails).
 
 A submission is **one `.py` file, at most 1 MB**: no zip and no separate weight files. If your agent is a neural network, train it anywhere (PyTorch, JAX, ...) and embed the weights in the file:
 
@@ -60,7 +60,7 @@ class Agent:
         return int(nn.linear(nn.global_avg_pool(h), self.W["fc.weight"]).argmax())
 ```
 
-`papersseum.nn` is a small numpy-only toolkit (`conv2d`, `linear`, pooling, `batch_norm`, `relu`, `softmax`, ...) in PyTorch layouts. The sandbox has no PyTorch, so `import torch` is rejected on upload; inference runs in numpy. About 350k float16 or 700k int8 weights fit in 1 MB. See [`examples/nn_agent.py`](examples/nn_agent.py) for a complete example, and [COMPETITION.md](COMPETITION.md) for the full participant guide. (`papersseum.load_weights` reads files from your agent's folder and works for local experiments only; it is rejected on upload.)
+`papersseum.nn` is a small numpy-only toolkit (`conv2d`, `linear`, pooling, `batch_norm`, `relu`, `softmax`, ...) in PyTorch layouts. The sandbox has no PyTorch, so `import torch` is rejected on upload; inference runs in numpy. About 350k float16 or 700k int8 weights fit in 1 MB. See [`examples/nn_agent.py`](https://github.com/dhairya-pandya/papersseum/blob/main/examples/nn_agent.py) for a complete example, and [COMPETITION.md](https://github.com/dhairya-pandya/papersseum/blob/main/COMPETITION.md) for the full participant guide. (`papersseum.load_weights` reads files from your agent's folder and works for local experiments only; it is rejected on upload.)
 
 ## Running it
 
@@ -87,7 +87,7 @@ print(result["placements"])
 
 ## Limits
 
-A submission is one `.py` file of at most 1 MB. `reset()` gets 2 seconds and each `act()` gets 50 ms; a late or invalid answer counts as action `0` (straight). Only a curated set of imports is allowed (numpy, math, collections, and similar; no `torch`), and `open`, `eval`, `getattr`, `vars` and raw `numpy.load` are blocked. `papersseum validate` runs the same check the platform runs on upload, locally. Full rules are in [COMPETITION.md](COMPETITION.md).
+A submission is one `.py` file of at most 1 MB. `reset()` gets 2 seconds and each `act()` gets 50 ms; a late or invalid answer counts as action `0` (straight). Only a curated set of imports is allowed (numpy, math, collections, and similar; no `torch`), and `open`, `eval`, `getattr`, `vars` and raw `numpy.load` are blocked. `papersseum validate` runs the same check the platform runs on upload, locally. Full rules are in [COMPETITION.md](https://github.com/dhairya-pandya/papersseum/blob/main/COMPETITION.md).
 
 ## Replays
 
