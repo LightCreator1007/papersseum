@@ -21,12 +21,13 @@ from papersseum.agents import BASELINES, RandomAgent
 from papersseum.env import PapersseumEnv
 from papersseum.match import run_match, replay_match, iter_frames
 from papersseum.loader import load_agent_from_file
-from papersseum.weights import load_weights
-from papersseum import constants, channels
+from papersseum.weights import load_weights, pack_weights, unpack_weights
+from papersseum import constants, channels, nn
 
 __all__ = [
     "Agent", "PapersseumEnv", "play", "evaluate", "run_match", "replay_match", "iter_frames",
-    "load_agent_from_file", "load_weights", "ascii_view", "ascii_obs", "constants", "channels",
+    "load_agent_from_file", "load_weights", "pack_weights", "unpack_weights",
+    "ascii_view", "ascii_obs", "constants", "channels", "nn",
     "__version__", "ENGINE_HASH",
 ]
 
