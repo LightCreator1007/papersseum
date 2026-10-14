@@ -55,6 +55,10 @@ class MatchTimeout(RuntimeError):
 
 # ---------------------------------------------------------------- backends
 
+# One math thread per bot, as in the Docker image (1 CPU each): without this, five
+# bots on a multi-core machine fight over BLAS threads and timings differ from the platform.
+THREAD_LIMITS = {k: "1" for k in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")}
+
 class _Proc:
     """A running host process plus how to kill it."""
 
@@ -98,7 +102,7 @@ class SubprocessBackend:
         popen = subprocess.Popen(
             [sys.executable, "-m", "papersseum.sandbox.host"],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-            cwd=src_dir, env={"PYTHONHASHSEED": "0", "PATH": os.environ.get("PATH", "")},
+            cwd=src_dir, env={"PYTHONHASHSEED": "0", "PATH": os.environ.get("PATH", ""), **THREAD_LIMITS},
             preexec_fn=limits if os.name == "posix" else None,
         )
         return _Proc(popen), os.path.join(src_dir, entry), src_dir
