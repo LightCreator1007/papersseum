@@ -36,6 +36,7 @@ export function parseResult(raw: unknown): MatchResult | null {
     if (!inSeats(pid) || !isNumber(coverage)) return null;
     parsed.push({ pid, coverage });
   }
+  if ([...parsed].map((s) => s.pid).sort((a, b) => a - b).join() !== "0,1,2,3,4") return null;
   return { scores: parsed, placements: placements as number[] };
 }
 

@@ -63,6 +63,7 @@ describe("parseResult", () => {
     ["a score without coverage", { scores: [...got.scores.slice(0, 4), { pid: 4 }], placements: got.placements }],
     ["a non-numeric coverage", { scores: [...got.scores.slice(0, 4), { pid: 4, coverage: "9" }], placements: got.placements }],
     ["four scores", { scores: got.scores.slice(0, 4), placements: got.placements }],
+    ["repeated score pids", { scores: [{ pid: 0, coverage: 1 }, { pid: 0, coverage: 2 }, ...got.scores.slice(2)], placements: got.placements }],
   ])("rejects %s", (_, raw) => {
     expect(parseResult(raw)).toBeNull();
   });
