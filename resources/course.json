@@ -103,7 +103,7 @@
             "averages",
             "law of large numbers"
           ],
-          "status": "planned"
+          "status": "ready"
         },
         {
           "slug": "08-td-learning",
@@ -113,7 +113,7 @@
           "maths": [
             "running averages"
           ],
-          "status": "planned"
+          "status": "ready"
         },
         {
           "slug": "09-function-approximation",
@@ -125,7 +125,7 @@
             "slopes",
             "minima"
           ],
-          "status": "planned"
+          "status": "ready"
         }
       ]
     },

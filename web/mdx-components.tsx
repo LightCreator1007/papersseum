@@ -8,7 +8,10 @@ import { Check } from "@/components/learn/check";
 import { DiscountPlayground } from "@/components/learn/discount-playground";
 import { CheeseHunt } from "@/components/learn/cheese-hunt";
 import { CodeBlock } from "@/components/learn/code-block";
+import { GradientDescent } from "@/components/learn/gradient-descent";
 import { GridWorld } from "@/components/learn/grid-world";
+import { MonteCarloGrid } from "@/components/learn/monte-carlo-grid";
+import { QLearningLab } from "@/components/learn/q-learning-lab";
 import { SlopeExplorer } from "@/components/learn/slope-explorer";
 import { ValueExplorer } from "@/components/learn/value-explorer";
 
@@ -20,7 +23,10 @@ const components: MDXComponents = {
   BanditCasino,
   CheeseHunt,
   DiscountPlayground,
+  GradientDescent,
   GridWorld,
+  MonteCarloGrid,
+  QLearningLab,
   SlopeExplorer,
   ValueExplorer,
   pre: (props: ComponentProps<"pre">) => <CodeBlock>{props.children}</CodeBlock>,
