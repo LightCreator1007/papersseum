@@ -40,7 +40,16 @@ def test_blocks_introspection_and_raw_loaders():
     from papersseum.security.static_check import scan_source
     for src in ('getattr(x, "a")', "vars(x)",
                 "import numpy as np\nnp.load('f')",
-                "import torch as t\nt.load('f')",
+                "import numpy as np\nnp.fromfile('f')",
                 "import numpy\nnumpy.lib.npyio.fromfile('f')"):
         assert not scan_source(src)["ok"], src
     assert scan_source("import numpy as np\nnp.zeros(3)\nimport json\njson.loads('1')")["ok"]
+
+
+def test_torch_and_load_weights_have_clear_reasons():
+    from papersseum.security.static_check import scan_source
+    r = scan_source("import torch\n")
+    assert not r["ok"] and "papersseum.nn" in r["violations"][0]["detail"]
+    r = scan_source("from papersseum import load_weights\ndef f(c):\n    return load_weights(c, 'w.npy')\n")
+    assert not r["ok"] and r["violations"][0]["kind"] == "weights"
+    assert scan_source("from papersseum import nn, unpack_weights\nW = unpack_weights('')\n")["ok"]

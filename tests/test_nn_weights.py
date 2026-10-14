@@ -91,3 +91,39 @@ def test_policy_runs_inside_the_time_budget():
     h = nn.relu(nn.conv2d(h, W["c2"], stride=2, padding=1))
     logits = nn.linear(nn.global_avg_pool(h), W["fc"])
     assert (time.perf_counter() - t) * 1000 < 50 and int(np.argmax(logits)) in (0, 1, 2)
+
+
+def _example_with_weights(tmp_path, dtype="float16"):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("ex_nn", "examples/nn_agent.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    np.savez(tmp_path / "model.npz", **mod.init_random(np.random.default_rng(3)))
+    agent = tmp_path / "nn_agent.py"
+    agent.write_text(open("examples/nn_agent.py").read())
+    from papersseum.cli import main
+    assert main(["pack", str(tmp_path / "model.npz"), "--into", str(agent), "--dtype", dtype]) == 0
+    return agent
+
+
+@pytest.mark.parametrize("dtype", ["float16", "int8"])
+def test_packed_agent_passes_platform_validation(tmp_path, dtype):
+    from papersseum.sandbox import SubprocessBackend, validate_sandboxed
+    agent = _example_with_weights(tmp_path, dtype)
+    assert "WEIGHTS = \"\"" not in agent.read_text()
+    res = validate_sandboxed(str(agent), backend=SubprocessBackend(), decisions=120)
+    assert res["ok"], res
+    assert res["stats"]["strikes"] == 0 and res["stats"]["max_ms"] < 50
+
+
+def test_pack_into_is_repeatable_and_enforces_the_size_limit(tmp_path, capsys):
+    from papersseum.cli import main
+    agent = _example_with_weights(tmp_path)
+    first = agent.read_text()
+    assert main(["pack", str(tmp_path / "model.npz"), "--into", str(agent)]) == 0
+    assert agent.read_text() == first and first.count("\nWEIGHTS = ") == 1
+    np.savez(tmp_path / "huge.npz", w=np.random.default_rng(0).normal(size=600_000).astype(np.float32))
+    before = agent.read_text()
+    assert main(["pack", str(tmp_path / "huge.npz"), "--into", str(agent), "--dtype", "float32"]) == 1
+    assert agent.read_text() == before                      # refused, nothing written
+    assert "limit" in capsys.readouterr().out

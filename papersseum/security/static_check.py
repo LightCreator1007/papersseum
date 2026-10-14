@@ -12,12 +12,15 @@ abuse early with a readable reason, before a submission ever reaches a sandbox.
 
 import ast
 
+# torch is deliberately absent: it is not installed in the sandbox (importing it is
+# slow and the limits are tight). Train with torch anywhere, then run the forward
+# pass with numpy / papersseum.nn using weights embedded via `papersseum pack`.
 ALLOWED_IMPORTS = {
     "numpy", "math", "random", "itertools", "collections", "functools",
     "heapq", "bisect", "typing", "dataclasses", "enum", "json", "copy",
     "operator", "statistics", "array", "re", "string", "time", "abc",
     "fractions", "decimal", "numbers", "contextlib",
-    "papersseum", "torch",
+    "papersseum",
 }
 
 BANNED_CALLS = {
@@ -36,6 +39,13 @@ MAX_BYTES = 1_000_000
 # paths. Weights go through `papersseum.load_weights` instead.
 LOADER_MODULES = {"numpy", "torch"}
 BANNED_LOADERS = {"load", "loadtxt", "genfromtxt", "fromfile", "hub"}
+
+
+def _import_msg(name, top):
+    if top == "torch":
+        return ("import 'torch' is not allowed: it is not installed in the sandbox. Train with torch "
+                "locally, then run inference with numpy / papersseum.nn (see `papersseum pack`)")
+    return f"import '{name}' is not allowed"
 
 
 def scan_source(src, filename="<submission>"):
@@ -57,17 +67,22 @@ def scan_source(src, filename="<submission>"):
                     aliases[(a.asname or a.name).split(".")[0]] = a.name.split(".")[0]
                 top = a.name.split(".")[0]
                 if top not in ALLOWED_IMPORTS:
-                    violations.append((node.lineno, "import", f"import '{a.name}' is not allowed"))
+                    violations.append((node.lineno, "import", _import_msg(a.name, top)))
         elif isinstance(node, ast.ImportFrom):
             if node.names and node.names[0].name == "*":
                 violations.append((node.lineno, "import", "'from ... import *' is not allowed"))
             top = (node.module or "").split(".")[0]
             if top and top not in ALLOWED_IMPORTS:
-                violations.append((node.lineno, "import", f"import from '{node.module}' is not allowed"))
+                violations.append((node.lineno, "import", _import_msg(node.module, top)))
         elif isinstance(node, ast.Call):
             f = node.func
             if isinstance(f, ast.Name) and f.id in BANNED_CALLS:
                 violations.append((node.lineno, "call", f"call to '{f.id}' is not allowed"))
+            if (isinstance(f, ast.Name) and f.id == "load_weights") or \
+                    (isinstance(f, ast.Attribute) and f.attr == "load_weights"):
+                violations.append((node.lineno, "weights",
+                                   "load_weights reads a file, and only a single .py file is uploaded; "
+                                   "embed your weights with `papersseum pack` and use unpack_weights"))
         elif isinstance(node, ast.Attribute):
             root = node.value
             while isinstance(root, ast.Attribute):
