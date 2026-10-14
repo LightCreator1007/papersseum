@@ -73,8 +73,7 @@ export function createEngineClient(makeWorker: () => WorkerLike): EngineClient {
 let shared: EngineClient | null = null;
 
 export function engineClient(): EngineClient {
-  shared ??= createEngineClient(
-    () => new Worker(new URL("../workers/engine.worker.ts", import.meta.url), { type: "module" }),
-  );
+  // A plain URL, not bundled: Pyodide 314 needs a module worker, and Turbopack's workers are classic.
+  shared ??= createEngineClient(() => new Worker("/engine/worker.mjs", { type: "module" }));
   return shared;
 }

@@ -1,5 +1,5 @@
 // Messages between the page (lib/engine-client.ts) and the replay engine
-// worker (workers/engine.worker.ts), and the result types both sides share.
+// worker (public/engine/worker.mjs), and the result types both sides share.
 
 export type SeatScore = { pid: number; coverage: number };
 export type MatchResult = { scores: SeatScore[]; placements: number[] };
@@ -27,4 +27,4 @@ export type WorkerOut =
   | { type: "done"; id: number; result: MatchResult }
   | { type: "error"; id: number; stage: ErrorStage; message: string };
 
-export const BATCH_FRAMES = 50;
+export { BATCH_FRAMES } from "@/public/engine/runtime.mjs";

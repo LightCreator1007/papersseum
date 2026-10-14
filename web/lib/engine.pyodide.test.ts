@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { loadPyodide, version, type PyodideAPI } from "pyodide";
 import { beforeAll, describe, expect, it } from "vitest";
 import { BATCH_FRAMES, type MatchResult } from "@/lib/engine-protocol";
-import { PYODIDE_VERSION, ReplayError, installEngine, openReplay, type EngineManifest } from "@/lib/engine-runtime";
+import { PYODIDE_VERSION, ReplayError, installEngine, openReplay } from "@/public/engine/runtime.mjs";
+import type { EngineManifest } from "@/public/engine/runtime.mjs";
 import { decodeReplay } from "@/lib/replay-format";
 
 // Runs the committed engine wheel in real Pyodide (numpy is downloaded from the
