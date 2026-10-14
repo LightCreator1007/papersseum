@@ -19,6 +19,41 @@ describe("verdict", () => {
   it("verifies against database seats stored as float4", () => {
     expect(verdict({ shippedHash: HASH, engineHash: HASH, got, recorded: null, expected: db() })).toEqual({ kind: "verified" });
   });
+  it("verifies database seats whose coverage is rounded to six significant digits", () => {
+    const real: MatchResult = {
+      placements: [1, 0, 4, 3, 2],
+      scores: [13.924274593064402, 44.647912243453646, 0.9819532908704883, 3.750884642604388, 4.361288039631988].map(
+        (coverage, pid) => ({ pid, coverage }),
+      ),
+    };
+    const seats: ExpectedSeat[] = [
+      { slot: 0, name: "a", placement: 2, coverage: 13.9243 },
+      { slot: 1, name: "b", placement: 1, coverage: 44.6479 },
+      { slot: 2, name: "c", placement: 5, coverage: 0.981953 },
+      { slot: 3, name: "d", placement: 4, coverage: 3.75088 },
+      { slot: 4, name: "e", placement: 3, coverage: 4.36129 },
+    ];
+    expect(verdict({ shippedHash: HASH, engineHash: HASH, got: real, recorded: null, expected: seats })).toEqual({ kind: "verified" });
+  });
+  it("still reports a database coverage that differs by a real amount", () => {
+    const real: MatchResult = {
+      placements: [1, 0, 4, 3, 2],
+      scores: [13.924274593064402, 44.647912243453646, 0.9819532908704883, 3.750884642604388, 4.361288039631988].map(
+        (coverage, pid) => ({ pid, coverage }),
+      ),
+    };
+    const seats: ExpectedSeat[] = [
+      { slot: 0, name: "a", placement: 2, coverage: 13.9243 },
+      { slot: 1, name: "b", placement: 1, coverage: 44.6479 },
+      { slot: 2, name: "c", placement: 5, coverage: 0.981953 + 0.01 },
+      { slot: 3, name: "d", placement: 4, coverage: 3.75088 },
+      { slot: 4, name: "e", placement: 3, coverage: 4.36129 },
+    ];
+    expect(verdict({ shippedHash: HASH, engineHash: HASH, got: real, recorded: null, expected: seats })).toMatchObject({
+      kind: "mismatch",
+      seats: [{ slot: 2 }],
+    });
+  });
   it("reports a seat whose database placement differs", () => {
     const expected = db();
     expected[2] = { ...expected[2], placement: 1 };

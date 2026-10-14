@@ -131,10 +131,11 @@ start, Retry creates a fresh one.
 - `verdict(input)` (pure):
   - `engineHash !== shippedHash` → `{kind: "older-engine"}`
   - no `recorded` and no database seats → `{kind: "unchecked"}`
-  - placements equal and every coverage within 1e-5 of both the replay's
+  - placements equal and every coverage within a relative 1e-5 (`|a - b| <= 1e-5 * max(1, |a|, |b|)`) of both the replay's
     result line and (on the match page) the database seats → `{kind: "verified"}`
   - otherwise `{kind: "mismatch", seats: [...]}` listing the differing slots.
-  The tolerance exists because `match_players.coverage` is `real` (float4).
+  The tolerance is relative because `match_players.coverage` is `real` (float4), which PostgREST
+  returns with about 6 significant digits (relative error up to ~5e-6).
 
 ### `web/components/replay-viewer.tsx` (new, client)
 

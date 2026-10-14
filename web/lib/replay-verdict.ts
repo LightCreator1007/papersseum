@@ -5,9 +5,13 @@ import type { MatchResult, SeatScore } from "@/lib/engine-protocol";
 import { percent } from "@/lib/format";
 
 const SEATS = 5;
-// Coverage is a percentage; match_players.coverage is float4, so values read
-// back from the database differ from the engine's doubles by up to ~4e-6.
+// Coverage is a percentage. match_players.coverage is float4, which PostgREST
+// returns with about 6 significant digits, so a stored value differs from the
+// engine's double by a relative error of up to ~5e-6. Compare relative to the
+// larger coverage (floored at 1 so near-zero values use an absolute bound).
 export const COVERAGE_TOLERANCE = 1e-5;
+const coverageAgrees = (a: number, b: number) =>
+  Math.abs(a - b) <= COVERAGE_TOLERANCE * Math.max(1, Math.abs(a), Math.abs(b));
 
 export type ExpectedSeat = { slot: number; name: string | null; placement: number | null; coverage: number | null };
 type Facts = { place: number | null; coverage: number | null };
@@ -80,7 +84,7 @@ export function verdict(input: {
     const disagreeing = references.find((ref) => {
       const r = ref[slot];
       const placeOff = r.place !== null && r.place !== mine.place;
-      const coverageOff = r.coverage !== null && !(Math.abs(r.coverage - mine.coverage) <= COVERAGE_TOLERANCE);
+      const coverageOff = r.coverage !== null && !coverageAgrees(r.coverage, mine.coverage);
       return placeOff || coverageOff;
     });
     if (disagreeing) seats.push({ slot, got: mine, recorded: disagreeing[slot] });

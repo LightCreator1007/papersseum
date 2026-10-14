@@ -18,7 +18,7 @@
 - Visual rules of the web app: no badges, pills, tags, gradients or decorative icons; plain buttons (`.btn`, `.btn-secondary`, `.link-button`); colours only from the CSS tokens in `web/app/globals.css` and the five player colours via `<Swatch>`. The verification result is a line of plain text.
 - Replay files picked on `/replay` never leave the browser. Files over 1 MB (1,048,576 bytes) are refused before reading.
 - Frames are streamed in batches of 50 decisions (`BATCH_FRAMES = 50`).
-- Coverage is a percentage (0–100). Results agree when placements are identical and every coverage is within `1e-5` (the database column is `real` / float4).
+- Coverage is a percentage (0–100). Results agree when placements are identical and every coverage is within a relative `1e-5` (`|a - b| <= 1e-5 * max(1, |a|, |b|)`; the database column is `real` / float4, read back with about 6 significant digits).
 - The engine modules listed in `papersseum/__init__.py` `_ENGINE_MODULES` are not modified, so `ENGINE_HASH` stays `94534ca788048520`.
 - Python commands run from the repo root with `uv run --frozen ...`. Web commands run in `web/`.
 - `web/AGENTS.md`: this is Next.js 16; check `web/node_modules/next/dist/docs/` before writing Next-specific code. React's lint rule `react-hooks/set-state-in-effect` is on: never call `setState` synchronously in an effect body.
