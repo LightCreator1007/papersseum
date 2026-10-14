@@ -183,3 +183,22 @@
 .cl-goal { border-color: var(--up); color: var(--up); }
 .cl-route { outline: 2px solid var(--callout-idea); outline-offset: -2px; }
 .plot-dot-faint { fill: var(--muted); opacity: 0.55; }
+
+/* neural playground */
+.np-blue { fill: var(--callout-idea); }
+.np-orange { fill: #e8893b; }
+.np-pt-blue { fill: var(--callout-idea); stroke: var(--text); stroke-width: 1; }
+.np-pt-orange { fill: #e8893b; stroke: var(--text); stroke-width: 1; }
+
+/* cart-pole */
+.cp-cart { fill: var(--surface); stroke: var(--text); stroke-width: 1.5; }
+.cp-pole { stroke: var(--text); stroke-width: 4; stroke-linecap: round; }
+.cp-pole-warn { stroke: var(--down); }
+.cp-tip { fill: var(--text); }
+
+/* policy nudge */
+.pn-bars { display: grid; gap: 8px; }
+.pn-row { display: grid; grid-template-columns: 84px minmax(0, 1fr) 44px 72px; gap: 10px; align-items: center; }
+.pn-track { height: 14px; border: 1px solid var(--rule); border-radius: 3px; background: var(--bg); overflow: hidden; }
+.pn-fill { height: 100%; background: var(--callout-idea); }
+.pn-num { text-align: right; font-variant-numeric: tabular-nums; }

@@ -1,0 +1,178 @@
+<Callout title="At a glance">
+**About 50 minutes.** Time to put it all together. We take Q-learning from Part C, replace the table with the neural network from the last chapter, and teach it to balance a pole on a moving cart. That sounds easy, and it is not: done naively, it falls apart. You will meet the two tricks that make it work, the replay buffer and the target network, and see what happens without them.
+</Callout>
+
+## Balance the pole
+
+Try this first. A cart slides along a track, with a pole hinged on top that wants to tip over. Every moment, the cart is pushed either left or right, and you score 1 for every step the pole stays up. A perfect run is 200 steps.
+
+Watch the **trained network** first. Then try **random pushes**. Then switch to **You** and see how long you last (turn on slow motion if it is too fast).
+
+<CartPoleStage />
+
+The trained network balances the pole for all 200 steps, calmly, again and again. Random pushing lasts around 23 steps. And if you tried it yourself, you probably found it hard! The network learned to do this entirely by trial and error. Nobody wrote any rule about which way to push. Let us see how.
+
+## The task
+
+The cart-pole task is a classic test for RL. At every step the agent sees **four numbers**: the cart's position, the cart's speed, the pole's angle, and the pole's angular speed (how fast it is tipping). It has **two actions**: push left or push right. It gets a reward of **+1 for every step the pole is still up**. The episode ends if the pole tilts more than 12 degrees, or the cart slides off the track, or after 200 steps.
+
+Nothing in the setup says which push is right. The agent only discovers that some behaviours make the episode last longer. That is exactly the situation RL is for.
+
+## Why a table will not do
+
+In Part C, we stored a Q-value for every state and action. Here, the state is four real numbers, such as 0.0123 and −0.7391, which can take infinitely many values. There is no list of states to put in a table, and a state we saw a moment ago will never repeat exactly.
+
+So we do what the last two chapters prepared us for: **estimate Q with a neural network**. The network takes the four numbers as input and produces **two numbers** as output: its estimate of $Q(s, \text{left})$ and $Q(s, \text{right})$. We use two hidden layers of 64 neurons each. In total, the network has 4,610 weights and biases. To act, the agent simply pushes in the direction with the higher Q-value.
+
+## Q-learning with a network
+
+Recall the Q-learning update from the temporal-difference chapter: nudge $Q(s, a)$ toward a target made of the reward plus the discounted best Q-value in the next state:
+
+$$
+\text{target} = R + \gamma \max_{a'} Q(s', a').
+$$
+
+With a table, we nudged one entry. With a network, we adjust the weights to make the network's output for the pair $(s, a)$ closer to the target. How wrong is it? The squared error:
+
+$$
+\text{loss} = \big( Q(s, a) - \text{target} \big)^2.
+$$
+
+We then use backpropagation (last chapter) to find how each weight should change, and take a gradient descent step (the chapter before that). In code, the whole thing is a handful of lines:
+
+```python
+best_next = judge.forward(s2).max(axis=1)           # the best Q-value in the next state
+targets = r + gamma * (1 - d) * best_next           # reward + gamma * best next (nothing after a fall)
+out = q.forward(s)                                  # the network's current Q-values
+picked = out[np.arange(batch), a]                   # ... for the moves that were actually taken
+d_out[np.arange(batch), a] = 2 * (picked - targets) / batch   # slope of the squared error
+q.learn(d_out, lr)                                  # backpropagation, then a small step downhill
+```
+
+A small worked example. Suppose the network currently says $Q(s, \text{right}) = 12$. The agent pushed right and got a reward of 1, and in the next state the best Q-value is 11. With $\gamma = 0.99$, the target is $1 + 0.99 \times 11 = 11.89$. The network said 12, so it was a little too high (by 0.11), and the update will pull it down a touch.
+
+## Why the naive version falls apart
+
+If you build exactly this and run it, it tends to go wrong. There are two culprits.
+
+**Problem 1: the data is a mess.** An agent learns from steps as they happen. But consecutive steps are almost identical: the pole's angle barely changes in 0.02 seconds. So the network is trained on a long run of nearly the same example, then on a long run of a different one. A network that is repeatedly fed near-duplicates tends to overfit to whatever happened most recently, and forget what it knew before. Ordinary supervised learning relies on examples being shuffled, and this is the opposite.
+
+**Problem 2: the target keeps moving.** Look at the target again: $R + \gamma \max Q(s', a')$. That target is computed by *the same network* we are trying to train. Every time we update the weights, the target changes too. It is like trying to hit a target that jumps whenever you aim at it. This feedback loop can make the numbers swing wildly or blow up.
+
+## Trick 1: the replay buffer
+
+The fix for the first problem is simple: **remember, then shuffle.** The agent stores its recent experience, each step as (state, action, reward, next state, did it fall), in a memory of the last 10,000 steps. Then, instead of learning from the step that just happened, it learns from a **random batch of 64 steps** drawn from the whole memory.
+
+A random batch mixes old and new, early and late, left-leaning and right-leaning. The examples are no longer lined up one after another, and each step can be learned from many times. This is called **experience replay**.
+
+## Trick 2: the target network
+
+The fix for the second problem: keep **two networks**. One is the main network, $Q$, that is trained all the time. The other is a **target network**, a frozen copy that is used only to compute the targets. Every 200 steps, we copy the main network's weights into the target network.
+
+Now the target holds still for 200 steps at a time. The main network can chase it properly, and then the target moves a little and the chase continues. It is far steadier than a target that moves every step.
+
+## The whole algorithm
+
+Putting it together, in plain words:
+
+1. Start with a random network $Q$ and a copy of it, the target network.
+2. At every step, **explore or exploit**: with a probability $\varepsilon$, push in a random direction, otherwise push the way $Q$ prefers. We start with $\varepsilon = 1$ and reduce it to 0.05 over the first 100 episodes.
+3. Take the push, and store (state, action, reward, next state, fell) in the replay buffer.
+4. Once the buffer has enough in it (500 steps), pick a **random batch of 64** from it and take one gradient step on the loss above, with targets computed by the **target network**.
+5. Every 200 steps, **copy** $Q$ into the target network.
+6. Repeat.
+
+That is **DQN**, short for deep Q-network.
+
+## Does it work?
+
+Yes. Here is one training run. The table shows the average number of steps the pole stayed up, per block of 25 training episodes (including the random pushes used for exploring):
+
+| Episodes | Average steps | |
+| --- | --- | --- |
+| 1 to 25 | 20.8 | like random pushing |
+| 26 to 50 | 17.4 | |
+| 51 to 75 | 63.1 | learning kicks in |
+| 76 to 100 | 171.8 | |
+| 101 to 150 | about 160 and 137 | |
+| 151 to 200 | about 150 and 138 | |
+| 201 to 250 | about 178 and 196 | |
+| 251 to 300 | about 193 and 192 | near perfect |
+
+For the first 50 episodes, nothing seems to happen. The network is picking up what is going on, while mostly acting at random. Then, between episodes 50 and 100, it takes off. After training, the finished network, with no exploring, balances the pole for 198 steps out of 200 on average.
+
+Two honest observations. First, the learning is **not steady**: after reaching about 172, the average dipped to 137 before recovering. This kind of wobble is typical of DQN, and it is why people often save the best version of the network they see along the way, rather than just the last. (The network in the demo at the top was chosen like that, and balances for the full 200 steps in every one of 100 test episodes we ran.) Second, the exploring we mixed into training makes the training scores lower than the finished network's true skill.
+
+## Do the tricks really matter?
+
+We can test that. We trained four versions: with both tricks, without the target network, without the replay buffer, and with neither. Each used five different random seeds, and we looked at the average steps survived over the last 50 training episodes (out of a possible 200):
+
+| Version | Result for each of the 5 seeds | Average |
+| --- | --- | --- |
+| Both tricks | 193, 200, 194, 191, 134 | **182** |
+| No target network | 193, 191, 157, 157, 164 | 172 |
+| No replay buffer | 110, 102, 114, 107, 142 | 115 |
+| Neither | 145, 75, 191, 163, 10 | 117 |
+
+What do we see?
+
+- **The replay buffer matters a lot** here. Without it, every seed ends up between 102 and 142, none reaching the high-190s that most seeds reach with it.
+- **The target network helped a little**, 172 against 182, but with only five seeds that gap is small enough to be partly luck. In a bigger or harder problem its steadying effect matters more, and it is standard in DQN.
+- **With neither trick, it is unreliable.** One seed did well (191) and one collapsed (10). You cannot count on it.
+- Even with both tricks, one seed (134) did worse than the rest. DQN has real run-to-run variation, and a single successful run does not mean it will always work.
+
+## What DQN cannot do
+
+DQN is a landmark, but it has limits:
+
+- **Discrete actions only.** It picks the best of a list of actions by taking a max. If an action were "turn the steering wheel by any angle", there would be no list to take a max over.
+- **It needs a lot of experience.** Even this small task took tens of thousands of steps. Hard problems can take millions.
+- **It can be fragile.** As we saw, it wobbles, and results depend on settings such as the step size and the exploring schedule.
+- **It learns values, and the policy follows.** The next chapter shows an alternative: learn the policy directly.
+
+## Run it yourself
+
+At the bottom of this page you can download:
+
+- `cartpole.py` is the cart-pole task in plain NumPy: the physics, and a helper to score a policy.
+- `dqn_cartpole.py` is the whole DQN, a small neural network with the Adam optimiser, a replay buffer and a target network, all in NumPy. Run it as `python dqn_cartpole.py`, or add `--tricks` to repeat the experiment with and without each trick.
+- `export_policy.py` trains and saves a network as a small file of numbers. It is how we made the one in the demo.
+- `check_numbers.py` checks every number quoted in this chapter. It trains twenty-one networks, so it takes about a minute and a half.
+
+Try changing the replay buffer size, the batch size, or how often the target network is updated. Which settings does it hate?
+
+## Check yourself
+
+<Check q="The network estimates Q(s, right) = 12. The agent pushed right, got a reward of 1, and the best Q-value in the next state is 11. With γ = 0.99, what is the target, and how far off was the network?">
+The target is $1 + 0.99 \times 11 = 11.89$. The network said 12, so it was too high by $12 - 11.89 = 0.11$. The update will nudge its estimate down by a little.
+</Check>
+
+<Check q="Why does the agent explore at random at the start of training, rather than just pushing the way the network prefers?">
+At the start, the network's Q-values are random numbers, so "the way it prefers" is meaningless. Exploring makes sure it tries both pushes in many situations and collects varied experience to learn from. As the Q-values become more trustworthy, the exploring is reduced.
+</Check>
+
+<Check q="How does the replay buffer help the learning?">
+It stops the network from learning only from a long run of near-identical consecutive steps. By learning from a random batch drawn from a memory of many past steps, the examples are mixed and varied, which makes learning steadier, and each step can be reused many times.
+</Check>
+
+<Check q="What problem does the target network solve?">
+The target depends on the network's own estimates, so every update changes the target and the network ends up chasing a target that keeps moving, which can make it swing wildly. Computing targets with a frozen copy, updated only every 200 steps, keeps the target still long enough for the network to chase it properly.
+</Check>
+
+<Check q="In the experiment, which trick mattered more, and what is the caveat?">
+The replay buffer mattered more: without it, all five seeds stayed between 102 and 142, while with it most reached the high 190s. The caveat is that this is only five seeds on one small task. The target network's smaller effect (172 against 182) could be partly luck, and results can differ on other problems.
+</Check>
+
+## Recap
+
+- **DQN** replaces the Q-table with a **neural network** that takes the state and outputs a Q-value for each action. It works for states made of real numbers.
+- It trains the network to match the Q-learning target $R + \gamma \max Q(s', a')$ by minimising the squared error with gradient descent.
+- Done naively it fails, for two reasons: **correlated data**, and a **moving target**.
+- A **replay buffer** stores past steps and trains on random batches, which breaks the correlation.
+- A **target network**, a slowly-updated frozen copy, computes the targets, which keeps the target still.
+- On cart-pole, DQN goes from random (about 23 steps) to almost perfect (198 of 200). The replay buffer made the biggest difference in our test.
+- Learning can **wobble** and varies between runs, so keeping the best network seen is common practice.
+
+## Where next
+
+DQN learns how good each action is, then picks the best. There is another way: skip the values, and learn what to *do* directly. That is policy gradients, and it opens the door to problems with smooth, continuous actions.
