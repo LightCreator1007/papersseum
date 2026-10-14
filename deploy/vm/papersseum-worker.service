@@ -1,0 +1,23 @@
+[Unit]
+Description=Papersseum match worker
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+User=papersseum
+Group=papersseum
+WorkingDirectory=/opt/papersseum/worker
+EnvironmentFile=/etc/papersseum/worker.env
+Environment=UV_CACHE_DIR=/var/lib/papersseum/uv-cache
+Environment=HOME=/var/lib/papersseum
+Environment=UV_PROJECT_ENVIRONMENT=/var/lib/papersseum/venv
+ExecStart=/usr/local/bin/uv run --frozen papersseum-worker
+Restart=always
+RestartSec=10
+# SIGTERM makes the worker finish its current match, then exit.
+KillSignal=SIGTERM
+TimeoutStopSec=330
+
+[Install]
+WantedBy=multi-user.target

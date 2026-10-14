@@ -1,0 +1,7 @@
+[Unit]
+Description=Ping healthchecks.io while the worker is running
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/papersseum/worker.env
+ExecStart=/bin/sh -c 'systemctl is-active --quiet papersseum-worker.service && [ -n "$HEALTHCHECK_URL" ] && curl -fsS -m 10 --retry 2 "$HEALTHCHECK_URL" >/dev/null || true'
