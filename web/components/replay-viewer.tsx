@@ -50,6 +50,7 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
   const cellsRef = useRef(new Uint8Array(0));
   const imageRef = useRef<ImageData | null>(null);
   const frameRef = useRef(0);
+  const endedRef = useRef(false); // the run failed: no more frames will arrive
   const themeRef = useRef<Theme>("light");
   const tableRef = useRef<Uint8ClampedArray | null>(null);
   const [frames, setFrames] = useState(0); // 0 until the header arrives
@@ -122,6 +123,7 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
             store.append(m.bytes);
           } catch (error) {
             cancelRun();
+            endedRef.current = true;
             setPhase({ kind: "error", stage: "run", message: String(error) });
             return;
           }
@@ -142,6 +144,7 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
           break;
         }
         case "error":
+          endedRef.current = true;
           setPhase({ kind: "error", stage: m.stage, message: m.message });
           break;
       }
@@ -191,7 +194,7 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
         draw();
         setFrame(frameRef.current);
       }
-      if (frameRef.current >= store.frames - 1) {
+      if (frameRef.current >= store.frames - 1 || (endedRef.current && frameRef.current >= store.available - 1)) {
         setPlaying(false);
         return;
       }
@@ -221,7 +224,7 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
   const toggle = () => {
     const store = storeRef.current;
     if (!store) return;
-    if (!playing && frameRef.current >= store.frames - 1) seek(0);
+    if (!playing && (frameRef.current >= store.frames - 1 || (endedRef.current && frameRef.current >= store.available - 1))) seek(0);
     setPlaying(!playing);
   };
 

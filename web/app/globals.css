@@ -113,6 +113,7 @@ main a.btn, main a.btn-secondary { text-decoration: none; }
 .board { border: 1px solid var(--rule); background: var(--surface); padding: 10px; }
 .board img { display: block; width: 100%; height: auto; }
 .board canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+.board canvas[hidden] { display: none; }
 
 /* placeholders */
 .placeholder-line { height: 37px; border-bottom: 1px solid var(--rule-soft); }
