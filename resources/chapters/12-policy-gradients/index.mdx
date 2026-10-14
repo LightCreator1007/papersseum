@@ -154,10 +154,10 @@ Does the baseline matter here too? We ran five different seeds for each version,
 
 | Version | Result for each of the 5 seeds | Average |
 | --- | --- | --- |
-| With a baseline | all close to 190 or more (one seed can lag) | **about 190** |
+| With a baseline | between about 170 and 195 (varies a little by computer) | **about 185** |
 | No baseline | 148, 163, 153, 156, 177 | 159 |
 
-With the baseline, at least four of the five seeds averaged 190 steps or more. Without it, none did, and the best was 177. The average gap is about 30 steps. In cart-pole every reward is +1, so every return is positive, which is exactly the situation from the slot-machine experiment. Subtracting the average return turns "everything looks good" into "this part was better than usual".
+With the baseline, every seed averaged at least 165 steps, and most were in the 180s or 190s. Without it, the best seed reached only 177. The average gap is about 25 steps. In cart-pole every reward is +1, so every return is positive, which is exactly the situation from the slot-machine experiment. Subtracting the average return turns "everything looks good" into "this part was better than usual".
 
 ## Values or policies?
 
@@ -215,7 +215,7 @@ DQN picks the best action by taking a max over a list of Q-values, and a continu
 - The **log-derivative trick** gives the slope of the expected reward as an average we can sample: $E\big[r \times \text{slope of } \ln \pi\big]$. For a softmax, the slope of $\ln \pi$ is **one-hot minus the probabilities**.
 - The update is **more of what worked**: nudge the chosen action up in proportion to its reward.
 - A **baseline** subtracts a typical reward. It leaves the average update unchanged but removes noise, which matters most when all rewards have the same sign.
-- **REINFORCE** applies this to whole episodes, nudging each action by its **advantage**, the return minus the baseline. On cart-pole it averaged about 190 steps with a baseline and 159 without.
+- **REINFORCE** applies this to whole episodes, nudging each action by its **advantage**, the return minus the baseline. On cart-pole it averaged about 185 steps with a baseline and 159 without.
 - Policy methods explore on their own, handle continuous actions, and use only fresh data. **Actor-critic** methods add a learned value function to cut the noise.
 
 ## Where next
