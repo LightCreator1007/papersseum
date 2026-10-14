@@ -132,6 +132,10 @@ on_own_land = obs[0]["local"][ch.OWN_TERRITORY, 15, 15] > 0.5
 
 Use `papersseum.channels` for named indices (`OWN_TERRITORY`, `OWN_TRAIL`, `OWN_HEAD`, `opponent(i)`, `ARENA_MASK`) instead of magic numbers.
 
+## Learn
+
+New to reinforcement learning? The site has a free beginner course, **Learn RL from zero**, for anyone with JEE Mains maths. Its lessons and code live in [`resources/`](resources/).
+
 ## Status
 
 The engine, reference environment, baselines, self-eval, JSONL replays and rating are done. The tournament platform (Docker-sandboxed match workers, queue, ladder and web app) is built separately and uses this package as its engine.

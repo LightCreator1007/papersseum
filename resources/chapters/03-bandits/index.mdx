@@ -1,0 +1,274 @@
+<Callout title="At a glance">
+**About 45 minutes.** You will learn how a program can get better at something using nothing but its own tries, what the "explore or exploit" dilemma is, and three simple ways to handle it. All you need is the idea of an average. We introduce every symbol as it appears.
+</Callout>
+
+## Play first, read later
+
+Before any theory, play a game.
+
+Below is a casino with five slot machines. You have **100 pulls**, and every win is one point. Each machine has its own hidden chance of paying out, and one of them is better than the rest. Nothing tells you which. Have a go, then come back.
+
+<BanditCasino />
+
+If you finished with fewer points than you hoped, good. That feeling is exactly what this chapter is about.
+
+## What did you just do?
+
+Think back over your hundred pulls. You probably tried each machine a few times, then drifted toward one that seemed to be paying well. Somewhere in the middle you may have asked yourself, "Is machine C actually bad, or was it just unlucky?"
+
+That little argument in your head has two sides, and both have names.
+
+- **Exploring** means trying something to find out more about it, even if it might turn out worse.
+- **Exploiting** means using what you already know to get the best result right now.
+
+Here is an everyday version. You have just joined a new college and there are two chai stalls near the hostel. You tried stall A once, and it was good. Tonight, do you go back to A, or try B?
+
+If you always go back to A, you will never find out that B might be much better. If you keep trying new stalls every night, you will drink a lot of bad chai. Neither habit works. The skill is in the mix.
+
+<Callout title="The big idea" kind="idea">
+An agent that learns from its own tries has to **balance learning with earning**. Every time it tries something new, it risks a worse result today. Every time it plays safe, it risks missing a better option forever.
+</Callout>
+
+## The problem, in plain words
+
+Let us state the game without the casino.
+
+- At every step you choose one of $k$ options. We call each option an **action**. (In the casino, $k = 5$ and the actions are the five machines.)
+- You get a number back. We call it the **reward**. (Here it is 1 for a win and 0 for a loss.)
+- Your aim is to collect as much total reward as you can over many steps.
+- You do **not** know how good each action is in advance. You find out only by trying.
+
+This is called the **multi-armed bandit** problem. The odd name comes from old slot machines, which had one lever (an "arm") and had a habit of taking your money, so people called them one-armed bandits. A room full of them is a multi-armed bandit. It has nothing to do with robbers.
+
+Why start here? Because it is the simplest reinforcement learning problem there is. Each pull is one decision, the reward arrives straight away, and nothing you do changes the next pull. That strips the subject down to its core question: **how do you learn what is good while you are still busy acting?** Later chapters add sequences of decisions, but this question never goes away.
+
+## How good is a machine?
+
+Every machine hides a number: its true chance of paying out. Say machine D pays out with chance 0.7. If you pulled it a huge number of times, you would win about 70 times in every 100, so you would average 0.7 points per pull.
+
+That long-run average has a name: the **expected value**. For a machine that pays 1 with chance $p$ and 0 otherwise,
+
+$$
+q = p \times 1 + (1 - p) \times 0 = p.
+$$
+
+In words: each possible reward, multiplied by how likely it is, added up. We write $q$ for this true value. For machine D, $q = 0.7$.
+
+The trouble is that we never get to see $q$. We only see wins and losses. So we do the natural thing and **estimate** it from what we have seen: the plain average of the rewards so far.
+
+Say you pulled machine A five times and got: win, lose, win, win, lose. That is 3 wins in 5 pulls, so your estimate is
+
+$$
+Q = \frac{1 + 0 + 1 + 1 + 0}{5} = 0.6.
+$$
+
+<Callout title="Notation" kind="maths">
+We use a small $q$ for the truth (which we never see) and a capital $Q$ for our estimate (which we build from what we have seen). The whole game is making $Q$ close to $q$.
+</Callout>
+
+With only a few pulls, an estimate can be far off. Flip a fair coin 10 times and you might easily see 7 heads. Flip it 1,000 times and you will be very close to 500. The same thing happens here: **the more you pull a machine, the more you can trust its average.** That one fact is what makes the whole problem interesting.
+
+## Keeping an average without keeping the pile
+
+Here is a practical annoyance. After 1,000 pulls, you do not want to store 1,000 numbers and add them all up again every time a new reward comes in. There is a neat trick that lets you keep just two numbers per machine: the current average, and how many pulls you have made.
+
+Let $Q_n$ be the average after $n$ rewards $R_1, R_2, \dots, R_n$. Then
+
+$$
+Q_n = \frac{R_1 + R_2 + \dots + R_n}{n}.
+$$
+
+Now one more reward $R_{n+1}$ arrives. The new average is
+
+$$
+Q_{n+1} = \frac{R_1 + \dots + R_n + R_{n+1}}{n + 1}.
+$$
+
+Look at the top. The first $n$ terms add up to $n \, Q_n$ (just multiply the first equation by $n$). So
+
+$$
+Q_{n+1} = \frac{n \, Q_n + R_{n+1}}{n + 1}
+= \frac{(n+1) \, Q_n - Q_n + R_{n+1}}{n + 1}
+= Q_n + \frac{R_{n+1} - Q_n}{n + 1}.
+$$
+
+That last form is the one to remember. In words:
+
+> **new estimate = old estimate + (1 / how many pulls) × (what you just saw − old estimate)**
+
+The bracket, "what you just saw minus what you expected", is the **surprise**. If the reward is exactly what you expected, the surprise is zero and the estimate does not move. If the reward is a big shock, the estimate moves further. And as $n$ grows, the step $1/(n+1)$ shrinks, so one more reward matters less and less once you have lots of experience.
+
+Let us check it on the five pulls from before: win, lose, win, win, lose. We start at $Q = 0$ and apply the rule each time.
+
+| Pull number | Reward | Surprise (reward − old estimate) | Step (1 / pull number) | New estimate |
+| --- | --- | --- | --- | --- |
+| 1 | 1 | 1 − 0 = 1 | 1 | 0 + 1 = **1.00** |
+| 2 | 0 | 0 − 1 = −1 | 1/2 | 1 − 0.5 = **0.50** |
+| 3 | 1 | 1 − 0.5 = 0.5 | 1/3 | 0.5 + 0.167 = **0.67** |
+| 4 | 1 | 1 − 0.67 = 0.33 | 1/4 | 0.67 + 0.083 = **0.75** |
+| 5 | 0 | 0 − 0.75 = −0.75 | 1/5 | 0.75 − 0.15 = **0.60** |
+
+It ends at 0.60, exactly the same as adding everything up and dividing by 5. The trick works.
+
+<Callout title="Remember this shape" kind="maths">
+**New estimate = old estimate + step size × (target − old estimate).** You have just met the most important move in this whole course. Q-learning, temporal-difference learning, and even the way a neural network adjusts its weights are all this same move, wearing different clothes. When you see it again, you will recognise it.
+</Callout>
+
+## Strategy 1: always pick the best so far
+
+Now for the real question: which machine do we pull next?
+
+The first idea that comes to mind is the sensible-sounding one. **Always pull the machine with the highest average so far.** This is called the **greedy** strategy, because it grabs the best-looking option every time.
+
+It has a nasty flaw. Imagine all five estimates start at 0. You try machine B, and by luck it pays out. Now $Q_B = 1$ and every other machine is still at 0. B is the highest, so the greedy strategy pulls B. And again. And again. It never touches the other four, because as far as it can tell, they are worse.
+
+Now suppose B's true chance is only 0.4, while machine E pays 0.8. The greedy learner will never find out. It locked onto B because of **one lucky pull**, and nothing in its rules ever lets it check.
+
+Even the best machine can be unlucky on its first try: a machine with a 0.8 chance still loses its first pull with chance $1 - 0.8 = 0.2$, one time in five. If that happens, a greedy learner may never come back to it.
+
+<Callout title="Try it" kind="try">
+In the casino above, drag the learner's ε slider all the way to 0 and press the run button several times. That is a greedy learner. Compare it with ε around 0.1. Watch how often the greedy one gets stuck on a poor machine.
+</Callout>
+
+## Strategy 2: mostly the best, sometimes a surprise
+
+The fix is wonderfully simple: **add a little randomness.**
+
+Pick a small number $\varepsilon$ (the Greek letter epsilon), such as 0.1. Then, every step:
+
+- with probability $\varepsilon$, **explore**: pick any machine at random, all equally likely;
+- with probability $1 - \varepsilon$, **exploit**: pick the machine with the best average so far.
+
+This is called **ε-greedy**. In Python, the heart of it is just these lines:
+
+```python
+if rng.random() < epsilon:
+    arm = int(rng.integers(k))        # explore: any machine, all equally likely
+else:
+    arm = argmax_random_ties(q, rng)  # exploit: the best average so far
+```
+
+A tiny change makes a big difference. Every machine keeps getting tried now and then, so a bad early estimate eventually gets corrected, and a machine that was written off too soon gets another chance.
+
+There is a price, and it is worth working out. Suppose $\varepsilon = 0.1$ and there are 5 machines, and the learner has already found the best one. How often does it pull that machine?
+
+- 90% of the time it exploits, and exploiting picks the best machine.
+- 10% of the time it explores, and exploring picks the best machine only 1 time in 5.
+
+So the chance it pulls the best machine is
+
+$$
+0.9 + 0.1 \times \frac{1}{5} = 0.92.
+$$
+
+Even a learner that has completely figured the casino out spends 8% of its pulls on things it already knows are worse. That is the price of curiosity.
+
+The knob $\varepsilon$ sets the balance. At $\varepsilon = 0$ you are greedy and can get stuck. At $\varepsilon = 1$ you pull completely at random and never use what you learn. The sweet spot is somewhere in between.
+
+## Strategy 3: be curious about what you know least
+
+Random exploring is a bit wasteful. It is just as likely to re-try a machine you have already pulled 80 times as one you have barely touched. A cleverer learner would explore *where it is least sure*.
+
+That is the idea behind **UCB**, which stands for "upper confidence bound". Instead of comparing averages, you compare averages **plus a bonus for uncertainty**. At pull number $t$, choose the machine $a$ that maximises
+
+$$
+Q(a) + c \sqrt{\frac{\ln t}{N(a)}}.
+$$
+
+Let us unpack that.
+
+- $Q(a)$ is our usual estimate for machine $a$.
+- $N(a)$ is how many times we have pulled machine $a$ so far.
+- $t$ is the total number of pulls so far.
+- $c$ says how adventurous we are. We will use $c = 1$.
+- $\ln$ is the natural logarithm, the "log to the base $e$" you meet in JEE. All you need to know is that it grows very slowly: $\ln 10$ is about 2.30.
+
+The second term is the **bonus**. Look at what controls it. A machine we have barely tried has a small $N(a)$, so the bonus is big. As we pull it more, $N(a)$ grows and the bonus shrinks. Meanwhile $\ln t$ creeps up slowly, which means every machine, however well explored, gets a gentle nudge to be looked at again eventually.
+
+A worked example. It is pull number $t = 10$.
+
+- Machine X has been tried 2 times, with $Q = 0.50$. Its bonus is $\sqrt{\ln 10 / 2} = \sqrt{1.15} \approx 1.07$, so its score is $0.50 + 1.07 = 1.57$.
+- Machine Y has been tried 8 times, with $Q = 0.60$. Its bonus is $\sqrt{\ln 10 / 8} = \sqrt{0.288} \approx 0.54$, so its score is $0.60 + 0.54 = 1.14$.
+
+UCB picks machine X, even though Y has the better average. That is the whole spirit of it: *we know so much less about X that it deserves a try.*
+
+## Who wins? An experiment
+
+Time to find out which of these ideas actually works. We built 200 random casinos with five machines each, let every strategy play 1,000 pulls in each casino, and averaged the results. Every strategy played exactly the same casinos.
+
+To keep luck out of the comparison, each pull is scored by the **true chance** of the machine that was picked, which is what that machine pays on average. So "avg payout" is the average chance of winning per pull.
+
+| Strategy | Avg payout | Pulls on the best machine |
+| --- | --- | --- |
+| Random | 0.51 | 20% |
+| Greedy (ε = 0) | 0.60 | 24% |
+| ε-greedy, ε = 0.01 | 0.70 | 52% |
+| ε-greedy, ε = 0.1 | **0.73** | 71% |
+| ε-greedy, ε = 0.3 | 0.69 | 65% |
+| UCB (c = 1) | 0.72 | 66% |
+| *Best possible* | *0.77* | *100%* |
+
+A few things stand out.
+
+- Random play scores 0.51, which makes sense: the average chance across machines is 0.5.
+- Greedy beats random only a little. It locks onto whatever looked good first, and only about a quarter of its pulls end up on the best machine.
+- ε = 0.1 reaches about 95% of the best possible score. Too little exploring (0.01) learns too slowly. Too much (0.3) wastes pulls. There is a sweet spot.
+- UCB does about as well as ε = 0.1. It explores on purpose, where it is least sure, instead of by coin flip.
+
+One word of caution. These casinos are friendly: five machines, chances that never change. Real problems can have thousands of options and chances that drift over time. Treat this table as an illustration of the idea, not a law of nature.
+
+## Run it yourself
+
+Everything above is backed by real code. At the bottom of this page you can download:
+
+- `bandit_basics.py` runs the experiment. Try `python bandit_basics.py`. It needs only NumPy.
+- `check_numbers.py` checks every number quoted in this chapter, so the text and the code cannot quietly disagree.
+
+Some things to try: change the number of machines, change ε, or change how many pulls each strategy gets. When do the strategies start to look alike? When do they pull apart?
+
+## Beyond slot machines
+
+You will meet bandits all over the place:
+
+- **Websites** deciding which of several page designs to show, favouring the one that gets more clicks while still testing the others.
+- **News and video apps** choosing what to recommend next.
+- **Medical trials** deciding which treatment to give the next patient as results come in.
+- **Game bots** that have a few ready-made plans and need to find out which one works against *this* opponent.
+
+In every case there is a choice, a payoff, and a lot you do not know yet. And in every case the same tension shows up: learn more, or use what you have?
+
+## Check yourself
+
+Try each one on paper before you open the answer.
+
+<Check q="A machine has been pulled 4 times and paid 1, 0, 0, 1. What is its estimate? Then it is pulled a fifth time and pays 1. Use the update rule to find the new estimate.">
+After four pulls the average is $(1 + 0 + 0 + 1)/4 = 0.5$. The fifth pull has reward 1, so the surprise is $1 - 0.5 = 0.5$, the step is $1/5$, and the new estimate is $0.5 + 0.5/5 = 0.6$. Check by adding up: 3 wins in 5 pulls is $3/5 = 0.6$. Same answer.
+</Check>
+
+<Check q="Why can a purely greedy learner get stuck on a bad machine?">
+Because it only ever pulls the machine with the best average so far. If a mediocre machine gets lucky early, its average looks great and the learner keeps pulling it. It never tries the others, so it never gets the evidence that would correct its mistake.
+</Check>
+
+<Check q="With ε = 0.2 and 4 machines, once the best machine has been found, what fraction of pulls go to it?">
+80% of the time it exploits and picks the best machine. The other 20% of the time it explores, and picks the best machine 1 time in 4. So the fraction is $0.8 + 0.2 \times \tfrac{1}{4} = 0.85$.
+</Check>
+
+<Check q="In UCB, what happens to a machine's bonus as you keep pulling that machine? And why is that sensible?">
+The bonus $c\sqrt{\ln t / N(a)}$ gets smaller, because $N(a)$ is in the denominator and keeps growing. It is sensible because the more you have tried a machine, the less uncertain you are about it, so it deserves less of a "let us find out" bonus.
+</Check>
+
+<Check q="You are only allowed 20 pulls in total. Would you pick a large ε or a small one? Why?">
+A small one. Exploring only pays off if you have enough pulls left afterwards to use what you learned. With just 20 pulls there is very little time to cash in on a discovery, so heavy exploring mostly wastes pulls. With thousands of pulls the balance tips the other way, and exploring early is worth it.
+</Check>
+
+## Recap
+
+- **Exploring** means trying things to learn about them. **Exploiting** means using what you know. Good agents need both.
+- A machine's **expected value** is its long-run average payout. We can only **estimate** it from the rewards we have seen.
+- You can keep a running average with one tiny update: **new = old + step × (surprise)**. This shape appears all through RL.
+- **Greedy** play can get stuck after one lucky pull. **ε-greedy** adds random exploring and fixes that, at a small price. **UCB** explores where it is least sure.
+- A bandit is the simplest RL problem: one choice, an instant reward, nothing carried forward. The next chapter changes that.
+
+## Where next
+
+So far every pull was a fresh start. Real problems are not like that: where you stand now decides what you can do next, and a good move today may only pay off many steps later. The next chapter turns the single choice into a whole sequence of them.
