@@ -52,9 +52,8 @@ class Engine:
                 continue
             nr, nc = moves[pid]
             kind = classify_entry(st, pid, nr, nc)
-            if kind == "self_trail":
-                kill(st, pid)
-                continue
+            # Crossing your own trail is harmless (lay_trail ignores cells that
+            # are already yours); only a rival's trail is deadly.
             if kind == "cut":
                 victim = int(st.trail[nr, nc])
                 kill(st, victim, killer=pid)

@@ -8,7 +8,7 @@ def classify_entry(state, pid, nr, nc):
         return "wall"
     t = state.trail[nr, nc]
     if t == pid:
-        return "self_trail"
+        return "self_trail"      # harmless: you may cross your own trail
     if t != -1:
         return "cut"
     return "clear"

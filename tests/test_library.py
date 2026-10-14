@@ -115,3 +115,38 @@ def test_load_weights(tmp_path):
             assert False
         except ValueError:
             pass
+
+
+def _setup_loop_state():
+    """Player 0 stands on the last cell of a 4-cell trail, facing the first one."""
+    from papersseum.engine import Engine
+    eng = Engine(3)
+    st = eng.state
+    pl = st.players[0]
+    cells = [(60, 60), (60, 61), (61, 61), (61, 60)]
+    assert all(st.arena_mask[r, c] and st.owner[r, c] == -1 for r, c in cells)
+    for r, c in cells:
+        st.trail[r, c] = 0
+    pl.trail_cells = list(cells)
+    pl.r, pl.c = 61, 60
+    pl.heading = pl.desired_heading = 0          # facing up, into (60, 60)
+    pl.accumulator = 1.0                         # force a step this tick
+    return eng, st, pl, cells
+
+
+def test_crossing_own_trail_is_harmless():
+    eng, st, pl, cells = _setup_loop_state()
+    eng.advance_tick(None)
+    assert pl.alive and pl.deaths == 0
+    assert (pl.r, pl.c) == (60, 60)
+    assert pl.trail_cells == cells                   # no duplicates, nothing erased
+    assert all(st.trail[r, c] == 0 for r, c in cells)
+
+
+def test_rival_trail_still_kills():
+    eng, st, pl, cells = _setup_loop_state()
+    for r, c in cells:
+        st.trail[r, c] = 1                           # same cells, but a rival's trail
+    st.players[1].trail_cells = list(cells)
+    eng.advance_tick(None)
+    assert pl.alive and st.players[1].alive is False and st.players[1].deaths == 1
