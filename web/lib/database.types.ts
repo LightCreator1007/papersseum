@@ -111,14 +111,14 @@ isOneToOne: false
                   ]
                 },"matches": {
                   Row: {
-                    "created_at": string,"engine_hash": string | null,"error": string | null,"finished_at": string | null,"id": number,"replay_path": string | null,"round_id": number,"seed": number,"started_at": string | null,"status": Database["public"]['Enums']["match_status"]
+                    "created_at": string,"engine_hash": string | null,"error": string | null,"finished_at": string | null,"id": number,"lobby_key": string | null,"replay_path": string | null,"round_id": number,"seed": number,"started_at": string | null,"status": Database["public"]['Enums']["match_status"]
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"engine_hash"?: string | null,"error"?: string | null,"finished_at"?: string | null,"id"?: never,"replay_path"?: string | null,"round_id": number,"seed": number,"started_at"?: string | null,"status"?: Database["public"]['Enums']["match_status"]
+                    "created_at"?: string,"engine_hash"?: string | null,"error"?: string | null,"finished_at"?: string | null,"id"?: never,"lobby_key"?: string | null,"replay_path"?: string | null,"round_id": number,"seed": number,"started_at"?: string | null,"status"?: Database["public"]['Enums']["match_status"]
                   }
                   Update: {
-                    "created_at"?: string,"engine_hash"?: string | null,"error"?: string | null,"finished_at"?: string | null,"id"?: never,"replay_path"?: string | null,"round_id"?: number,"seed"?: number,"started_at"?: string | null,"status"?: Database["public"]['Enums']["match_status"]
+                    "created_at"?: string,"engine_hash"?: string | null,"error"?: string | null,"finished_at"?: string | null,"id"?: never,"lobby_key"?: string | null,"replay_path"?: string | null,"round_id"?: number,"seed"?: number,"started_at"?: string | null,"status"?: Database["public"]['Enums']["match_status"]
                   }
                   Relationships: [
                     {
@@ -159,14 +159,14 @@ isOneToOne: false
                   ]
                 },"season": {
                   Row: {
-                    "allowed_email_domain": string | null,"engine_hash": string | null,"frozen": boolean,"games_per_round": number,"id": number,"matchmaking_noise": number,"max_backlog": number,"name": string,"submission_cooldown": string
+                    "allowed_email_domain": string | null,"engine_hash": string | null,"frozen": boolean,"games_per_round": number,"id": number,"matchmaking_noise": number,"max_backlog": number,"name": string,"repeat_window_rounds": number,"submission_cooldown": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "allowed_email_domain"?: string | null,"engine_hash"?: string | null,"frozen"?: boolean,"games_per_round"?: number,"id"?: number,"matchmaking_noise"?: number,"max_backlog"?: number,"name"?: string,"submission_cooldown"?: string
+                    "allowed_email_domain"?: string | null,"engine_hash"?: string | null,"frozen"?: boolean,"games_per_round"?: number,"id"?: number,"matchmaking_noise"?: number,"max_backlog"?: number,"name"?: string,"repeat_window_rounds"?: number,"submission_cooldown"?: string
                   }
                   Update: {
-                    "allowed_email_domain"?: string | null,"engine_hash"?: string | null,"frozen"?: boolean,"games_per_round"?: number,"id"?: number,"matchmaking_noise"?: number,"max_backlog"?: number,"name"?: string,"submission_cooldown"?: string
+                    "allowed_email_domain"?: string | null,"engine_hash"?: string | null,"frozen"?: boolean,"games_per_round"?: number,"id"?: number,"matchmaking_noise"?: number,"max_backlog"?: number,"name"?: string,"repeat_window_rounds"?: number,"submission_cooldown"?: string
                   }
                   Relationships: [
                     

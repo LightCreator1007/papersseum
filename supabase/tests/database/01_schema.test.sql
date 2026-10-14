@@ -19,7 +19,7 @@ select ok(
 select functions_are('internal',
   array['handle_new_user', 'claim_job', 'heartbeat', 'own_running_job', 'complete_validation',
         'lock_match_bots', 'complete_match', 'mark_job_failed', 'fail_job', 'requeue_expired',
-        'schedule_round'],
+        'schedule_round', 'lobby_key', 'lobby_played'],
   'internal schema has exactly the expected functions');
 
 -- Season defaults
