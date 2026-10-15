@@ -47,14 +47,14 @@ isOneToOne: false
                   ]
                 },"bots": {
                   Row: {
-                    "active_since": string | null,"active_submission_id": string | null,"active_version": number | null,"banned": boolean,"created_at": string,"elo": number,"games": number,"id": string,"is_house": boolean,"name": string,"owner_id": string | null
+                    "active_since": string | null,"active_submission_id": string | null,"active_version": number | null,"appearance": Json | null,"banned": boolean,"created_at": string,"elo": number,"games": number,"id": string,"is_house": boolean,"name": string,"owner_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "active_since"?: string | null,"active_submission_id"?: string | null,"active_version"?: number | null,"banned"?: boolean,"created_at"?: string,"elo"?: number,"games"?: number,"id"?: string,"is_house"?: boolean,"name": string,"owner_id"?: string | null
+                    "active_since"?: string | null,"active_submission_id"?: string | null,"active_version"?: number | null,"appearance"?: Json | null,"banned"?: boolean,"created_at"?: string,"elo"?: number,"games"?: number,"id"?: string,"is_house"?: boolean,"name": string,"owner_id"?: string | null
                   }
                   Update: {
-                    "active_since"?: string | null,"active_submission_id"?: string | null,"active_version"?: number | null,"banned"?: boolean,"created_at"?: string,"elo"?: number,"games"?: number,"id"?: string,"is_house"?: boolean,"name"?: string,"owner_id"?: string | null
+                    "active_since"?: string | null,"active_submission_id"?: string | null,"active_version"?: number | null,"appearance"?: Json | null,"banned"?: boolean,"created_at"?: string,"elo"?: number,"games"?: number,"id"?: string,"is_house"?: boolean,"name"?: string,"owner_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -242,7 +242,7 @@ isOneToOne: false
           Views: {
             "leaderboard": {
                   Row: {
-                    "active_since": string | null,"active_version": number | null,"bot_id": string | null,"conservative": number | null,"elo": number | null,"games": number | null,"handle": string | null,"is_house": boolean | null,"name": string | null,"owner_name": string | null,"rank": number | null,"sigma": number | null
+                    "active_since": string | null,"active_version": number | null,"appearance": Json | null,"bot_id": string | null,"conservative": number | null,"elo": number | null,"games": number | null,"handle": string | null,"is_house": boolean | null,"name": string | null,"owner_name": string | null,"rank": number | null,"sigma": number | null
                   }
                   ComputedFields: never
                   Relationships: [
@@ -280,6 +280,9 @@ isOneToOne: false
                            },
 "resolve_bot_name":
 { Args: { "p_name": string }; Returns: string
+                           },
+"set_bot_appearance":
+{ Args: { "p_appearance": Json }; Returns: undefined
                            }
           }
           Enums: {
