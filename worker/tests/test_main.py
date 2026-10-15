@@ -2,13 +2,21 @@
 import psycopg
 import pytest
 
-from papersseum_worker import db, main, runner, storage
+from papersseum_worker import db, main, notify, runner, storage
 
 from conftest import BUILTIN_LOBBY
 
 
 @pytest.fixture
-def calls(monkeypatch):
+def notified(monkeypatch):
+    log = []
+    monkeypatch.setattr(notify, "after_validation", lambda conn, sid: log.append(("validation", sid)))
+    monkeypatch.setattr(notify, "after_match", lambda conn, mid: log.append(("match", mid)))
+    return log
+
+
+@pytest.fixture
+def calls(monkeypatch, notified):
     log = []
     monkeypatch.setattr(db, "fail_job", lambda conn, job_id, error: log.append(("fail", job_id, error)))
     monkeypatch.setattr(db, "complete_validation",
@@ -70,7 +78,91 @@ def test_match_report_has_one_entry_per_seat(monkeypatch, calls):
     winner = next(p for p in players if p["placement"] == 1)
     loser = next(p for p in players if p["placement"] == 5)
     assert winner["elo_after"] > 1000 > loser["elo_after"]
-    assert set(players[0]) == {"slot", "placement", "coverage", "deaths", "strikes", "crashed", "score", "elo_after"}
+    assert set(players[0]) == {"slot", "placement", "coverage", "deaths", "strikes", "crashed", "score", "elo_after",
+                                "status", "error"}
+
+
+def test_match_payload_carries_seat_status(monkeypatch, calls):
+    job = {"job_id": 8, "kind": "match", "match_id": 9, "seed": 7,
+           "players": [dict(p, storage_path=None, sha256=None) for p in BUILTIN_LOBBY]}
+    monkeypatch.setattr(db, "claim_job", lambda conn: job)
+    monkeypatch.setattr(storage, "upload_replay", lambda match_id, data: f"{match_id}.jsonl.gz")
+    monkeypatch.setattr(runner, "play", lambda seed, players: {
+        "scores": [{"pid": i, "coverage": 10.0, "time_avg_coverage": 10.0, "deaths": 0} for i in range(5)],
+        "placements": [0, 1, 2, 3, 4], "action_log": [], "strikes": {}, "crashed": {2: True},
+        "seats": {i: {"status": "crashed" if i == 2 else "ok", "error": "boom" if i == 2 else None}
+                  for i in range(5)},
+        "replay": b"",
+    })
+    sent = {}
+    monkeypatch.setattr(db, "finish_match", lambda conn, job_id, match_id, compute, path: sent.update(
+        players=compute([(i, f"b{i}", 1500.0, 0) for i in range(5)])))
+    assert main.run_one(None) is True
+    assert calls == []
+    seat2 = next(p for p in sent["players"] if p["slot"] == 2)
+    assert seat2["status"] == "crashed" and seat2["error"] == "boom" and seat2["crashed"] is True
+    seat0 = next(p for p in sent["players"] if p["slot"] == 0)
+    assert seat0["status"] == "ok" and seat0["error"] is None
+
+
+def test_notifications_follow_a_validation_verdict(monkeypatch, calls, notified):
+    monkeypatch.setattr(db, "claim_job", lambda conn: {
+        "job_id": 5, "kind": "validate", "submission_id": "sub-5", "storage_path": "p", "sha256": "h"})
+    monkeypatch.setattr(runner, "validate", lambda path: {"ok": True, "error": None, "violations": []})
+    assert main.run_one(None) is True
+    assert calls == [("validated", 5, True, None)]
+    assert notified == [("validation", "sub-5")]
+
+
+def test_no_notification_when_the_job_itself_fails(monkeypatch, calls, notified):
+    monkeypatch.setattr(db, "claim_job", lambda conn: {
+        "job_id": 6, "kind": "validate", "submission_id": "sub-6", "storage_path": "p", "sha256": "h"})
+
+    def broken(path):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(runner, "validate", broken)
+    assert main.run_one(None) is True
+    assert notified == []
+
+
+def test_notifications_follow_a_finished_match(monkeypatch, calls, notified):
+    job = {"job_id": 8, "kind": "match", "match_id": 9, "seed": 7,
+           "players": [dict(p, storage_path=None, sha256=None) for p in BUILTIN_LOBBY]}
+    monkeypatch.setattr(db, "claim_job", lambda conn: job)
+    monkeypatch.setattr(storage, "upload_replay", lambda match_id, data: f"{match_id}.jsonl.gz")
+    monkeypatch.setattr(runner, "play", lambda seed, players: {
+        "scores": [{"pid": i, "coverage": 10.0, "time_avg_coverage": 10.0, "deaths": 0} for i in range(5)],
+        "placements": [0, 1, 2, 3, 4], "action_log": [], "strikes": {}, "crashed": {},
+        "seats": {i: {"status": "ok", "error": None} for i in range(5)},
+        "replay": b"",
+    })
+    order = []
+    monkeypatch.setattr(db, "finish_match", lambda *a: order.append("finished"))
+    monkeypatch.setattr(notify, "after_match", lambda conn, mid: order.append(("notified", mid)))
+    assert main.run_one(None) is True
+    assert order == ["finished", ("notified", 9)]
+
+
+def test_a_malformed_notification_row_does_not_fail_the_job(monkeypatch):
+    log = []
+
+    class WideRows:
+        def execute(self, sql, params):
+            return self
+
+        def fetchall(self):
+            return [("u1", "a@b.c", True, "submission_passed", {}, "extra")]
+
+    monkeypatch.setattr(db, "fail_job", lambda conn, job_id, error: log.append(("fail", job_id, error)))
+    monkeypatch.setattr(db, "complete_validation",
+                        lambda conn, job_id, ok, error, violations: log.append(("validated", job_id, ok, error)))
+    monkeypatch.setattr(storage, "agent_file", lambda path, sha: "/cache/h.py")
+    monkeypatch.setattr(db, "claim_job", lambda conn: {
+        "job_id": 5, "kind": "validate", "submission_id": "sub-5", "storage_path": "p", "sha256": "h"})
+    monkeypatch.setattr(runner, "validate", lambda path: {"ok": True, "error": None, "violations": []})
+    assert main.run_one(WideRows()) is True
+    assert log == [("validated", 5, True, None)]
 
 
 def test_heartbeat_reconnects_after_losing_the_connection(monkeypatch):

@@ -4,6 +4,8 @@
     papersseum validate my_agent.py
     papersseum pack model.pt --into my_agent.py
     papersseum render replay.jsonl out.mp4
+    papersseum replay replay.jsonl --at 120
+    papersseum report replay.jsonl
     papersseum version
 """
 
@@ -43,7 +45,8 @@ def cmd_validate(args):
     match with your agent in two seats against three baselines, each agent in its
     own process, under the same time rules (a bot that is late on more than 20% of
     decisions is rejected as too slow). Passing here means passing on upload."""
-    from papersseum.sandbox import SubprocessBackend, validate_sandboxed
+    from papersseum import sandbox
+    from papersseum.sandbox import SubprocessBackend
 
     report = scan_file(args.agent)
     if not report["ok"]:
@@ -54,17 +57,31 @@ def cmd_validate(args):
     print("static scan: ok")
 
     what = f"{args.decisions} decisions" if args.decisions else "a full match"
-    print(f"playing {what} (your agent x2 + greedy, safe_expander, hunter) ...")
-    res = validate_sandboxed(args.agent, backend=SubprocessBackend(),
-                             decisions=args.decisions or None, seed=args.seed)
-    st = res["stats"]
-    if not res["ok"]:
-        print(f"REJECTED: {res['error']}")
-        return 1
-    for w in res["warnings"]:
-        print(f"warning: {w}")
-    print(f"smoke match: ok ({st['decisions']} decisions, slowest {st['max_ms']:.1f} ms, "
-          f"budget {constants.ACT_TIMEOUT_MS} ms)")
+    seeds = [args.seed, args.seed + 1, args.seed + 2] if args.strict else [args.seed]
+    if args.strict:
+        print("Strict mode is closer to the server, not identical: "
+              "single-core speed differs between machines.")
+    for seed in seeds:
+        tail = f", seed {seed}" if args.strict else ""
+        print(f"playing {what} (your agent x2 + greedy, safe_expander, hunter){tail} ...")
+        res = sandbox.validate_sandboxed(args.agent, backend=SubprocessBackend(),
+                                         decisions=args.decisions or None, seed=seed)
+        st = res["stats"]
+        if not res["ok"]:
+            print(f"REJECTED: {res['error']}")
+            return 1
+        for w in res["warnings"]:
+            print(f"warning: {w}")
+        print(f"smoke match: ok ({st['decisions']} decisions, slowest {st['max_ms']:.1f} ms, "
+              f"budget {constants.ACT_TIMEOUT_MS} ms)")
+        if args.strict:
+            if res["warnings"]:
+                print("strict: warning treated as failure")
+                return 1
+            if st["max_ms"] > 0.6 * constants.ACT_TIMEOUT_MS:
+                print(f"strict: slowest decision {st['max_ms']:.1f} ms is over 60% of the "
+                      f"{constants.ACT_TIMEOUT_MS} ms budget")
+                return 1
     print(f"engine {papersseum.ENGINE_HASH}")
     print("PASSED")
     return 0
@@ -99,6 +116,55 @@ def cmd_render(args):
     data = load_replay(args.replay)
     render_replay_mp4(data["seed"], data["action_log"], args.out)
     print(f"wrote {args.out} from seed {data['seed']}")
+    return 0
+
+
+def cmd_replay(args):
+    import papersseum.constants as C
+    from papersseum.engine import Engine
+    from papersseum.render import ascii_frame
+    from papersseum.replay_io import load_replay
+    from papersseum.state import area_pct
+    if args.at < 0:
+        print("--at must be 0 or more", file=sys.stderr)
+        return 2
+    rep = load_replay(args.replay)
+    eng = Engine(rep["seed"])
+    index = 0
+    for row in rep["action_log"]:
+        if index == args.at:
+            break
+        for k in range(C.STEP_PER_DECISION):
+            eng.advance_tick({p: row[p] for p in range(C.N_PLAYERS)} if k == 0 else None)
+        index += 1
+        if eng.is_over():
+            break
+    if index < args.at:
+        print(f"decision {args.at} is past the end; showing the last frame ({index})")
+    st = eng.state
+    print(f"decision {index}, tick {st.tick}")
+    print(ascii_frame(st))
+    for p in st.players:
+        where = f"head at row {p.r}, col {p.c}" if p.alive else "dead"
+        cov = area_pct(st, p.pid) / 100.0 if p.alive else 0.0
+        print(f"slot {p.pid}: {where}, coverage {cov:.1%}")
+    return 0
+
+
+def cmd_report(args):
+    import json
+    from papersseum.replay_io import load_replay
+    from papersseum.report import match_report
+    rep = load_replay(args.replay)
+    r = match_report(rep["seed"], rep["action_log"])
+    if args.json:
+        print(json.dumps(r))
+        return 0
+    print(f"{r['decisions']} decisions")
+    print("slot  kills  deaths  final   peak")
+    for s in r["seats"]:
+        print(f"{s['slot']:>4}  {len(s['kills']):>5}  {len(s['deaths']):>6}  "
+              f"{s['final_coverage']:>5.1%}  {s['peak_coverage']:>5.1%}")
     return 0
 
 
@@ -207,6 +273,8 @@ def build_parser():
     va.add_argument("agent", help="path to your agent .py")
     va.add_argument("--seed", type=int, default=7)
     va.add_argument("--decisions", type=int, default=0, help="only play this many decisions (default: the full match)")
+    va.add_argument("--strict", action="store_true",
+                    help="also fail on warnings or under 40%% time headroom, over 3 seeds")
     va.set_defaults(func=cmd_validate)
 
     ev = sub.add_parser("eval", help="benchmark your agent over many matches vs a baseline field")
@@ -220,6 +288,16 @@ def build_parser():
     rn.add_argument("replay", help="path to replay.jsonl (seed + action_log)")
     rn.add_argument("out", help="output .mp4 path")
     rn.set_defaults(func=cmd_render)
+
+    ry = sub.add_parser("replay", help="show the board at one decision of a replay")
+    ry.add_argument("replay", help="path to replay.jsonl or replay.jsonl.gz")
+    ry.add_argument("--at", type=int, required=True, help="decision number, 0 is the opening frame")
+    ry.set_defaults(func=cmd_replay)
+
+    rp = sub.add_parser("report", help="kills, deaths and coverage per seat from a replay")
+    rp.add_argument("replay", help="path to replay.jsonl or replay.jsonl.gz")
+    rp.add_argument("--json", action="store_true", help="print the full report as JSON")
+    rp.set_defaults(func=cmd_report)
 
     nw = sub.add_parser("new", help="write a starter agent file")
     nw.add_argument("path", nargs="?", default="my_agent.py", help="output path (default my_agent.py)")

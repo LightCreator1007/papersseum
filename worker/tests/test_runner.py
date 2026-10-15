@@ -129,3 +129,33 @@ def test_slow_bot_gets_strikes(short_matches, tmp_path):
     res = runner.play(5, with_upload(1, write(tmp_path, src)))
     assert res["strikes"].get(1, 0) > 0
     assert res["crashed"] == {}
+
+
+def test_play_reports_every_seat_status():
+    res = runner.play(7, [dict(p) for p in BUILTIN_LOBBY])
+    assert set(res["seats"]) == {0, 1, 2, 3, 4}
+    assert all(s == {"status": "ok", "error": None} for s in res["seats"].values())
+
+
+def test_play_forwards_a_failed_seat_and_truncates_its_error(monkeypatch):
+    long_error = "x" * 500
+
+    def fake_match(seed, agents, backend=None, players=None):
+        return {
+            "scores": [{"pid": i, "coverage": 1.0, "time_avg_coverage": 1.0, "deaths": 0} for i in range(5)],
+            "placements": [0, 1, 2, 3, 4],
+            "action_log": [[0, 0, 0, 0, 0]],
+            "replay": b"{}",
+            "slots": [
+                {"status": "too_slow" if i == 2 else "ok", "error": long_error if i == 2 else None,
+                 "strikes": 3 if i == 2 else 0}
+                for i in range(5)
+            ],
+        }
+
+    monkeypatch.setattr(runner, "run_sandboxed_match", fake_match)
+    res = runner.play(7, [dict(p) for p in BUILTIN_LOBBY])
+    assert res["seats"][2] == {"status": "too_slow", "error": "x" * 300}
+    assert res["seats"][0] == {"status": "ok", "error": None}
+    assert res["crashed"] == {2: True}
+    assert res["strikes"] == {2: 3}
