@@ -255,6 +255,8 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
   };
 
   const ready = frames > 0;
+  // The live region below holds only this message, which changes per stage, so
+  // a screen reader hears each stage and the verdict but not every percent.
   const status =
     phase.kind === "error"
       ? errorText(phase, available)
@@ -264,7 +266,8 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
           ? "Fetching the replay…"
           : phase.kind === "loading-engine"
             ? "Loading the replay engine (one-time download)…"
-            : `Computing the match… ${frames ? Math.floor((available / frames) * 100) : 0}%`;
+            : "Computing the match…";
+  const progress = phase.kind === "computing" ? ` ${frames ? Math.floor((available / frames) * 100) : 0}%` : null;
   const canRetry = phase.kind === "error" && (phase.stage === "fetch" || phase.stage === "engine");
   const failedBeforeStart = phase.kind === "error" && !ready;
 
@@ -296,11 +299,12 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
             value={frame}
             onChange={(e) => seek(Number(e.target.value))}
             aria-label="Match time"
+            aria-valuetext={clock(frame)}
           />
           <span className="num small">
             {clock(frame)} / {clock(frames - 1)}
           </span>
-          <span className="replay-speeds">
+          <span className="replay-speeds" role="group" aria-label="Playback speed">
             {SPEEDS.map((s) => (
               <button key={s} type="button" className="link-button" aria-pressed={speed === s} onClick={() => setSpeed(s)}>
                 {s}×
@@ -317,8 +321,11 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
           </li>
         ))}
       </ul>
-      <p className="small replay-status" role="status">
-        <span className={phase.kind === "error" ? "error-text" : "muted"}>{status}</span>
+      <p className="small replay-status">
+        <span className={phase.kind === "error" ? "error-text" : "muted"}>
+          <span role="status">{status}</span>
+          {progress}
+        </span>
         {canRetry && (
           <>
             {" "}
