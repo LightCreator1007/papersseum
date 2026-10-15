@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ReplayViewer } from "@/components/replay-viewer";
 import { replayFileProblem } from "@/lib/replay-input";
 
@@ -12,13 +12,22 @@ export function ReplayDrop() {
   const [chosen, setChosen] = useState<Chosen | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [over, setOver] = useState(false);
+  const pickRef = useRef(0); // the latest pick wins, even if an earlier one finishes reading later
 
   const take = async (file: File | undefined) => {
     if (!file) return;
+    const pick = ++pickRef.current;
     const issue = replayFileProblem(file);
     setProblem(issue);
     if (issue) return;
-    const bytes = new Uint8Array(await file.arrayBuffer());
+    let bytes: Uint8Array;
+    try {
+      bytes = new Uint8Array(await file.arrayBuffer());
+    } catch {
+      if (pick === pickRef.current) setProblem("That file couldn't be read.");
+      return;
+    }
+    if (pick !== pickRef.current) return;
     setChosen((prev) => ({ id: (prev?.id ?? 0) + 1, name: file.name, source: { bytes } }));
   };
 
