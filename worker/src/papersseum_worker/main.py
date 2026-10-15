@@ -12,6 +12,7 @@ log = logging.getLogger("worker")
 stopping = threading.Event()
 current = {"job_id": None}      # read by the heartbeat thread
 RECONNECT_SECONDS = 10
+ENGINE_MISMATCH_SECONDS = 60
 
 
 def handle_validate(conn, job):
@@ -98,6 +99,34 @@ def run_one(conn):
     return True
 
 
+def is_engine_mismatch(e):
+    """internal.claim_job raises this when public.season.engine_hash is not ours."""
+    return isinstance(e, psycopg.errors.RaiseException) and str(e).startswith("Engine hash mismatch")
+
+
+def loop(conn):
+    while not stopping.is_set():
+        try:
+            if not run_one(conn):
+                stopping.wait(config.POLL_SECONDS)
+        except psycopg.errors.RaiseException as e:
+            if not is_engine_mismatch(e):
+                raise
+            # Not a crash: restarting won't fix it, and systemd would restart us
+            # every 10 s. Wait for an operator instead, without claiming jobs.
+            log.error("%s. Not claiming jobs: update this worker (deploy/vm/update.sh) or "
+                      "public.season.engine_hash. Retrying in %d s",
+                      str(e).splitlines()[0], ENGINE_MISMATCH_SECONDS)
+            stopping.wait(ENGINE_MISMATCH_SECONDS)
+        except psycopg.OperationalError:
+            log.warning("lost the database connection; reconnecting in %d s", RECONNECT_SECONDS)
+            stopping.wait(RECONNECT_SECONDS)
+            try:
+                conn = db.connect()
+            except psycopg.OperationalError:
+                pass
+
+
 def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     try:
@@ -111,18 +140,7 @@ def main():
     db.heartbeat(conn)
     threading.Thread(target=heartbeat_loop, daemon=True).start()
     log.info("worker %s started, engine %s", config.WORKER_ID, config.ENGINE_HASH)
-
-    while not stopping.is_set():
-        try:
-            if not run_one(conn):
-                stopping.wait(config.POLL_SECONDS)
-        except psycopg.OperationalError:
-            log.warning("lost the database connection; reconnecting in %d s", RECONNECT_SECONDS)
-            stopping.wait(RECONNECT_SECONDS)
-            try:
-                conn = db.connect()
-            except psycopg.OperationalError:
-                pass
+    loop(conn)
     log.info("stopped")
 
 

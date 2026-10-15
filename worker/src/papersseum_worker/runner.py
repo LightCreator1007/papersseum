@@ -43,14 +43,17 @@ def check_allowed():
 
 def check_ready():
     """Startup check: the sandbox is allowed, and with Docker, the image exists
-    and was built from the same engine as this worker."""
+    and has the same engine and library version as this worker. The version
+    matters on its own: library releases can add modules (papersseum.nn, ...)
+    without changing the engine hash."""
     check_allowed()
     if config.SANDBOX_BACKEND != "docker":
         return
     try:
         r = subprocess.run(
             [config.DOCKER, "run", "--rm", "--network", "none", "--entrypoint", "python",
-             config.SANDBOX_IMAGE, "-c", "import papersseum; print(papersseum.ENGINE_HASH)"],
+             config.SANDBOX_IMAGE, "-c",
+             "import papersseum; print(papersseum.ENGINE_HASH); print(papersseum.__version__)"],
             capture_output=True, text=True, timeout=120)
     except (OSError, subprocess.TimeoutExpired) as e:
         raise SandboxMissing(f"could not run docker: {e}") from e
@@ -58,11 +61,17 @@ def check_ready():
         raise SandboxMissing(
             f"could not start sandbox image {config.SANDBOX_IMAGE!r} "
             f"(build it with docker/Dockerfile): {r.stderr.strip()[-300:]}")
-    image_hash = r.stdout.strip()
+    lines = r.stdout.split()
+    image_hash = lines[0] if lines else ""
+    image_version = lines[1] if len(lines) > 1 else "unknown"
     if image_hash != config.ENGINE_HASH:
         raise SandboxMissing(
             f"sandbox image engine {image_hash} != worker engine {config.ENGINE_HASH}; "
             "rebuild the image from this checkout")
+    if image_version != config.LIBRARY_VERSION:
+        raise SandboxMissing(
+            f"sandbox image has papersseum {image_version} but the worker has "
+            f"{config.LIBRARY_VERSION}; rebuild the image from this checkout")
 
 
 def _backend():
