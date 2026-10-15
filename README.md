@@ -27,130 +27,34 @@ Every decision, your agent gets a view built from its own point of view. There a
 - **Local view**, shape `(16, 31, 31)`. Cropped on your head and rotated so your heading points up, so "straight", "left", and "right" always mean the same pixels. Use it for quick reactions.
 - **Scalars**: your coverage, rank, speed, boost remaining, time left, and each opponent's coverage, speed, and alive flag.
 
-## Writing an agent
-
-Your file defines a class named `Agent` with `reset(config)` and `act(obs) -> int`:
-
-```python
-class Agent:
-    def reset(self, config: dict) -> None:
-        """Called once per match with the constants and a seed."""
-
-    def act(self, obs: dict) -> int:
-        """Called every decision. Return 0, 1 or 2."""
-```
-
-Run `papersseum new my_agent.py` to drop a copy-ready starter next to you. Four baselines ship in [`papersseum/agents/`](https://github.com/dhairya-pandya/papersseum/tree/main/papersseum/agents): `random`, `greedy` (grinds small capture loops), `safe_expander`, and `hunter` (chases and cuts exposed trails).
-
-A submission is **one `.py` file, at most 1 MB**: no zip and no separate weight files. If your agent is a neural network, train it anywhere (PyTorch, JAX, ...) and embed the weights in the file:
+## Using the library
 
 ```bash
-papersseum pack model.pt --into my_agent.py         # writes WEIGHTS = "..." into your agent
+pip install -U papersseum        # Python 3.11+; the only dependency is NumPy
+papersseum version               # library version and engine hash (must match the server's)
 ```
 
-```python
-from papersseum import nn, unpack_weights
+| Command | What it does |
+|---|---|
+| `papersseum new my_agent.py` | Write a starter agent |
+| `papersseum play my_agent.py --vs greedy,hunter` | Play one match against baselines (`--render out.mp4` needs `ffmpeg`) |
+| `papersseum eval my_agent.py --games 30` | Benchmark over many matches: placements, win rate, coverage, rating |
+| `papersseum validate my_agent.py` | The platform's upload check, run locally |
+| `papersseum pack model.pt --into my_agent.py` | Embed trained weights in a single-file agent |
+| `papersseum render game.jsonl.gz out.mp4` | Render a saved replay |
 
-class Agent:
-    def reset(self, config):
-        self.W = unpack_weights(WEIGHTS)             # {"conv1.weight": ndarray, ...}
-
-    def act(self, obs):
-        h = nn.relu(nn.conv2d(obs["local"], self.W["conv1.weight"], self.W["conv1.bias"], padding=1))
-        return int(nn.linear(nn.global_avg_pool(h), self.W["fc.weight"]).argmax())
-```
-
-`papersseum.nn` is a small numpy-only toolkit (`conv2d`, `linear`, pooling, `batch_norm`, `relu`, `softmax`, ...) in PyTorch layouts. The sandbox has no PyTorch, so `import torch` is rejected on upload; inference runs in numpy. About 350k float16 or 700k int8 weights fit in 1 MB. See [`examples/nn_agent.py`](https://github.com/dhairya-pandya/papersseum/blob/main/examples/nn_agent.py) for a complete example, and [COMPETITION.md](https://github.com/dhairya-pandya/papersseum/blob/main/COMPETITION.md) for the full participant guide. (`papersseum.load_weights` reads files from your agent's folder and works for local experiments only; it is rejected on upload.)
-
-## Running it
-
-```bash
-pip install papersseum             # or: pip install -e ".[dev,viewer]" from a clone
-
-papersseum new my_agent.py                         # write a starter agent
-papersseum play my_agent.py --vs greedy,hunter --seed 7 --render match.mp4
-papersseum eval my_agent.py --games 30             # benchmark vs a baseline field
-papersseum validate my_agent.py                    # the platform's upload check: scan + a full match
-papersseum pack model.pt --into my_agent.py        # embed trained weights in your single-file agent
-papersseum version                                 # library + engine hash (must match the server)
-```
-
-MP4 rendering needs `ffmpeg` on PATH; everything else is pure Python plus NumPy. Or from Python:
+From Python:
 
 ```python
 import papersseum
-result = papersseum.play("my_agent.py", vs=["greedy", "hunter"], seed=7, render="match.mp4")
+
+result = papersseum.play("my_agent.py", vs=["greedy", "hunter"], seed=7)
 print(result["placements"])
+
+env = papersseum.PapersseumEnv(seed=7)       # a multi-agent environment for training
+obs = env.reset()                            # {player: observation}
 ```
 
-`match.mp4` is a real H.264 video with one frame per engine tick, so 1x playback matches the real 180 second match. `papersseum.ENGINE_HASH` identifies the engine build; a match with the server's hash means local results equal ladder results.
+An agent is one `.py` file defining `Agent` with `reset(config)` and `act(obs) -> int` (`0` straight, `1` left, `2` right). Four baselines (`random`, `greedy`, `safe_expander`, `hunter`) ship in [`papersseum/agents/`](papersseum/agents), and [`examples/`](examples) has a starter and a neural-network agent.
 
-## Limits
-
-A submission is one `.py` file of at most 1 MB. `reset()` gets 2 seconds and each `act()` gets 50 ms; a late or invalid answer counts as action `0` (straight). Only a curated set of imports is allowed (numpy, math, collections, and similar; no `torch`), and `open`, `eval`, `getattr`, `vars` and raw `numpy.load` are blocked. `papersseum validate` runs the same check the platform runs on upload, locally. Full rules are in [COMPETITION.md](https://github.com/dhairya-pandya/papersseum/blob/main/COMPETITION.md).
-
-## Replays
-
-Every match is a JSONL file (add `.gz` to compress): a header line (seed, engine hash, numpy version, players), one line of five actions per decision, and a result line. A match is about 1 KB gzipped.
-
-```bash
-papersseum play my_agent.py --save-replay game.jsonl.gz
-papersseum render game.jsonl.gz game.mp4
-```
-
-```python
-from papersseum.replay_io import load_replay
-from papersseum import replay_match, iter_frames
-
-rep = load_replay("game.jsonl.gz")
-same = replay_match(rep["seed"], rep["action_log"])          # re-run without observations
-for frame in iter_frames(rep["seed"], rep["action_log"]):    # owner, trail, heads per decision
-    ...
-```
-
-On the tournament site every finished match plays in the browser: the page re-runs it with this engine (in Pyodide) and checks the result. Local files open on its `/replay` page and are not uploaded.
-
-## Test and iterate locally
-
-Measure your agent against a field of baselines before you ever submit:
-
-```bash
-papersseum eval examples/my_agent.py --games 30     # placements, win rate, coverage, rating, strength
-```
-
-It plays your agent in slot 0 against a varied baseline field over many seeds and reports the same signals the ladder uses: how often you place 1st to 5th, mean coverage, and a rating (online Elo plus a batch Plackett-Luce strength).
-
-See exactly what your agent sees, as one character per cell (`@` your head, `M` your land, `t` your trail, `O` opponent land, `~` opponent trail, `X` opponent head, `.` empty, `#` wall):
-
-```python
-import papersseum
-from papersseum import channels as ch
-
-env = papersseum.PapersseumEnv(seed=7)
-obs = env.reset()
-print(papersseum.ascii_obs(obs[0], "local"))         # your agent's eyes
-on_own_land = obs[0]["local"][ch.OWN_TERRITORY, 15, 15] > 0.5
-```
-
-Use `papersseum.channels` for named indices (`OWN_TERRITORY`, `OWN_TRAIL`, `OWN_HEAD`, `opponent(i)`, `ARENA_MASK`) instead of magic numbers.
-
-## Learn
-
-New to reinforcement learning? The site has a free beginner course, **Learn RL from zero**, for anyone with JEE Mains maths. Its lessons and code live in [`resources/`](resources/).
-
-## Status
-
-The engine, reference environment, baselines, self-eval, JSONL replays and rating are done. The tournament platform (Docker-sandboxed match workers, queue, ladder and web app) is built separately and uses this package as its engine.
-
-## Running matches in a sandbox (platform operators)
-
-```python
-from papersseum.sandbox import run_sandboxed_match, validate_sandboxed, DockerBackend
-
-backend = DockerBackend(image="papersseum-sandbox")     # build with docker/Dockerfile
-check = validate_sandboxed("agent.py", backend=backend)  # {ok, error, violations, warnings, stats}
-result = run_sandboxed_match(seed, [path0, path1, path2, path3, path4], backend=backend)
-open("match.jsonl", "wb").write(result["replay"])
-```
-
-Each agent gets its own container (no network, no capabilities, read-only root, 512 MB, 1 CPU, 64 processes, code mounted read-only, no environment). Agents think in parallel; a late `act()` becomes action 0 plus a strike, and an agent that exits or goes silent is killed and plays straight for the rest of the match. Time is measured by the runner, not the agent. An agent late on more than 20% of decisions (or keeping the match waiting more than 20 s in total) is disqualified as `too_slow`; occasional slow decisions only cost that move. `validate_sandboxed` plays a full match (the agent against itself plus three baselines) under the same rule. `SubprocessBackend` (the default) is for tests and development only and is not a security boundary.
+Everything else (upload rules, time limits, scoring, deep-learning recipe) is in [COMPETITION.md](COMPETITION.md).
