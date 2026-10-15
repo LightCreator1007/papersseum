@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { unstable_rethrow } from "next/navigation";
 import type { Database } from "@/lib/database.types";
 
 // Per request, with the visitor's session. Row-level security decides access.
@@ -30,6 +31,7 @@ export async function getUserId(): Promise<string | null> {
     if (error) console.error("auth: getClaims failed", error);
     return data?.claims?.sub ?? null;
   } catch (e) {
+    unstable_rethrow(e); // cookies() during prerendering throws Next's own bail-out; let it through
     console.error("auth: could not read the session", e);
     return null;
   }

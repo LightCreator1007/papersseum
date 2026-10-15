@@ -11,6 +11,7 @@ from papersseum_worker.ratings import new_ratings
 log = logging.getLogger("worker")
 stopping = threading.Event()
 current = {"job_id": None}      # read by the heartbeat thread
+RECONNECT_SECONDS = 10
 
 
 def handle_validate(conn, job):
@@ -49,14 +50,30 @@ def handle_match(conn, job):
     log.info("match %s done, placements %s", job["match_id"], result["placements"])
 
 
+def heartbeat_once(conn):
+    """Send one heartbeat (it extends the running job's lease). Returns the
+    connection to use next time, or None if it was lost and must be reopened."""
+    try:
+        if conn is None:
+            conn = db.connect()
+        db.heartbeat(conn, current["job_id"])
+    except psycopg.OperationalError:
+        log.warning("heartbeat lost the database connection; reconnecting in %d s", RECONNECT_SECONDS)
+        if conn is not None:
+            conn.close()
+        return None
+    except Exception:
+        log.exception("heartbeat failed")
+    return conn
+
+
 def heartbeat_loop():
-    conn = db.connect()          # its own connection: the main one is busy during a match
+    conn = None                  # its own connection: the main one is busy during a match
+    wait = config.HEARTBEAT_SECONDS
     while True:
-        time.sleep(config.HEARTBEAT_SECONDS)
-        try:
-            db.heartbeat(conn, current["job_id"])
-        except Exception:
-            log.exception("heartbeat failed")
+        time.sleep(wait)
+        conn = heartbeat_once(conn)
+        wait = config.HEARTBEAT_SECONDS if conn is not None else RECONNECT_SECONDS
 
 
 def run_one(conn):
@@ -100,8 +117,8 @@ def main():
             if not run_one(conn):
                 stopping.wait(config.POLL_SECONDS)
         except psycopg.OperationalError:
-            log.warning("lost the database connection; reconnecting in 10 s")
-            stopping.wait(10)
+            log.warning("lost the database connection; reconnecting in %d s", RECONNECT_SECONDS)
+            stopping.wait(RECONNECT_SECONDS)
             try:
                 conn = db.connect()
             except psycopg.OperationalError:
