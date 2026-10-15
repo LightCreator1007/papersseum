@@ -34,6 +34,8 @@
 
 ## File map
 
+> **Note (2026-10-15):** the worker and its Pyodide runtime live in `web/public/engine/worker.mjs` and `web/public/engine/runtime.mjs` (not `web/workers/engine.worker.ts` / `web/lib/engine-runtime.ts`), as unbundled plain ES modules: Pyodide 314 requires a module worker, and Turbopack's worker bootstrap is classic-only (`importScripts`). The page starts it with `new Worker("/engine/worker.mjs", { type: "module" })`. Later tasks keep the original paths in their steps.
+
 ```
 papersseum/frames.py                    new   FrameEncoder, check_replay, open_replay, encode_frames
 tests/test_frames.py                    new
@@ -45,12 +47,12 @@ web/public/board-light.svg, board-dark.svg  regen (same match as home-replay.dat
 web/public/engine/                      new   papersseum-0.5.0-py3-none-any.whl, manifest.json
 web/lib/fixtures/match.jsonl.gz         new   natively recorded match for the Pyodide test
 web/lib/engine-protocol.ts              new   worker message types, shared result types
-web/lib/engine-runtime.ts               new   Pyodide calls shared by worker and Node test
+web/public/engine/runtime.mjs           new   Pyodide calls shared by worker and Node test
 web/lib/engine.pyodide.test.ts          new   determinism test in real Pyodide
 web/lib/replay-format.ts                mod   FrameStore (incremental), headerLength, clock
 web/lib/replay-verdict.ts               new   parseResult, verdict, verdictText, seatNames
 web/lib/engine-client.ts                new   one worker per page, run/cancel, stale-message filter
-web/workers/engine.worker.ts            new   Pyodide boot + batch loop
+web/public/engine/worker.mjs            new   Pyodide boot + batch loop
 web/components/replay-viewer.tsx        new   canvas, controls, status line
 web/lib/replay-input.ts                 new   size guard for picked files
 web/components/replay-drop.tsx          new   drop zone + viewer

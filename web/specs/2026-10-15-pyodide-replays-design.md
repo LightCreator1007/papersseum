@@ -92,7 +92,9 @@ Rerun whenever anything under `papersseum/` changes.
   the sets of files are the same. Fails with "run web/scripts/build_engine.py".
 - Asserts `manifest.engine_hash == papersseum.ENGINE_HASH`.
 
-### `web/workers/engine.worker.ts` (new)
+### `web/public/engine/worker.mjs` (new)
+
+> **Note (2026-10-15):** the worker and its Pyodide runtime live in `web/public/engine/worker.mjs` and `web/public/engine/runtime.mjs` (not `web/workers/engine.worker.ts` / `web/lib/engine-runtime.ts`), as unbundled plain ES modules: Pyodide 314 requires a module worker, and Turbopack's worker bootstrap is classic-only (`importScripts`). The page starts it with `new Worker("/engine/worker.mjs", { type: "module" })`.
 
 A module Web Worker.
 
