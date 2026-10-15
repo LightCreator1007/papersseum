@@ -1,5 +1,5 @@
 import papersseum.constants as C
-from papersseum.state import recount_areas, consolidate
+from papersseum.state import recount_areas, connect_land
 from papersseum.trail import is_outside_own_land
 
 
@@ -16,9 +16,9 @@ def classify_entry(state, pid, nr, nc):
 
 def kill(state, pid, killer=None):
     """Kill player `pid`. If `killer` is given (and is a live, different player), the killer
-    takes the victim's land and the victim's trail cells that lay on neutral ground, but only
-    what ends up joined to the killer's own land: a bot's land is always one connected mass, so
-    the rest becomes neutral. The victim's trail is always erased."""
+    takes all of the victim's land and the victim's trail cells that lay on neutral ground, and
+    a thin strip of land joins whatever is not touching its own land (a bot's land is always one
+    connected mass, see `state.connect_land`). The victim's trail is always erased."""
     p = state.players[pid]
     takes = killer is not None and killer != pid and state.players[killer].alive
     before = state.owner == killer if takes else None
@@ -41,7 +41,7 @@ def kill(state, pid, killer=None):
     p.boost_timer = 0
     recount_areas(state)
     if takes:
-        consolidate(state, killer, before)
+        connect_land(state, killer, before)
 
 
 def is_laying_trail(state, pid):

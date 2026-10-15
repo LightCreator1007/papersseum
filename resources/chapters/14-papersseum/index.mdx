@@ -1,5 +1,5 @@
 <Callout title="At a glance">
-**About 60 minutes.** This is where the course comes together. Papersseum is a five-player territory game, and in this chapter we treat it as an RL problem: what the states, actions and rewards are, why it is harder than anything so far, and how to train a first bot with the policy gradients from chapter 12. The bot we build is tiny, 371 numbers in total, and it holds on average about **15% of the map** against bots that hold around 7%. At the end, you will have a single `.py` file that is ready to submit. You need everything from the earlier chapters, especially chapters 10, 12 and 13.
+**About 60 minutes.** This is where the course comes together. Papersseum is a five-player territory game, and in this chapter we treat it as an RL problem: what the states, actions and rewards are, why it is harder than anything so far, and how to train a first bot with the policy gradients from chapter 12. The bot we build is tiny, 371 numbers in total, and it holds on average about **39% of the map** against bots that hold around 8 to 16%. At the end, you will have a single `.py` file that is ready to submit. You need everything from the earlier chapters, especially chapters 10, 12 and 13.
 </Callout>
 
 ## The game in one minute
@@ -88,13 +88,13 @@ Numbers from training can flatter a bot, so we test it on **30 fresh matches** (
 
 | Bot | Matches won (of 30) | Average share of the map held over the match |
 | --- | --- | --- |
-| Trained network | **13** | **15%** |
-| Same network, random weights | 3 | 4% |
-| The hand-written `greedy`, `safe_expander`, `hunter` | 5 to 10 | roughly 7 to 8% |
+| Trained network | **20** | **39%** |
+| Same network, random weights | 7 | 9% |
+| The hand-written `greedy`, `safe_expander`, `hunter` | 7 to 8 | roughly 8 to 16% |
 
-Two lessons. First, **training worked**: the trained network holds about three times as much land as it did before training, and wins more than four times as often. Second, the untrained network is clearly worse than the hand-written bots, so the learning is doing real work, not just the features we handed it.
+Two lessons. First, **training worked**: the trained network holds more than four times as much land as it did before training, and wins nearly three times as often. Second, the untrained network is about as good as the weaker hand-written bots, which is the effect of the features and the lean towards "straight" we gave it at the start. Good features are worth a lot.
 
-Then a harder test: a field with two `hunter` bots (which actively chase rivals), a `safe_expander` and a `greedy`. Here the trained bot holds only about 6% and wins about one match in five (6 of 30 in our run), no better than the hand-written bots. It learned to beat the easy field, not to handle hunters. One more check: if the finished policy always takes its single most likely move instead of sampling, it still does well on the easy field (about 14% over 10 matches, though a sample that small is very noisy), so you can submit it either way.
+Then a harder test: a field with two `hunter` bots (which actively chase rivals), a `safe_expander` and a `greedy`. Here the trained bot holds about 23% and wins around two matches in five (12 of 30 in our run), still ahead of every hand-written bot (the best, `hunter`, holds about 16%), but far from dominant. One more check: if the finished policy always takes its single most likely move instead of sampling, it still does well on the easy field (about 39% over 10 matches, though a sample that small is very noisy), so you can submit it either way.
 
 ## Honest limits
 
@@ -156,7 +156,7 @@ A single picture does not say how long the bot has been out, or how many turns i
 This is the baseline idea from chapter 12. Without it, almost every return is positive (or all similar), so every move looks good and the updates are noisy. Subtracting the average turns "everything is fine" into "this move was better or worse than usual", which gives a clearer signal. Rescaling keeps the step sizes sensible however large the returns are.
 </Check>
 
-<Check q="The trained bot beat the untrained one by a wide margin, but won only about one match in five against two hunters. What does that tell you?">
+<Check q="The trained bot beat the untrained one by a wide margin, but won only about two matches in five against two hunters. What does that tell you?">
 Training made it better against the opponents it practised on, but it is not strong against styles that expose its weaknesses. The result depends on who it plays, which is chapter 13's point about moving targets. To get more robust, train against a wider and stronger set of opponents, such as a league that includes past versions of the bot.
 </Check>
 
@@ -169,7 +169,7 @@ Matches are fully determined by their seed. Testing on matches the bot trained o
 - Papersseum as an MDP: an episode of 1,800 decisions, three actions, a state made of 16 pictures around the bot's head, a reward equal to the change in land owned (minus a penalty for dying).
 - It is harder than cart-pole because rewards are **lumpy**, danger comes from **other agents**, and those agents are a **moving target**.
 - **Feature engineering** summarises the picture into 19 numbers, plus a small memory of the current trip. Good features made even an untrained network respectable.
-- A **19-16-3 network** trained with **REINFORCE** and a baseline raised the average share of the map from about 4% to about 15% on fresh matches, and won 13 of 30.
+- A **19-16-3 network** trained with **REINFORCE** and a baseline raised the average share of the map from about 9% to about 39% on fresh matches, and won 20 of 30.
 - It is noisy and trained against a narrow set of opponents, so the next steps are better features, more training, and a **league** of varied opponents.
 - A submission is one `.py` file with the weights embedded. `pack`, `validate` and `eval` take you from a trained network to an upload.
 
