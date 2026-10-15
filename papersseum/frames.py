@@ -20,7 +20,7 @@ import numpy as np
 import papersseum.constants as C
 from papersseum.engine import Engine
 from papersseum.geometry import arena_mask
-from papersseum.replay_io import loads_replay
+from papersseum.replay_io import MAX_REPLAY_BYTES, ReplayTooLarge, loads_replay
 
 OUTSIDE = 0xFE
 MAX_DECISIONS = C.TOTAL_TICKS // C.STEP_PER_DECISION       # 1800
@@ -139,6 +139,8 @@ def open_replay(data):
     Raises ValueError with a reason a person can read."""
     try:
         rep = loads_replay(bytes(data))
+    except ReplayTooLarge as e:
+        raise ValueError(f"it is over {MAX_REPLAY_BYTES // 2**20} MB once unpacked") from e
     except Exception as e:
         raise ValueError("it could not be read as a replay file") from e
     if not isinstance(rep, dict):

@@ -130,6 +130,20 @@ def test_open_replay_legacy_file_has_no_recorded_result():
     assert meta["recorded"] is None and meta["engineHash"] is None and meta["players"] == []
 
 
+def test_open_replay_result_line_without_placements_has_no_recorded_result():
+    raw = (b'{"type":"header","seed":3}\n' + json.dumps(GOOD_ROW).encode() + b"\n"
+           + b'{"type":"result","scores":[]}\n')
+    meta = json.loads(open_replay(raw).meta_json())
+    assert meta["recorded"] is None and meta["seed"] == 3
+
+
+def test_open_replay_refuses_a_gzip_bomb():
+    bomb = gzip.compress(b"\0" * (20 * 1024 * 1024))
+    assert len(bomb) < 100_000
+    with pytest.raises(ValueError, match="over 16 MB"):
+        open_replay(bomb)
+
+
 @pytest.mark.parametrize("raw", [b"hello", b"\x1f\x8b not gzip", b"[1,2,3]\n", b""])
 def test_open_replay_refuses_non_replays(raw):
     with pytest.raises(ValueError, match="could not be read as a replay file|no moves"):

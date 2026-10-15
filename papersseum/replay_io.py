@@ -16,8 +16,31 @@ JSON object format is still readable.
 
 import gzip
 import json
+import zlib
 
 FORMAT_VERSION = 1
+MAX_REPLAY_BYTES = 16 * 1024 * 1024   # unpacked; a full match is well under 1 MB
+
+
+class ReplayTooLarge(ValueError):
+    """The replay unpacks to more than MAX_REPLAY_BYTES (e.g. a gzip bomb)."""
+
+
+def _gunzip(data):
+    """gzip.decompress, but stop past MAX_REPLAY_BYTES instead of filling memory."""
+    out = bytearray()
+    while data:                                              # one gzip member at a time
+        d = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        out += d.decompress(data, MAX_REPLAY_BYTES + 1 - len(out))   # always >= 1 here
+        if len(out) > MAX_REPLAY_BYTES:
+            raise ReplayTooLarge("replay is too large")
+        out += d.flush()
+        if len(out) > MAX_REPLAY_BYTES:
+            raise ReplayTooLarge("replay is too large")
+        if not d.eof:
+            raise EOFError("compressed replay ended early")
+        data = d.unused_data
+    return bytes(out)
 
 
 def _header(seed, players):
@@ -45,7 +68,7 @@ def loads_replay(data):
     """Parse replay bytes (plain or gzipped) into a dict with keys: seed,
     engine_hash, numpy_version, players, action_log, scores, placements."""
     if data[:2] == b"\x1f\x8b":
-        data = gzip.decompress(data)
+        data = _gunzip(data)
     lines = [l for l in data.decode().splitlines() if l.strip()]
     first = json.loads(lines[0])
     if isinstance(first, dict) and "action_log" in first:      # legacy single-object format
@@ -62,7 +85,8 @@ def loads_replay(data):
         if isinstance(rec, list):
             out["action_log"].append(rec)
         elif rec.get("type") == "result":
-            out["scores"], out["placements"] = rec["scores"], rec["placements"]
+            # a partial result line plays as "no recorded result", not as an unreadable file
+            out["scores"], out["placements"] = rec.get("scores"), rec.get("placements")
     return out
 
 
