@@ -47,6 +47,8 @@ On Vercel the project's root directory is `web/`, so turn on *Project Settings >
 | `npm run dev` | Development server |
 | `npm test` | Unit tests |
 | `npm run test:int` | Upload tests against local Supabase (creates and deletes test users) |
+| `npm run test:pyodide` | Runs the committed engine wheel in real Pyodide (Node; downloads numpy from the Pyodide CDN) and checks it reproduces a natively recorded match |
 | `npm run typecheck` | Generates route types, then `tsc` |
 | `npm run lint` | ESLint |
 | `npm run gen:types` | Regenerates `lib/database.types.ts` after a migration |
+| `uv run --frozen python web/scripts/build_engine.py` | From the repo root: rebuilds the replay engine wheel in `public/engine/` and the Pyodide test fixture. Run it after any change under `papersseum/` |
