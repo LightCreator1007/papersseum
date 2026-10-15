@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { MatchResult } from "@/lib/engine-protocol";
 import { parseResult, seatNames, verdict, verdictText, type ExpectedSeat } from "@/lib/replay-verdict";
 
-const HASH = "94534ca788048520";
+const HASH = "4204650401abc33b";
 const got: MatchResult = {
   placements: [3, 0, 2, 4, 1],
   scores: [40.5, 3.25, 20, 99.987654321, 10].map((coverage, pid) => ({ pid, coverage })),

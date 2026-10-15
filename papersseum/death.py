@@ -72,3 +72,47 @@ def resolve_headon(state, moves):
     for pid in sorted(killed):
         kill(state, pid, killer=killer_of.get(pid))
     return killed
+
+
+def resolve_cell_conflicts(state, moves):
+    """One bot per cell. Drops from `moves` every move that would leave two live bots on one cell.
+
+    Head-ons between two trail-drawing bots were settled by `resolve_headon` (the smaller dies).
+    What is left is a conflict nobody dies in: two bots heading for the same cell, a swap, or a
+    bot stepping onto one that is staying put. A bot that is staying put keeps its cell. Between
+    two movers the bigger bot (ties: the lower seat) moves in, and the other waits a tick. A bot
+    that has to wait becomes a staying-put bot itself, so this repeats until nothing clashes.
+    """
+    pos = {p.pid: (p.r, p.c) for p in state.players if p.alive}
+    dest = {pid: moves.get(pid, pos[pid]) for pid in pos}
+    waiting = set()
+
+    def priority(pid):
+        return (state.area[pid], -pid)
+
+    changed = True
+    while changed:
+        changed = False
+        by_cell = {}
+        for pid in sorted(pos):
+            by_cell.setdefault(dest[pid], []).append(pid)
+        for pids in by_cell.values():
+            if len(pids) < 2:
+                continue
+            stayers = [pid for pid in pids if dest[pid] == pos[pid]]
+            winner = stayers[0] if stayers else max(pids, key=priority)
+            for pid in pids:
+                if pid != winner:
+                    dest[pid] = pos[pid]
+                    waiting.add(pid)
+                    changed = True
+        for a in sorted(pos):                                   # two movers swapping cells
+            for b in sorted(pos):
+                if a < b and dest[a] != pos[a] and dest[a] == pos[b] and dest[b] == pos[a]:
+                    loser = min((a, b), key=priority)
+                    dest[loser] = pos[loser]
+                    waiting.add(loser)
+                    changed = True
+    for pid in waiting:
+        moves.pop(pid, None)
+    return waiting

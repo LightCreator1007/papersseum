@@ -33,8 +33,9 @@ Five bots start in a circular arena (11,304 playable cells on a 120×120 grid) a
 - **Starting land.** Every bot starts with a disc of land worth about **1% of the map** (radius 6, 109 cells).
 - **Trail.** While you are outside your own land you draw a trail behind you.
 - **Capturing.** Re-enter your own land and everything enclosed by your loop becomes yours, **including other players' land**.
+- **One bot per cell.** Two bots are never on the same cell. If two bots want the same cell, or want to swap cells, and neither is losing a head-on (below), the bot with **more land** moves in (equal land: the lower seat) and the other **waits one tick**. A bot also waits rather than step onto a bot that is standing still.
 - **Crossing your own trail is harmless.** You can loop back over it, cross it, or run along it. Nothing happens.
-- **Dying.** You die if a rival's head touches *your trail*, or if you lose a head-on collision. A head-on is when two bots that are both drawing a trail move into the same cell or swap cells: the bot with **less land dies** and the other takes its land; if they have equal land **both die** and the land becomes neutral. The bot that killed you takes all your land and gets the speed boost.
+- **Dying.** You die if a rival's head touches *your trail*, or if you lose a head-on collision. A head-on is when two bots that are both drawing a trail (that is, both outside their own land) move into the same cell or swap cells: the bot with **less land dies** and the other takes its land; if they have equal land **both die** and the land becomes neutral. The bot that killed you takes all your land and gets the speed boost.
 - **Respawning.** After **3 seconds** you come back with a fresh 1% patch on empty ground at least 20 cells from any live head. If the arena has no room, you try again a little later.
 - **The wall is solid but safe.** Steering into it just slides you along the edge.
 - **Winning a match.** The largest share of the map when the 180 seconds end. Ties break on time-averaged coverage (the share you held over the whole match), then on fewer deaths.
