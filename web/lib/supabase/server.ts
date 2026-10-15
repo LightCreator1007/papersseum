@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { unstable_rethrow } from "next/navigation";
 import type { Database } from "@/lib/supabase/database.types";
+import { DEV_PERSONAS, devPersona } from "@/lib/dev-auth";
 
 // Per request, with the visitor's session. Row-level security decides access.
 export async function createClient() {
@@ -25,6 +26,8 @@ export async function createClient() {
 }
 
 export async function getUserId(): Promise<string | null> {
+  const persona = await devPersona(); // dev-only fake login, see lib/dev-auth.ts
+  if (persona) return DEV_PERSONAS[persona].userId;
   try {
     const supabase = await createClient();
     const { data, error } = await supabase.auth.getClaims();
