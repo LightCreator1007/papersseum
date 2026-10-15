@@ -1,3 +1,4 @@
+import type { MyBot } from "@/features/ladder/queries";
 import { renameBot } from "@/features/upload/actions";
 import { ActionForm } from "@/components/me/action-form";
 import styles from "@/components/me/me.module.css";
@@ -23,4 +24,18 @@ export function RenameForm({ name }: { name: string }) {
       />
     </ActionForm>
   );
+}
+
+// The rename form while this season's rename is unused; otherwise a line saying why it's gone.
+export function BotNameControl({ bot }: { bot: Pick<MyBot, "name" | "banned" | "renamedFrom"> }) {
+  if (bot.renamedFrom) {
+    return (
+      <p className="muted small">
+        Renamed from {bot.renamedFrom} this season. Links to {bot.renamedFrom} still lead here, and the next rename comes
+        with the next season.
+      </p>
+    );
+  }
+  if (bot.banned) return <p className="muted small">A banned bot can&apos;t be renamed.</p>;
+  return <RenameForm name={bot.name} />;
 }

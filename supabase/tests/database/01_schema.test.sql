@@ -4,7 +4,7 @@ select plan(32);
 
 select tables_are('public',
   array['season', 'profiles', 'admins', 'bots', 'submissions', 'rounds', 'matches',
-        'match_players', 'jobs', 'workers'],
+        'match_players', 'jobs', 'workers', 'bot_name_aliases'],
   'public schema has exactly the expected tables');
 
 select is(
@@ -19,7 +19,7 @@ select ok(
 select functions_are('internal',
   array['handle_new_user', 'claim_job', 'heartbeat', 'own_running_job', 'complete_validation',
         'lock_match_bots', 'complete_match', 'mark_job_failed', 'fail_job', 'requeue_expired',
-        'schedule_round', 'lobby_key', 'lobby_played'],
+        'schedule_round', 'lobby_key', 'lobby_played', 'display_name_from', 'refresh_display_name'],
   'internal schema has exactly the expected functions');
 
 -- Season defaults

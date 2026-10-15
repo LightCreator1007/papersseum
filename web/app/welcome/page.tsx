@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { BotCharacter } from "@/components/character/bot-character";
-import { RenameForm } from "@/components/me/rename-form";
+import { BotNameControl } from "@/components/me/rename-form";
 import { Placeholder } from "@/components/placeholder";
 import { ButtonLink } from "@/components/ui/button";
 import { characterFor, signatureColor } from "@/lib/character/for-bot";
 import { requireMyBot } from "@/lib/me";
-import { getProfileHandle } from "@/features/ladder/queries";
+import { getProfileName } from "@/features/ladder/queries";
+import { firstName } from "@/lib/owner-name";
 import { safeNext } from "@/features/auth/redirect";
 import styles from "./welcome.module.css";
 import { ISSUES_URL } from "@/components/contact-organisers";
@@ -37,7 +38,8 @@ async function WelcomeContent({ searchParams }: { searchParams: PageProps<"/welc
       </p>
     );
   }
-  const handle = await getProfileHandle(userId).catch(() => null);
+  const owner = await getProfileName(userId).catch(() => null);
+  const first = firstName(owner);
   const genome = characterFor({ name: bot.name });
   const accent = signatureColor(genome);
 
@@ -45,17 +47,18 @@ async function WelcomeContent({ searchParams }: { searchParams: PageProps<"/welc
     <>
       <section className={styles.hero}>
         <div className={styles.intro}>
-          <p className={styles.kicker}>{handle ? `Welcome, ${handle}` : "Welcome"}</p>
+          <p className={styles.kicker}>{first ? `Welcome, ${first}` : "Welcome"}</p>
           <h1>Meet your bot.</h1>
           <p className={styles.lede}>
-            Everyone sees it as <b>{bot.name}</b>. You can rename it once this season, here or later in Settings.
+            Everyone sees it as <b>{bot.name}</b>
+            {bot.renamedFrom ? "." : ". You can rename it once this season, here or later in Settings."}
           </p>
-          <RenameForm name={bot.name} />
+          <BotNameControl bot={bot} />
           <dl className={styles.visibility}>
             <div>
               <dt>Public</dt>
               <dd>
-                Bot name, character, rank and every match it plays{handle ? `, and ${handle} as its owner` : ""}.
+                Bot name, character, rank and every match it plays{owner ? `, and ${owner} as its owner` : ""}.
               </dd>
             </div>
             <div>
@@ -73,7 +76,7 @@ async function WelcomeContent({ searchParams }: { searchParams: PageProps<"/welc
             <span className={styles.rank}>-</span>
             <BotCharacter genome={genome} size={24} accent={accent} state="still" label="" />
             <b>{bot.name}</b>
-            <span className={styles.owner}>{handle && handle !== bot.name ? handle : ""}</span>
+            <span className={styles.owner}>{owner ?? ""}</span>
             <span className={styles.unrated}>Not rated yet</span>
           </div>
           <figcaption>On the leaderboard, before your first match.</figcaption>

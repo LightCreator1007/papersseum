@@ -19,6 +19,32 @@ export type Database = {
                   Relationships: [
                     
                   ]
+                },"bot_name_aliases": {
+                  Row: {
+                    "bot_id": string,"created_at": string,"old_name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "bot_id": string,"created_at"?: string,"old_name": string
+                  }
+                  Update: {
+                    "bot_id"?: string,"created_at"?: string,"old_name"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "bot_name_aliases_bot_id_fkey"
+      columns: ["bot_id"]
+isOneToOne: false
+      referencedRelation: "bots"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "bot_name_aliases_bot_id_fkey"
+      columns: ["bot_id"]
+isOneToOne: false
+      referencedRelation: "leaderboard"
+      referencedColumns: ["bot_id"]
+    }
+                  ]
                 },"bots": {
                   Row: {
                     "active_since": string | null,"active_submission_id": string | null,"active_version": number | null,"banned": boolean,"created_at": string,"elo": number,"games": number,"id": string,"is_house": boolean,"name": string,"owner_id": string | null
@@ -131,14 +157,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "created_at": string,"handle": string,"id": string
+                    "created_at": string,"display_name": string | null,"handle": string,"id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"handle": string,"id": string
+                    "created_at"?: string,"display_name"?: string | null,"handle": string,"id": string
                   }
                   Update: {
-                    "created_at"?: string,"handle"?: string,"id"?: string
+                    "created_at"?: string,"display_name"?: string | null,"handle"?: string,"id"?: string
                   }
                   Relationships: [
                     
@@ -216,7 +242,7 @@ isOneToOne: false
           Views: {
             "leaderboard": {
                   Row: {
-                    "active_since": string | null,"active_version": number | null,"bot_id": string | null,"conservative": number | null,"elo": number | null,"games": number | null,"handle": string | null,"is_house": boolean | null,"name": string | null,"rank": number | null,"sigma": number | null
+                    "active_since": string | null,"active_version": number | null,"bot_id": string | null,"conservative": number | null,"elo": number | null,"games": number | null,"handle": string | null,"is_house": boolean | null,"name": string | null,"owner_name": string | null,"rank": number | null,"sigma": number | null
                   }
                   ComputedFields: never
                   Relationships: [
@@ -246,7 +272,15 @@ isOneToOne: false
         to: "submissions"
         isOneToOne: true
         isSetofReturn: false
-      } }
+      } },
+"rename_bot":
+{ Args: { "p_new_name": string }; Returns: {
+              "name": string
+            }[]
+                           },
+"resolve_bot_name":
+{ Args: { "p_name": string }; Returns: string
+                           }
           }
           Enums: {
             "job_kind": "validate"|"match","job_status": "queued"|"running"|"done"|"failed","match_status": "queued"|"running"|"done"|"failed","round_kind": "ladder"|"final","submission_status": "pending"|"validating"|"active"|"rejected"|"superseded"

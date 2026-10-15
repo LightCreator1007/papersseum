@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { setEmailOptIn } from "@/features/upload/actions";
 import { ActionForm } from "@/components/me/action-form";
 import styles from "@/components/me/me.module.css";
-import { RenameForm } from "@/components/me/rename-form";
+import { BotNameControl } from "@/components/me/rename-form";
 import { Placeholder } from "@/components/placeholder";
 import { requireMyBot } from "@/lib/me";
 
@@ -17,10 +17,12 @@ async function SettingsContent() {
     <>
       <section className={styles.panel}>
         <h2>Bot name</h2>
-        <p className="muted small">
-          One rename per season. Old links to {bot.name} keep working, and nobody else can take the old name.
-        </p>
-        <RenameForm name={bot.name} />
+        {!bot.renamedFrom && (
+          <p className="muted small">
+            One rename per season. Old links to {bot.name} keep working, and nobody else can take the old name.
+          </p>
+        )}
+        <BotNameControl bot={bot} />
       </section>
 
       <section className={styles.panel}>
