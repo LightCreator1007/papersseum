@@ -23,6 +23,7 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
+// Static files skip it, including the replay engine in public/engine/ (manifest, wheel, .mjs).
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|dat)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|engine/|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|dat)$).*)"],
 };
