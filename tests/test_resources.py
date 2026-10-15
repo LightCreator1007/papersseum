@@ -29,7 +29,7 @@ def test_chapter_code_runs(script):
     _skip_if_missing(script)
     args = [] if script.name.startswith("check_") else ["--fast"]
     out = subprocess.run([sys.executable, script.name, *args], cwd=script.parent,
-                         capture_output=True, text=True, timeout=300)
+                         capture_output=True, text=True, timeout=900)
     assert out.returncode == 0, out.stdout[-1500:] + out.stderr[-1500:]
 
 

@@ -180,7 +180,7 @@
             "probability",
             "logistic curve"
           ],
-          "status": "planned"
+          "status": "ready"
         },
         {
           "slug": "14-papersseum",
@@ -188,7 +188,7 @@
           "summary": "The game as an RL problem, a training recipe, and how to pack your policy into one file and submit it.",
           "minutes": 60,
           "maths": [],
-          "status": "planned"
+          "status": "ready"
         }
       ]
     }
@@ -198,13 +198,13 @@
       "slug": "glossary",
       "title": "Glossary",
       "summary": "Every term in the course, in one sentence.",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "slug": "cheatsheet",
       "title": "Maths cheat sheet",
       "summary": "Every symbol and formula on one page.",
-      "status": "planned"
+      "status": "ready"
     }
   ]
 }

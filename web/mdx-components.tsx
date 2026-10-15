@@ -14,6 +14,8 @@ import { GridWorld } from "@/components/learn/grid-world";
 import { MonteCarloGrid } from "@/components/learn/monte-carlo-grid";
 import { NeuralPlayground } from "@/components/learn/neural-playground";
 import { PolicyNudge } from "@/components/learn/policy-nudge";
+import { RpsLearners } from "@/components/learn/rps-learners";
+import { EloCalculator } from "@/components/learn/elo-calculator";
 import { QLearningLab } from "@/components/learn/q-learning-lab";
 import { SlopeExplorer } from "@/components/learn/slope-explorer";
 import { ValueExplorer } from "@/components/learn/value-explorer";
@@ -32,6 +34,8 @@ const components: MDXComponents = {
   MonteCarloGrid,
   NeuralPlayground,
   PolicyNudge,
+  RpsLearners,
+  EloCalculator,
   QLearningLab,
   SlopeExplorer,
   ValueExplorer,
