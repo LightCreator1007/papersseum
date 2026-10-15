@@ -1,0 +1,62 @@
+/* The visitor's own row: tinted, marked, and pinned so it stays on screen while scrolling. */
+.row[data-mine] td {
+  position: sticky;
+  top: 60px;
+  bottom: 0;
+  z-index: 1;
+  background: color-mix(in srgb, var(--slot-3) 14%, var(--bg));
+  border-top: 1px solid var(--text);
+  border-bottom: 1px solid var(--text);
+}
+.row[data-unrated] td { color: var(--muted); }
+
+.bot { display: inline-flex; align-items: center; gap: var(--space-2); max-width: 100%; min-width: 0; }
+/* Names run to 32 characters. Past about 22 they truncate with an ellipsis; the full name is
+   in the title and on the profile. Keeps the table usable at 390px. */
+.bot :global(.bot-tag) { min-width: 0; }
+.bot :global(.bot-tag) span {
+  display: block;
+  max-width: clamp(12ch, 38vw, 24ch);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.house {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 0 5px;
+  border: 1px solid var(--rule);
+  color: var(--muted);
+  cursor: help;
+}
+.you {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  padding: 1px 6px;
+  background: var(--text);
+  color: var(--bg);
+  flex: none;
+}
+.gap td { text-align: center; color: var(--muted); padding-block: 2px; }
+.more { margin: var(--space-4) 0 0; font-size: 13px; color: var(--muted); }
+.more a { color: var(--text); }
+
+.unrated {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border: 1px solid var(--rule);
+  white-space: nowrap;
+}
+.provisional {
+  margin-left: 6px;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  padding: 0 4px;
+  border: 1px solid var(--rule);
+  color: var(--muted);
+  text-decoration: none;
+  cursor: help;
+  vertical-align: 1px;
+}

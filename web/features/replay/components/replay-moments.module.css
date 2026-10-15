@@ -1,0 +1,55 @@
+/* The scrubber with a lane of marks above it. */
+.track { position: relative; flex: 1; display: flex; align-items: center; min-width: 160px; padding-top: 14px; }
+.track > input { flex: 1; width: 100%; }
+
+.marks { position: absolute; top: 0; left: 8px; right: 8px; height: 12px; pointer-events: none; }
+.mark {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--c);
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  line-height: 12px;
+  cursor: pointer;
+  opacity: 0.45;
+  transition: opacity var(--dur-fast) var(--ease-smooth), transform var(--dur-fast) var(--ease-swing);
+}
+.mark[data-past] { opacity: 1; }
+.mark[data-kind="lead"] { color: var(--text); }
+.mark:hover { opacity: 1; transform: translateX(-50%) scale(1.5); }
+
+/* The same moments as a list, behind a disclosure. */
+.moments { margin-top: var(--space-3); font-size: 13px; }
+.moments summary { cursor: pointer; color: var(--muted); width: max-content; }
+.moments summary:hover { color: var(--text); }
+.moments ol { list-style: none; margin: var(--space-3) 0 0; padding: 0; max-height: 220px; overflow: auto; border-top: 1px solid var(--rule); }
+.moments li { border-bottom: 1px solid var(--rule-soft); }
+.moments li:not([data-past]) { color: var(--muted); }
+.moments button {
+  display: grid;
+  grid-template-columns: 44px 16px 1fr;
+  gap: var(--space-2);
+  align-items: center;
+  width: 100%;
+  padding: 6px var(--space-2);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.moments button:hover, .moments button:focus-visible { background: color-mix(in srgb, var(--c) 14%, transparent); }
+.moments time { font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+.moments i { font-style: normal; font-family: var(--font-pixel); font-size: 11px; color: var(--c); }
+.moments i[data-kind="lead"] { color: var(--text); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mark { transition: none; }
+  .mark:hover { transform: translateX(-50%); }
+}

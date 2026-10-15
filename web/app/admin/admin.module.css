@@ -1,0 +1,85 @@
+/* Organiser panel. Dense and plain on purpose: rules and colour carry the structure. */
+.page { display: grid; gap: var(--space-7); padding-bottom: var(--space-9); }
+
+.head { display: grid; gap: var(--space-3); padding-top: var(--space-6); }
+.kicker { margin: 0; font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+.head h1 { margin: 0; font-size: clamp(36px, 5vw, 56px); font-weight: 300; letter-spacing: -0.04em; line-height: 1; }
+
+.mono { font-family: var(--mono); font-size: 13px; }
+.mono[data-mismatch] { color: var(--down); }
+
+/* Season strip: facts on the left, the one season-wide control on the right. */
+.season {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-5) 0;
+  border-top: 1px solid var(--text);
+  border-bottom: 1px solid var(--rule);
+}
+.season dl { display: flex; flex-wrap: wrap; gap: var(--space-7); margin: 0; }
+.season dt { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.season dd { margin: 4px 0 0; }
+
+.error { margin: 0; padding: var(--space-4); border: 1px solid var(--down); color: var(--down); }
+
+/* Needs attention: a coloured left rule per tone, no fills. */
+.warnings { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.warnings li {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--slot-3);
+}
+.warnings li[data-tone="failed"] { border-left-color: var(--down); }
+.warnings span { color: var(--muted); font-size: 14px; }
+
+.block h2 { display: flex; align-items: baseline; gap: var(--space-3); margin: 0 0 var(--space-3); font-size: 20px; font-weight: 400; }
+.count { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+
+.rows { list-style: none; margin: var(--space-3) 0 0; padding: 0; border-top: 1px solid var(--rule); }
+.rows li {
+  display: grid;
+  grid-template-columns: minmax(0, 14rem) minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  align-items: center;
+  min-height: 52px;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.rows li[data-banned] .who a { color: var(--muted); text-decoration: line-through; }
+.who { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.who a, .who > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meta { color: var(--muted); font-size: 14px; min-width: 0; }
+.tag { flex: none; padding: 1px 6px; border: 1px solid var(--rule); font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.tag[data-tone="failed"] { border-color: var(--down); color: var(--down); }
+
+.why summary { cursor: pointer; width: max-content; }
+.why pre { margin: var(--space-2) 0 0; padding: var(--space-3); max-height: 160px; overflow: auto; border: 1px solid var(--rule); font-size: 12px; white-space: pre-wrap; word-break: break-word; }
+
+.inline { display: flex; align-items: center; gap: var(--space-3); justify-content: flex-end; }
+.msg { font-size: 13px; max-width: 22ch; }
+.msg[data-ok="false"] { color: var(--down); }
+
+.filter input {
+  width: min(100%, 320px);
+  padding: 8px 12px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--rule);
+}
+.filter input:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+/* Loading: ruled rows the height of the real ones, no shimmer. */
+.loading { display: grid; border-top: 1px solid var(--rule); }
+.loading span { height: 52px; border-bottom: 1px solid var(--rule); }
+
+@media (max-width: 720px) {
+  .rows li { grid-template-columns: minmax(0, 1fr) auto; }
+  .rows li .meta { grid-column: 1 / -1; grid-row: 2; }
+  .inline { flex-wrap: wrap; }
+}

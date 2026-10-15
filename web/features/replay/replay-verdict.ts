@@ -113,7 +113,7 @@ export function seatNames(players: unknown, expected?: ExpectedSeat[]): string[]
 }
 
 const ORDINALS = ["1st", "2nd", "3rd", "4th", "5th"];
-const place = (n: number | null) => (n === null ? "—" : (ORDINALS[n - 1] ?? `${n}th`));
+const place = (n: number | null) => (n === null ? "no place" : (ORDINALS[n - 1] ?? `${n}th`));
 
 export function verdictText(v: Verdict, names: string[]): string {
   switch (v.kind) {

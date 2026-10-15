@@ -1,0 +1,4 @@
+.head { margin-bottom: var(--space-7); }
+.head h1 { font-size: clamp(32px, 4vw, 44px); letter-spacing: -0.03em; line-height: 1.05; margin: 0; }
+.head p { margin: var(--space-3) 0 0; max-width: 56ch; font-size: var(--text-md); }
+.stamp { margin-top: var(--space-3); }

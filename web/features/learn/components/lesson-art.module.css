@@ -1,0 +1,11 @@
+.art { display: block; width: 100%; height: auto; overflow: visible; }
+.ink { fill: var(--text); }
+.rule { fill: var(--rule); }
+.soft { fill: var(--rule-soft); }
+.muted { fill: var(--muted); }
+.s0 { fill: var(--slot-0); }
+.s1 { fill: var(--slot-1); }
+.s2 { fill: var(--slot-2); }
+.s3 { fill: var(--slot-3); }
+.s4 { fill: var(--slot-4); }
+.wire { stroke: var(--rule); stroke-width: 0.5; shape-rendering: geometricPrecision; }

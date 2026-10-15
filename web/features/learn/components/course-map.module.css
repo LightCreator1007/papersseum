@@ -1,0 +1,103 @@
+/* The Learn index: a hero with a way in, a progress track, then one card per chapter grouped by part. */
+
+.home { min-width: 0; }
+
+/* ---------- hero ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--space-8); align-items: end; padding-bottom: var(--space-8); border-bottom: 1px solid var(--rule); }
+.eyebrow { font-family: var(--mono); font-size: var(--text-xs); color: var(--muted); letter-spacing: 0.02em; margin: 0 0 var(--space-4); }
+.title { font-size: clamp(40px, 6vw, 64px); font-weight: 400; letter-spacing: -0.04em; line-height: 0.98; margin: 0; text-wrap: balance; }
+.lede { margin: var(--space-5) 0 0; font-size: var(--text-lg); line-height: 1.5; color: var(--muted); max-width: 46ch; text-wrap: pretty; }
+.stats { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: var(--space-7); margin: var(--space-7) 0 0; }
+.stats div { display: flex; flex-direction: column; gap: 4px; }
+.stats dt { order: 2; font-size: var(--text-xs); color: var(--muted); }
+.stats dd { order: 1; margin: 0; font-family: var(--font-pixel); font-size: 28px; line-height: 1; }
+
+/* the way in */
+.start {
+  display: flex; flex-direction: column; color: var(--text); text-decoration: none;
+  border: 1px solid var(--rule); border-radius: var(--radius-3); overflow: hidden; background: var(--surface);
+  transition: border-color var(--dur-moderate) var(--ease-smooth);
+}
+.startArt { padding: var(--space-5) var(--space-6); background: color-mix(in oklch, var(--slot-1) 8%, var(--surface)); border-bottom: 1px solid var(--rule); }
+.startBody { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-5); }
+.startLabel { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--mono); font-size: var(--text-xs); color: var(--muted); }
+.startLabel::before { content: ""; width: 8px; height: 8px; background: var(--slot-1); }
+.startTitle { font-size: var(--text-xl); letter-spacing: -0.02em; line-height: 1.2; }
+.startSum { font-size: var(--text-sm); color: var(--muted); line-height: 1.5; }
+.startCta { margin-top: var(--space-3); align-self: flex-start; display: inline-flex; align-items: center; gap: var(--space-2); min-height: 36px; padding: 0 var(--space-4); border-radius: 999px; background: var(--text); color: var(--bg); font-size: var(--text-sm); }
+.startCta span { display: inline-block; transition: transform var(--dur-moderate) var(--ease-swing); }
+
+/* ---------- progress track ---------- */
+.track { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-3) var(--space-7); padding: var(--space-5) 0; border-bottom: 1px solid var(--rule); font-size: var(--text-sm); }
+.trackHead { display: flex; flex-direction: column; gap: 2px; }
+.trackLabel { color: var(--text); }
+.trackCount { font-family: var(--mono); font-size: var(--text-xs); color: var(--muted); }
+.trackParts { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); }
+.trackPart { display: flex; align-items: center; gap: var(--space-2); }
+.trackPartId { font-family: var(--font-pixel); font-size: 12px; color: var(--muted); width: 10px; }
+.trackSquares { display: flex; gap: 3px; }
+.square { display: block; width: 14px; height: 14px; border: 1px solid var(--rule); background: var(--bg); transition: background-color var(--dur-fast) var(--ease-smooth), border-color var(--dur-fast) var(--ease-smooth); }
+.square:hover { border-color: var(--text); }
+.square[data-opened] { background: var(--text); border-color: var(--text); }
+.trackNext { color: var(--text); white-space: nowrap; }
+.trackHint { color: var(--muted); white-space: nowrap; }
+
+/* ---------- a part ---------- */
+.part { margin-top: var(--space-9); }
+.partHead { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: var(--space-5); align-items: start; margin-bottom: var(--space-6); }
+.partId { display: grid; place-items: center; width: 56px; height: 56px; font-family: var(--font-pixel); font-size: 32px; line-height: 1; color: var(--text); background: color-mix(in oklch, var(--part) 14%, var(--bg)); border: 1px solid color-mix(in oklch, var(--part) 35%, transparent); border-radius: var(--radius-2); }
+.partTitle { margin: 2px 0 0; font-size: var(--text-2xl); font-weight: 400; letter-spacing: -0.025em; line-height: 1.15; }
+.partBlurb { margin: var(--space-2) 0 0; color: var(--muted); font-size: var(--text-md); max-width: 56ch; }
+.partMeta { font-family: var(--mono); font-size: var(--text-xs); color: var(--muted); white-space: nowrap; padding-top: 8px; }
+
+/* ---------- chapter cards ---------- */
+.grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+.card { height: 100%; }
+.cardLink {
+  display: flex; flex-direction: column; height: 100%; color: var(--text); text-decoration: none;
+  border: 1px solid var(--rule); border-radius: var(--radius-3); overflow: hidden; background: var(--surface);
+  transition: border-color var(--dur-moderate) var(--ease-smooth);
+}
+.cardArt { padding: var(--space-4) var(--space-5); background: color-mix(in oklch, var(--part) 7%, var(--surface)); border-bottom: 1px solid var(--rule); transition: background-color var(--dur-moderate) var(--ease-smooth); }
+.cardArt svg { transition: transform var(--dur-slow) var(--ease-swing); }
+.cardBody { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) var(--space-5) var(--space-5); flex: 1; }
+.cardTop { display: flex; align-items: center; gap: var(--space-2); min-height: 22px; }
+.num { font-family: var(--font-pixel); font-size: 16px; line-height: 1; color: var(--muted); margin-right: auto; }
+.chip { display: inline-flex; align-items: center; min-height: 20px; padding: 0 var(--space-2); border: 1px solid var(--rule); border-radius: 999px; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.opened { display: inline-flex; align-items: center; min-height: 20px; padding: 0 var(--space-2); border: 1px solid var(--text); border-radius: 999px; font-size: 11px; color: var(--text); white-space: nowrap; }
+.cardTitle { font-size: var(--text-md); font-weight: 500; letter-spacing: -0.01em; line-height: 1.3; text-wrap: balance; }
+.cardSum { font-size: var(--text-sm); color: var(--muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.card[data-soon] .cardLink { cursor: default; }
+.card[data-soon] .cardArt { filter: grayscale(1); opacity: 0.5; }
+
+@media (hover: hover) and (pointer: fine) {
+  a.cardLink:hover, .start:hover { border-color: var(--text); }
+  a.cardLink:hover .cardArt { background: color-mix(in oklch, var(--part) 13%, var(--surface)); }
+  a.cardLink:hover .cardArt svg { transform: scale(1.04); }
+  .start:hover .startCta span { transform: translateX(3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  a.cardLink:hover .cardArt svg, .start:hover .startCta span { transform: none; }
+}
+
+/* reference pages: a smaller, sideways card */
+.refs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); list-style: none; margin: 0; padding: 0; }
+.refs .cardLink { flex-direction: row; }
+.refs .cardArt { flex: none; width: 132px; display: grid; place-items: center; padding: var(--space-3); border-bottom: 0; border-right: 1px solid var(--rule); }
+
+/* ---------- small screens ---------- */
+@media (max-width: 860px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: var(--space-7); }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .track { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .grid, .refs { grid-template-columns: minmax(0, 1fr); }
+  .stats { gap: var(--space-5); }
+  .stats dd { font-size: 22px; }
+  .partHead { grid-template-columns: 44px minmax(0, 1fr); gap: var(--space-4); }
+  .partId { width: 44px; height: 44px; font-size: 24px; }
+  .partMeta { grid-column: 2; padding-top: 0; }
+  .part { margin-top: var(--space-8); }
+  .refs .cardArt { width: 104px; }
+}

@@ -1,0 +1,105 @@
+/* Get started: a bordered plate on the surface colour. Steps on the left track a terminal on
+   the right that types the real session. The terminal is dark in both themes, like the
+   editor mock in the cards above. */
+.panel {
+  margin: var(--space-8) auto 0; padding: var(--space-7); text-align: left;
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 8fr); gap: var(--space-7) var(--space-8); align-items: center;
+  border: 1px solid var(--rule); border-radius: 20px;
+  background: var(--surface);
+}
+
+/* ---------- Steps ---------- */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+.steps li {
+  position: relative; display: grid; grid-template-columns: 32px minmax(0, 1fr); column-gap: var(--space-3); row-gap: 2px;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  border: 1px solid transparent; border-radius: 10px;
+  transition: background-color var(--dur-moderate) var(--ease-smooth), border-color var(--dur-moderate) var(--ease-smooth);
+}
+/* The rail: a 2px bar in the step's colour that grows from the top as the step goes live. */
+.steps li::before {
+  content: ""; position: absolute; left: 0; top: var(--space-3); bottom: var(--space-3); width: 2px; border-radius: 1px;
+  background: var(--c); transform: scaleY(0); transform-origin: 50% 0;
+  transition: transform var(--dur-slow) var(--ease-smooth);
+}
+.num { grid-row: span 2; padding-top: 3px; font-family: var(--font-pixel); font-size: 13px; color: var(--muted); transition: color var(--dur-moderate) var(--ease-smooth); }
+.stepTitle { font-size: 18px; font-weight: 400; letter-spacing: -0.01em; color: var(--muted); transition: color var(--dur-moderate) var(--ease-smooth); }
+.stepBody { font-size: 14px; font-weight: 300; line-height: 1.5; color: var(--muted); }
+.steps li[data-state="done"] .stepTitle { color: var(--text); }
+.steps li[data-state="active"] { background: var(--bg); border-color: var(--rule); }
+.steps li[data-state="active"]::before { transform: scaleY(1); }
+.steps li[data-state="active"] .num { color: var(--text); }
+.steps li[data-state="active"] .stepTitle { color: var(--text); }
+
+/* ---------- Terminal ---------- */
+.term {
+  border-radius: 12px; overflow: hidden; background: #0e0e0e; color: #ededea; border: 1px solid #262626;
+}
+.bar { display: flex; align-items: center; gap: var(--space-3); height: 38px; padding: 0 var(--space-3) 0 var(--space-4); background: #181818; border-bottom: 1px solid #242424; }
+.lights { display: inline-flex; gap: 6px; }
+.lights i { width: 9px; height: 9px; border-radius: 50%; background: #333; }
+.path { flex: 1; text-align: center; font-family: var(--mono); font-size: 12px; color: #8a8a8a; }
+.replay {
+  font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid #2e2e2e; background: transparent; color: #bdbdb8; cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-smooth), color var(--dur-fast) var(--ease-smooth);
+}
+.replay:hover { background: #262626; color: #ffffff; }
+.replay:focus-visible, .copy:focus-visible { outline: 2px solid #ededea; outline-offset: 2px; }
+/* Keeps the Replay button's slot so the path stays centred when it is hidden. */
+.replay[hidden] { display: inline-block; visibility: hidden; }
+
+.screen {
+  min-height: 300px; padding: var(--space-5) var(--space-5) var(--space-6);
+  font-family: var(--mono); font-size: 13px; line-height: 1.75;
+}
+.block + .block { margin-top: var(--space-3); }
+.line { display: flex; align-items: center; gap: 10px; min-height: 30px; }
+.prompt { color: var(--c, #8a8a8a); }
+.typed { display: inline-block; overflow: hidden; white-space: nowrap; width: calc(var(--len) * 1ch); font-family: inherit; color: #ffffff; }
+.caret, .idle { display: inline-block; width: 0.6em; height: 1.15em; margin-left: -6px; background: #ededea; }
+.caret { visibility: hidden; }
+.idle { margin-left: 0; animation: blink 1.1s steps(2, jump-none) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.out { padding-left: calc(1ch + 10px); color: #8f8f8a; white-space: pre-wrap; overflow-wrap: anywhere; }
+.out[data-pass] { color: var(--slot-2); font-family: var(--font-pixel); letter-spacing: 0.04em; }
+
+.copy {
+  margin-left: auto; flex: none; font: inherit; font-family: var(--sans); font-size: 12px; line-height: 1;
+  padding: 6px 10px; border-radius: 6px; border: 1px solid #2e2e2e; background: #161616; color: #bdbdb8; cursor: pointer;
+  opacity: 0.7; transition: opacity var(--dur-fast) var(--ease-smooth), background-color var(--dur-fast) var(--ease-smooth), color var(--dur-fast) var(--ease-smooth);
+}
+.line:hover .copy, .copy:focus-visible { opacity: 1; }
+.copy:hover { background: #262626; color: #ffffff; }
+.copy[data-copied] { opacity: 1; color: var(--slot-2); border-color: color-mix(in oklch, var(--slot-2) 40%, #2e2e2e); }
+
+/* Armed: everything waits, empty. Playing: lines appear on their schedule (--d), each
+   command types itself one character per step, and its caret lives only while typing. */
+.screen[data-arm] .line, .screen[data-arm] .out { opacity: 0; }
+.screen[data-arm] .typed { width: 0; }
+.screen[data-play] .line, .screen[data-play] .out { animation: appear 1ms linear var(--d) both; }
+.screen[data-play] .typed { animation: type calc(var(--len) * 34ms) steps(var(--len)) var(--d) both; }
+.screen[data-play] .caret { animation: caret-life calc(var(--len) * 34ms + 320ms) linear var(--d); }
+.screen[data-play] .out { animation: out-in var(--dur-moderate) var(--ease-smooth) var(--d) both; }
+@keyframes appear { from { opacity: 0; } }
+@keyframes type { from { width: 0; } }
+@keyframes caret-life { from, to { visibility: visible; } }
+@keyframes out-in { from { opacity: 0; transform: translateY(4px); } }
+
+.actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--space-3); padding-top: var(--space-6); border-top: 1px solid var(--rule); }
+
+@media (max-width: 900px) {
+  .panel { grid-template-columns: 1fr; padding: var(--space-5); }
+}
+@media (max-width: 560px) {
+  .panel { padding: var(--space-3); border-radius: 16px; gap: var(--space-5); margin-top: var(--space-7); }
+  /* 11px keeps the longest command (31 characters) and its Copy button on one line at 390px. */
+  .screen { padding: var(--space-4) var(--space-3) var(--space-5); font-size: 11px; min-height: 0; }
+  .line { gap: 8px; }
+  .copy { padding: 5px 8px; }
+  .actions { padding: var(--space-5) var(--space-2) var(--space-2); }
+  .actions > * { flex: 1 1 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .steps li, .steps li::before, .num, .stepTitle { transition: none; }
+  .idle { animation: none; }
+}

@@ -1,0 +1,158 @@
+/* Home: an editorial masthead inside main.wrap, then centred sections with product mocks
+   in framed cards. The proof and CTA bands break out of main.wrap (960px). */
+.proof, .cta { width: 100vw; margin-left: calc(50% - 50vw); position: relative; }
+
+/* ---------- Hero: masthead ---------- */
+/* Full-bleed like the proof and CTA bands, with the playground's fluid side padding. It fills
+   the viewport below whatever sits above it (HeroFit publishes --hero-top), so its foot sits
+   on the bottom edge of the viewport. */
+.hero {
+  container-type: inline-size; width: 100vw; margin-left: calc(50% - 50vw);
+  display: flex; flex-direction: column;
+  padding: 0 clamp(20px, 3vw, 48px) var(--space-7); min-height: calc(100svh - var(--hero-top, 95px));
+}
+
+/* Shared by the live chips further down the page. */
+@keyframes blink { 50% { opacity: 0.2; } }
+
+/* The name set to the width of the hero. Ten glyphs of Geist 300 at -0.07em fill it at ~17cqi. */
+.word {
+  display: flex; justify-content: space-between; margin: var(--space-4) 0 -0.14em; padding-bottom: 0.2em; overflow: hidden;
+  font-size: 17cqi; font-weight: 300; letter-spacing: -0.07em; line-height: 0.78;
+}
+.word span { display: inline-block; animation: letter 900ms var(--ease-smooth) both; }
+@keyframes letter { from { transform: translateY(105%); } }
+
+/* Both columns sit on the bottom edge; on short viewports the plate rides up over the name. */
+.heroBody {
+  flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: clamp(32px, 5cqi, 96px); align-items: end;
+  margin-top: var(--space-6);
+}
+.heroIntro {
+  display: grid; gap: var(--space-5); padding-top: var(--space-3); border-top: 1px solid var(--rule);
+  animation: rise 800ms var(--ease-smooth) 700ms both;
+}
+.heroLede { margin: 0; max-width: 34ch; font-size: clamp(18px, 1.8cqi, 28px); font-weight: 300; letter-spacing: -0.015em; line-height: 1.4; }
+.heroActions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-5); }
+
+/* The live board as a plate, riding up over the foot of the name. */
+/* Sized by the viewport height so the whole board stays in view, capped at 58% of the width. */
+.plate { position: relative; width: min(58cqi, 66svh); margin: calc(-1 * clamp(64px, 16cqi, 260px)) 0 0; background: var(--bg); animation: rise 1100ms var(--ease-smooth) 450ms both; }
+@keyframes rise { from { opacity: 0; transform: translateY(32px); } }
+
+@media (max-width: 720px) {
+  .hero { min-height: 0; }
+  .heroBody { grid-template-columns: 1fr; gap: var(--space-6); }
+  .heroBody { align-items: start; }
+  .plate { width: 100%; margin-top: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .word span, .heroIntro, .plate { animation: none; }
+}
+
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; justify-content: center; }
+
+/* ---------- Sections ---------- */
+.section { padding: var(--space-10) 0 0; text-align: center; }
+.label { margin: 0; font-size: 13px; color: var(--muted); letter-spacing: 0.02em; }
+.h2 { font-size: clamp(36px, 5vw, 64px); font-weight: 300; letter-spacing: -0.045em; line-height: 1.02; margin: var(--space-3) auto 0; max-width: 18ch; }
+.sub { color: var(--muted); font-size: 18px; font-weight: 300; line-height: 1.6; max-width: 54ch; margin: var(--space-4) auto 0; }
+
+/* Feature cards */
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin-top: var(--space-8); text-align: left; }
+.card { border: 1px solid var(--rule); border-radius: 14px; padding: var(--space-5); background: var(--bg); transition: border-color var(--dur-moderate) var(--ease-swing), transform var(--dur-moderate) var(--ease-swing); }
+.card:hover { border-color: color-mix(in srgb, var(--text) 30%, var(--rule)); transform: translateY(-3px); }
+.card h3 { font-size: 20px; font-weight: 400; letter-spacing: -0.02em; margin: var(--space-5) 0 var(--space-2); }
+.card p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.55; font-weight: 300; }
+.mock {
+  height: 220px; border-radius: 10px; display: grid; place-items: center; overflow: hidden; padding: var(--space-5);
+  background: var(--surface); border: 1px solid var(--rule-soft);
+}
+.editor { width: 100%; max-width: 340px; border-radius: 8px; background: #121212; color: #e8e8e4; overflow: hidden; border: 1px solid #262626; }
+.fileTab { display: inline-block; padding: 6px 12px; font-family: var(--mono); font-size: 11px; background: #1f1f1f; color: #bbb; }
+.editor pre { margin: 0; padding: 12px 14px; font-family: var(--mono); font-size: 12px; line-height: 1.7; }
+.kw { color: var(--slot-4); } .str { color: var(--slot-2); } .num { color: var(--slot-3); } .cm { color: #777; }
+.checkMock { display: flex; flex-direction: column; gap: var(--space-3); width: 100%; max-width: 300px; }
+.chip { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--bg); border: 1px solid var(--rule); font-size: 13px; }
+.chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--slot-3); animation: blink 1s steps(2, jump-none) infinite; }
+.chip b { font-family: var(--mono); font-weight: 400; color: var(--muted); }
+.checkMock ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.checkMock li { padding: 10px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--rule); font-size: 13px; display: flex; gap: 8px; }
+.checkMock li[data-done]::before { content: "✓"; color: var(--slot-2); }
+.checkMock li[data-run]::before { content: "■"; color: var(--slot-3); animation: blink 0.8s steps(2, jump-none) infinite; }
+.replayMock { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 10px; }
+.replayMock img { display: block; width: 140px; height: 140px; margin: 0 auto; image-rendering: pixelated; }
+.scrub { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--rule); font-size: 12px; }
+.scrub i { flex: 1; height: 4px; border-radius: 2px; background: var(--rule); position: relative; overflow: hidden; }
+.scrub b { position: absolute; inset: 0 auto 0 0; width: 46%; background: var(--text); animation: scrub 6s linear infinite; }
+@keyframes scrub { from { width: 0; } to { width: 100%; } }
+.scrub em { font-style: normal; font-family: var(--mono); color: var(--muted); }
+.toastMock { width: 100%; max-width: 300px; display: flex; flex-direction: column; gap: 10px; }
+.toast { display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--rule); animation: toastIn 3.6s var(--ease-swing) infinite; }
+.toast b { display: block; font-weight: 500; font-size: 14px; }
+.toast span { font-size: 12px; color: var(--muted); }
+@keyframes toastIn { 0% { transform: translateY(-12px); opacity: 0; } 12%, 85% { transform: none; opacity: 1; } 100% { opacity: 0; } }
+.miniLadder { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-family: var(--mono); }
+.miniLadder li { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--rule); background: var(--bg); }
+.miniLadder li[data-you] { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+/* Strategy tabs */
+.tabsWrap { margin-top: var(--space-7); }
+.tabList { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 4px; padding: 4px; border: 1px solid var(--rule); border-radius: 999px; }
+.tab { font: inherit; font-size: 14px; padding: 8px 16px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; transition: background-color var(--dur-fast), color var(--dur-fast); }
+.tab:hover { color: var(--text); }
+.tab[aria-selected="true"] { background: var(--text); color: var(--bg); }
+.tabPanel { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: var(--space-7); align-items: center; margin-top: var(--space-6); padding: var(--space-6); border: 1px solid var(--rule); border-radius: 14px; text-align: left; animation: panelIn var(--dur-slow) var(--ease-swing) both; }
+@keyframes panelIn { from { opacity: 0; transform: translateY(8px); } }
+.tabArt { display: grid; place-items: center; aspect-ratio: 1; border-radius: 10px; background: color-mix(in oklch, var(--c) 12%, var(--surface)); }
+.tabCopy p { font-size: 22px; font-weight: 300; letter-spacing: -0.015em; line-height: 1.4; margin: 0 0 var(--space-5); }
+.tabCopy code { display: inline-block; font-family: var(--mono); font-size: 13px; padding: 8px 12px; border-radius: 8px; background: var(--surface); border: 1px solid var(--rule); }
+
+/* Social proof */
+.proof { margin-top: var(--space-10); padding: var(--space-8) 0 0; border-top: 1px solid var(--rule); text-align: center; }
+.marquee { overflow: hidden; padding: var(--space-6) 0; }
+.marquee ul { display: flex; gap: var(--space-8); width: max-content; list-style: none; margin: 0; padding: 0; animation: slide 40s linear infinite; }
+.marquee:hover ul { animation-play-state: paused; }
+.marquee li a { display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; color: var(--text); }
+.marquee li span { font-size: 13px; }
+.marquee li em { font-style: normal; font-family: var(--font-pixel); font-size: 12px; color: var(--muted); }
+@keyframes slide { to { transform: translateX(-50%); } }
+.stats { max-width: 960px; margin: 0 auto; padding: 0 28px; display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); min-height: 110px; }
+.stats div { padding: var(--space-6) var(--space-4); }
+.stats div + div { border-left: 1px solid var(--rule); }
+.stats dt { font-size: 13px; color: var(--muted); }
+.stats dd { margin: 8px 0 0; font-family: var(--font-pixel); font-size: clamp(32px, 4vw, 52px); line-height: 1; }
+/* A sentence, not a number (waiting on the queue): sized to fit the cell. */
+.stats dd[data-text] { font-size: clamp(18px, 2vw, 24px); line-height: 1.2; }
+.statsEmpty { max-width: 960px; margin: 0 auto; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding-block: var(--space-8); }
+
+/* Rules at a glance: components/home/rule-instruments.module.css.
+   Get started: components/home/get-started.module.css. FAQ: components/home/faq.module.css. */
+.more { margin: var(--space-5) 0 0; font-size: 14px; }
+
+/* Final CTA */
+.cta {
+  margin-top: var(--space-10); margin-bottom: -56px; padding: var(--space-10) 24px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-5);
+  background: var(--text); color: var(--bg);
+}
+.cta h2 { font-size: clamp(40px, 6.5vw, 96px); font-weight: 300; letter-spacing: -0.05em; line-height: 1; margin: 0; }
+/* The band is inverted, so its buttons are too: they reuse the shared Button states and
+   only swap the colour variables. The primary keeps the shared yellow fill. */
+.cta .ctaPrimary, .cta .ctaGhost { --btn-h: 48px; --btn-radius: 999px; padding: 0 var(--space-6); font-size: 15px; font-weight: 400; }
+.cta .ctaPrimary { --btn-bg: var(--bg); --btn-fg: var(--text); }
+.cta .ctaGhost { --btn-line: color-mix(in srgb, var(--bg) 45%, transparent); --btn-fg: var(--bg); --btn-fill: var(--bg); --btn-fill-fg: var(--text); }
+.cta .ctaPrimary:focus-visible, .cta .ctaGhost:focus-visible { outline-color: var(--bg); }
+
+@media (max-width: 900px) {
+  .windowBody { grid-template-columns: 1fr; }
+  .seats { border-right: 0; border-bottom: 1px solid var(--rule); }
+  .seats ol { flex-direction: row; flex-wrap: wrap; }
+  .cards, .tabPanel { grid-template-columns: 1fr; }
+  .tabArt { max-width: 200px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee ul { animation: none; flex-wrap: wrap; width: auto; justify-content: center; }
+  .marquee li[aria-hidden] { display: none; }
+  .chip i, .checkMock li[data-run]::before, .scrub b, .toast, .tabPanel { animation: none; }
+}

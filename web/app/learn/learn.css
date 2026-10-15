@@ -12,8 +12,21 @@
   --callout-careful: #b23b2a;
   --callout-try: #1f7a4d;
 }
+/* Dark follows the site theme: the toggle's data-theme first, then the OS setting. */
+:root[data-theme="dark"] {
+  --code-bg: #1b1b1b;
+  --tok-keyword: #d9a0d9;
+  --tok-string: #7fd6a4;
+  --tok-number: #f0b36a;
+  --tok-comment: #7d7d78;
+  --tok-title: #8fbdf0;
+  --callout-idea: #8fbdf0;
+  --callout-maths: #d9a0d9;
+  --callout-careful: #ef7d6b;
+  --callout-try: #7fd6a4;
+}
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --code-bg: #1b1b1b;
     --tok-keyword: #d9a0d9;
     --tok-string: #7fd6a4;
@@ -27,28 +40,15 @@
   }
 }
 
-/* ---------- the course map ---------- */
-.learn-home { max-width: 760px; min-width: 0; }
-.learn-lede { max-width: 620px; font-size: 17px; line-height: 1.55; }
-.learn-facts { list-style: none; padding: 0; margin: 4px 0 8px; display: flex; flex-wrap: wrap; gap: 6px 28px; font-size: 14px; }
-.learn-part h2 { font-size: 18px; margin: 40px 0 2px; }
-.learn-chapters { list-style: none; padding: 0; margin: 12px 0 0; border-top: 1px solid var(--rule); }
-.chapter { border-bottom: 1px solid var(--rule-soft); }
-.chapter > a, .chapter > div { display: flex; gap: 14px; align-items: baseline; padding: 12px 2px; text-decoration: none; }
-.chapter > a:hover { background: var(--surface); }
-.chapter-no { flex: 0 0 22px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
-.chapter-main { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.chapter-title { font-weight: 600; }
-.chapter-sum { color: var(--muted); font-size: 14px; }
-.chapter-min { flex: 0 0 auto; color: var(--muted); font-size: 13px; white-space: nowrap; }
-.chapter-soon .chapter-title { font-weight: 500; color: var(--muted); }
-
 /* ---------- a lesson ---------- */
 .lesson-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
 @media (min-width: 900px) { .lesson-layout { grid-template-columns: minmax(0, 1fr) 200px; gap: 48px; } }
 .lesson { max-width: 680px; min-width: 0; }
 .lesson h1 { font-size: 32px; line-height: 1.15; letter-spacing: -0.025em; margin-top: 4px; }
 .lesson-meta { margin-top: 8px; }
+.lesson-head { display: grid; grid-template-columns: minmax(0, 1fr) 152px; gap: 28px; align-items: end; padding-bottom: 24px; border-bottom: 1px solid var(--rule); }
+.lesson-art { padding: 12px 14px; border: 1px solid var(--rule); border-radius: 10px; background: color-mix(in oklch, var(--slot-1) 7%, var(--surface)); }
+@media (max-width: 560px) { .lesson-head { grid-template-columns: minmax(0, 1fr); } .lesson-art { display: none; } }
 .lesson-body { margin-top: 28px; font-size: 17px; line-height: 1.72; }
 .lesson-body > * + * { margin-top: 16px; }
 .lesson-body h2 { font-size: 24px; line-height: 1.25; letter-spacing: -0.015em; margin: 52px 0 0; scroll-margin-top: 16px; }
@@ -58,12 +58,12 @@
 .lesson-body ul { list-style: disc; }
 .lesson-body ol { list-style: decimal; }
 .lesson-body li + li { margin-top: 6px; }
-.lesson-body strong { font-weight: 600; }
+.lesson-body strong { font-weight: 500; }
 .lesson-body blockquote { border-left: 3px solid var(--rule); padding-left: 16px; color: var(--muted); }
 .lesson-body hr { border: 0; border-top: 1px solid var(--rule); margin: 36px 0; }
 .lesson-body code { font-family: var(--mono); font-size: 0.88em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
 .lesson-body table { border-collapse: collapse; font-size: 15px; width: 100%; }
-.lesson-body th { text-align: left; font-weight: 600; border-bottom: 1px solid var(--rule); padding: 8px 14px 8px 0; }
+.lesson-body th { text-align: left; font-weight: 500; border-bottom: 1px solid var(--rule); padding: 8px 14px 8px 0; }
 .lesson-body td { border-bottom: 1px solid var(--rule-soft); padding: 8px 14px 8px 0; vertical-align: top; }
 .lesson-body img { max-width: 100%; height: auto; }
 
@@ -87,7 +87,7 @@
 /* callouts */
 .callout { border: 1px solid var(--rule); border-left: 4px solid var(--callout-idea); background: var(--surface); border-radius: 4px; padding: 12px 16px; font-size: 16px; line-height: 1.65; }
 .callout > * + * { margin-top: 10px; }
-.callout-title { font-weight: 600; font-size: 14px; letter-spacing: 0.01em; }
+.callout-title { font-weight: 500; font-size: 14px; letter-spacing: 0.01em; }
 .callout-maths { border-left-color: var(--callout-maths); }
 .callout-careful { border-left-color: var(--callout-careful); }
 .callout-try { border-left-color: var(--callout-try); }
@@ -95,7 +95,7 @@
 /* check yourself */
 .check { border: 1px solid var(--rule); border-radius: 4px; background: var(--surface); font-size: 16px; }
 .check + .check { margin-top: 10px; }
-.check summary { cursor: pointer; padding: 11px 16px; font-weight: 600; list-style: none; }
+.check summary { cursor: pointer; padding: 11px 16px; font-weight: 500; list-style: none; }
 .check summary::-webkit-details-marker { display: none; }
 .check summary::before { content: "+"; display: inline-block; width: 18px; color: var(--muted); }
 .check[open] summary::before { content: "−"; }
@@ -105,7 +105,7 @@
 /* demos */
 .demo { border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); padding: 16px 18px; font-size: 15px; line-height: 1.5; }
 .demo > * + * { margin-top: 12px; }
-.demo-title { font-weight: 600; }
+.demo-title { font-weight: 500; }
 .demo-status { font-variant-numeric: tabular-nums; }
 .arms { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 8px; }
 .arm .btn-secondary { padding: 7px 10px; font-size: 13px; white-space: nowrap; }
@@ -153,7 +153,7 @@
 .diagram-line { stroke: var(--muted); stroke-width: 1.4; }
 .diagram-arrow-head { fill: var(--muted); }
 .diagram-text { fill: var(--muted); font-size: 12px; font-family: var(--sans); }
-.diagram-strong { fill: var(--text); font-size: 14px; font-weight: 600; }
+.diagram-strong { fill: var(--text); font-size: 14px; font-weight: 500; }
 
 /* discount playground */
 .stream { border: 1px solid var(--rule-soft); border-radius: 4px; padding: 8px 10px; }
@@ -171,7 +171,7 @@
 .gw-arrow { font-size: 22px; line-height: 1; }
 .gw-val { font-variant-numeric: tabular-nums; color: var(--muted); }
 .gw-wall { background: var(--rule); border-color: var(--rule); }
-.gw-goal, .gw-pit { align-items: center; justify-content: center; font-size: 20px; font-weight: 600; }
+.gw-goal, .gw-pit { align-items: center; justify-content: center; font-size: 20px; font-weight: 500; }
 .gw-goal { border-color: var(--up); color: var(--up); }
 .gw-pit { border-color: var(--down); color: var(--down); }
 
