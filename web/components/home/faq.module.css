@@ -1,0 +1,57 @@
+/* FAQ as disclosures on hairlines. Each row is numbered with a CSS counter; the icon is
+   the brand's 3x3 cell plus, whose vertical arm folds away to a minus when open. */
+.faq { max-width: 760px; margin: var(--space-7) auto 0; text-align: left; counter-reset: faq; border-bottom: 1px solid var(--rule); }
+.item { counter-increment: faq; border-top: 1px solid var(--rule); }
+
+.q { margin: 0; font: inherit; }
+.q button {
+  width: 100%; min-height: 64px; display: grid; grid-template-columns: 40px minmax(0, 1fr) 12px; align-items: center; gap: var(--space-3);
+  padding: var(--space-4) var(--space-1); border: 0; background: none; color: var(--text); text-align: left; cursor: pointer;
+  font: inherit; font-size: 18px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.4;
+}
+.q button::before {
+  content: counter(faq, decimal-leading-zero);
+  font-family: var(--font-pixel); font-size: 12px; color: var(--muted); letter-spacing: 0;
+  transition: color var(--dur-moderate) var(--ease-smooth);
+}
+.q button:focus-visible { outline: 2px solid var(--text); outline-offset: -2px; border-radius: 4px; }
+.qText { transition: transform var(--dur-slow) var(--ease-smooth); }
+.qText code { font-family: var(--mono); font-size: 0.85em; }
+
+.icon { width: 12px; height: 12px; fill: var(--muted); overflow: visible; transition: fill var(--dur-moderate) var(--ease-smooth); }
+.icon rect { transform-box: fill-box; transform-origin: center; transition: transform var(--dur-moderate) var(--ease-swing), opacity var(--dur-moderate) var(--ease-smooth); }
+.item[data-open] .icon { fill: var(--text); }
+.item[data-open] .icon rect[data-arm="v"] { transform: scale(0); opacity: 0; }
+.item[data-open] .q button::before { color: var(--text); }
+
+@media (hover: hover) and (pointer: fine) {
+  .q button:hover::before { color: var(--text); }
+  .q button:hover .icon { fill: var(--text); }
+  .q button:hover .qText { transform: translateX(4px); }
+}
+
+/* Height eases between 0fr and 1fr; the answer settles in a beat behind it. */
+.panel {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur-slow) var(--ease-swing);
+}
+.item[data-open] .panel { grid-template-rows: 1fr; }
+.panelInner { min-height: 0; overflow: hidden; }
+.panelInner p {
+  margin: 0; padding: 0 var(--space-7) var(--space-5) calc(40px + var(--space-3) + var(--space-1));
+  max-width: 62ch; color: var(--muted); font-size: 16px; font-weight: 300; line-height: 1.65;
+  opacity: 0; transform: translateY(-6px);
+  transition: opacity var(--dur-moderate) var(--ease-smooth), transform var(--dur-slow) var(--ease-smooth);
+}
+.item[data-open] .panelInner p { opacity: 1; transform: none; transition-delay: 60ms; }
+.panelInner code { font-family: var(--mono); font-size: 0.88em; color: var(--text); }
+
+@media (max-width: 560px) {
+  .q button { grid-template-columns: 28px minmax(0, 1fr) 12px; font-size: 16px; padding-inline: 0; }
+  .panelInner p { padding-left: calc(28px + var(--space-3)); padding-right: 0; font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel, .panelInner p, .qText, .icon rect { transition-duration: var(--dur-instant); }
+  .panelInner p { transform: none; }
+  .q button:hover .qText { transform: none; }
+}

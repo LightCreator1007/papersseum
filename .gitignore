@@ -20,10 +20,11 @@ scratch_*
 *.mp4
 *.gif
 *.png
+!web/app/apple-icon.png
 replay.html
 
 # docs and spec (not tracked)
-docs/
+/docs/
 Paper.io Tournament Spec.md
 platform.html
 PLATFORM.md

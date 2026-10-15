@@ -1,0 +1,234 @@
+/* Motion layer: CSS micro-interactions on the tokens in tokens.css.
+   Rules (pinned by styles/motion-safe-initial-state.test.ts):
+   - Only transform, opacity, filter and colour animate. Never `transition: all`.
+   - A hidden or offset initial state lives under `prefers-reduced-motion: no-preference`
+     and starts with `html.js`, so no-JS and reduced-motion visitors never see it.
+   - Entry states use @starting-style or keyframes, which cannot leave an element stuck.
+   - Hover effects only under (hover: hover) and (pointer: fine).
+   - Custom properties set from JS are named --js-*. */
+
+/* Reveal. Hidden only while JS is on and motion is allowed; components/motion/reveal.tsx
+   shows it. The failsafe keyframe shows it anyway if the script never runs. */
+@media (prefers-reduced-motion: no-preference) {
+  html.js [data-reveal] {
+    opacity: 0;
+    animation: reveal-failsafe 0s calc(var(--dur-loop) * 2) forwards;
+  }
+}
+@keyframes reveal-failsafe { to { opacity: 1; } }
+
+/* Press scale. Opt in with data-press on any pressable element. */
+[data-press] {
+  transition: transform var(--dur-fast) var(--ease-smooth);
+}
+[data-press]:active:not(:disabled, [aria-disabled="true"]) {
+  transform: scale(var(--press-scale));
+}
+
+/* Dropdown. The panel carries data-dropdown and data-state="open" | "closed".
+   Closing fades, then hides visibility so the closed panel leaves the tab order. */
+[data-dropdown] {
+  transform-origin: var(--js-origin, top center);
+  transition:
+    opacity var(--dur-fast) var(--ease-smooth),
+    transform var(--dur-fast) var(--ease-smooth),
+    visibility 0s linear 0s;
+}
+[data-dropdown][data-state="closed"] {
+  opacity: 0;
+  transform: translateY(calc(var(--space-1) * -1)) scale(0.98);
+  visibility: hidden;
+  pointer-events: none;
+  transition-delay: 0s, 0s, var(--dur-fast);
+}
+@starting-style {
+  [data-dropdown][data-state="open"] {
+    opacity: 0;
+    transform: translateY(calc(var(--space-1) * -1)) scale(0.98);
+  }
+}
+
+/* Tooltip. <span data-tooltip>trigger<span role="tooltip">text</span></span>.
+   CSS only: shows on keyboard focus anywhere, and on hover for fine pointers. */
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip] > [role="tooltip"] {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + var(--space-2));
+  translate: -50% 0;
+  z-index: var(--z-popover);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-1);
+  background: var(--text);
+  color: var(--bg);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-fast) var(--ease-smooth),
+    transform var(--dur-fast) var(--ease-smooth);
+}
+[data-tooltip]:focus-within > [role="tooltip"] {
+  display: block;
+}
+@starting-style {
+  [data-tooltip]:focus-within > [role="tooltip"] {
+    opacity: 0;
+    transform: translateY(var(--space-1));
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  [data-tooltip]:hover > [role="tooltip"] {
+    display: block;
+  }
+  @starting-style {
+    [data-tooltip]:hover > [role="tooltip"] {
+      opacity: 0;
+      transform: translateY(var(--space-1));
+    }
+  }
+}
+
+/* Tabs indicator. A 1px bar that JS places with --js-tab-x (px) and --js-tab-w (the tab
+   width as a scale factor). Without JS it stays collapsed; the selected tab is also
+   marked by colour, so the bar is never the only signal. */
+[data-tabs-indicator] {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 2px;
+  background: var(--text);
+  transform-origin: left center;
+  transform: translateX(var(--js-tab-x, 0)) scaleX(var(--js-tab-w, 0));
+  transition: transform var(--dur-moderate) var(--ease-swing);
+}
+[role="tab"] {
+  transition: color var(--dur-fast) var(--ease-smooth);
+}
+[role="tab"][aria-selected="true"] {
+  color: var(--text);
+}
+
+/* Skeleton. Pulses only when motion is allowed; otherwise a static block. */
+[data-skeleton] {
+  background: var(--rule-soft);
+  border-radius: var(--radius-1);
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-skeleton] {
+    animation: skeleton-pulse var(--dur-loop) var(--ease-move) infinite;
+  }
+}
+@keyframes skeleton-pulse { 50% { opacity: 0.5; } }
+
+/* Number pop-in. Put data-pop on a span and change its React key to replay. */
+[data-pop] {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-pop] {
+    animation: number-pop var(--dur-moderate) var(--ease-swing) both;
+  }
+}
+@keyframes number-pop {
+  from { opacity: 0; transform: translateY(40%); filter: blur(2px); }
+}
+
+/* Accordion. <details data-accordion>; height snaps (never animated), the body fades
+   and settles, the chevron turns. */
+details[data-accordion] > summary {
+  cursor: pointer;
+  list-style: none;
+}
+details[data-accordion] > summary::-webkit-details-marker {
+  display: none;
+}
+[data-accordion-chevron] {
+  display: inline-block;
+  transition: transform var(--dur-moderate) var(--ease-smooth);
+}
+details[data-accordion][open] > summary [data-accordion-chevron] {
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: no-preference) {
+  details[data-accordion][open] > :not(summary) {
+    animation: accordion-in var(--dur-moderate) var(--ease-smooth);
+  }
+}
+@keyframes accordion-in {
+  from { opacity: 0; transform: translateY(calc(var(--space-1) * -1)); }
+}
+
+@keyframes fade-in { from { opacity: 0; } }
+
+/* Reduced motion: a second version, not "off". Fades stay and run at --dur-instant;
+   moves, loops and slides become static. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: var(--dur-instant);
+    --dur-moderate: var(--dur-instant);
+    --dur-slow: var(--dur-instant);
+  }
+  html {
+    scroll-behavior: auto;
+  }
+  [data-dropdown] {
+    transition:
+      opacity var(--dur-instant) var(--ease-smooth),
+      visibility 0s linear 0s;
+  }
+  [data-dropdown][data-state="closed"] {
+    transition-delay: 0s, var(--dur-instant);
+  }
+  [data-tooltip] > [role="tooltip"] {
+    transition: opacity var(--dur-instant) var(--ease-smooth);
+  }
+  [data-tabs-indicator],
+  [data-accordion-chevron],
+  [data-press] {
+    transition: none;
+  }
+  [data-pop],
+  details[data-accordion][open] > :not(summary) {
+    animation: fade-in var(--dur-instant) var(--ease-smooth) both;
+  }
+}
+
+/* Route transition: the new page is revealed through a 3x3 grid of cells that
+   grow from each cell's centre, echoing the logo. Old page fades underneath. */
+@property --cell {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 51%;
+}
+::view-transition { pointer-events: none; }
+::view-transition-group(site-header) { animation: none; z-index: 100; }
+::view-transition-old(site-header) { display: none; }
+::view-transition-new(site-header) { animation: none; }
+::view-transition-old(.cell-out) {
+  animation: cell-out var(--dur-slow) var(--ease-move) both;
+}
+::view-transition-new(.cell-wipe) {
+  --cell: 0%;
+  mask-image:
+    linear-gradient(to right, transparent calc(50% - var(--cell)), #000 0 calc(50% + var(--cell)), transparent 0),
+    linear-gradient(to bottom, transparent calc(50% - var(--cell)), #000 0 calc(50% + var(--cell)), transparent 0);
+  mask-composite: intersect;
+  mask-size: 33.34% 33.34%;
+  mask-repeat: repeat;
+  animation: cell-in var(--dur-slow) var(--ease-move) both;
+}
+@keyframes cell-in { from { --cell: 0%; } to { --cell: 51%; } }
+@keyframes cell-out { to { opacity: 0; transform: scale(0.985); } }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-new(.cell-wipe) { mask-image: none; animation: vt-fade var(--dur-instant) linear both; }
+  ::view-transition-old(.cell-out) { animation: vt-fade var(--dur-instant) linear reverse both; }
+}
+@keyframes vt-fade { from { opacity: 0; } to { opacity: 1; } }

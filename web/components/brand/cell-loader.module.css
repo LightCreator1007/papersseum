@@ -1,0 +1,64 @@
+.loader {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--muted);
+  font-size: 13px;
+}
+.grid {
+  display: grid;
+  grid-template: repeat(3, 6px) / repeat(3, 6px);
+  gap: 2px;
+  flex: none;
+}
+.cell {
+  background: var(--ink);
+  opacity: 0.15;
+}
+.label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Spiral order from the top-left, clockwise, centre last. Each cell lights for a third of
+   the loop; the staggered negative delays make the lit run chase round the ring. */
+.cell:nth-child(1) { --slot: 0; }
+.cell:nth-child(2) { --slot: 1; }
+.cell:nth-child(3) { --slot: 2; }
+.cell:nth-child(6) { --slot: 3; }
+.cell:nth-child(9) { --slot: 4; }
+.cell:nth-child(8) { --slot: 5; }
+.cell:nth-child(7) { --slot: 6; }
+.cell:nth-child(4) { --slot: 7; }
+.cell:nth-child(5) { --slot: 8; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .cell {
+    animation: cell-lit var(--dur-loop) steps(1, end) infinite;
+    animation-delay: calc(var(--dur-loop) * var(--slot) / -9);
+  }
+}
+@keyframes cell-lit {
+  0% { opacity: 1; }
+  33% { opacity: 0.15; }
+}
+
+/* Reduced motion: the static brand mark and the visible text label. */
+@media (prefers-reduced-motion: reduce) {
+  .cell { opacity: 1; }
+  .cell:nth-child(odd) { opacity: 0; }
+  .label {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+  }
+}

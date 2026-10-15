@@ -1,0 +1,20 @@
+.cell {
+  position: relative;
+  min-width: 0;
+  background: var(--surface);
+  box-shadow: var(--hairline);
+}
+/* The glow is a gradient centred on --js-mx / --js-my, written from gsap.quickTo in
+   cell.tsx. It draws only while a fine pointer is over the cell. */
+.glow { --js-mx: -400px; --js-my: -400px; }
+@media (hover: hover) and (pointer: fine) {
+  .glow:hover {
+    background:
+      radial-gradient(
+        220px circle at var(--js-mx) var(--js-my),
+        color-mix(in oklch, var(--text) 7%, transparent),
+        transparent 70%
+      ),
+      var(--surface);
+  }
+}

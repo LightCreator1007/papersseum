@@ -1,0 +1,18 @@
+.overlay { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.rider {
+  position: absolute; transform: translate(-50%, -92%);
+  transition: left 100ms linear, top 100ms linear;
+  filter: drop-shadow(0 1px 0 var(--bg));
+}
+.rider[data-jump] { transition: none; }
+.rider svg { display: block; width: 100%; height: auto; }
+.ring {
+  position: absolute; width: 4%; aspect-ratio: 1; border: 2px solid currentColor;
+  transform: translate(-50%, -50%) scale(0.2); opacity: 1;
+  animation: ring var(--dur-slow) var(--ease-swing) forwards;
+}
+@keyframes ring { to { transform: translate(-50%, -50%) scale(2.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .rider { transition: none; }
+  .ring { display: none; }
+}

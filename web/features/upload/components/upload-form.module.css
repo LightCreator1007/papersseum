@@ -1,0 +1,12 @@
+.title { margin: 0; font-weight: 500; }
+.lede { margin: 4px 0 14px; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.submit { margin-left: auto; }
+.msg { margin: 12px 0 0; }
+.note { margin: 12px 0 0; color: var(--muted); }
+
+/* Uploading needs the file on this device, which a phone rarely has. */
+.phone { display: none; margin: 12px 0 0; color: var(--muted); }
+@media (max-width: 640px) {
+  .phone { display: block; }
+}

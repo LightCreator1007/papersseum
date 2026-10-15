@@ -1,0 +1,45 @@
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--text);
+}
+.mark { position: relative; flex: none; width: 8px; height: 8px; }
+
+/* live: filled circle with a soft ring that breathes. */
+.live { border-radius: 50%; background: var(--up); }
+.live::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--up);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .live::after { animation: live-ring var(--dur-loop) var(--ease-smooth) infinite; }
+}
+@keyframes live-ring {
+  from { transform: scale(1); opacity: 0.5; }
+  to { transform: scale(2.4); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live::after { display: none; }
+}
+
+/* waiting: hollow ring. */
+.waiting { border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--muted); }
+
+/* done: solid square in ink. */
+.done { background: var(--ink); border-radius: 1px; }
+
+/* failed: diamond. */
+.failed { background: var(--down); transform: rotate(45deg) scale(0.85); }
+
+/* paused: two bars. */
+.paused {
+  background:
+    linear-gradient(var(--muted), var(--muted)) 0 0 / 3px 100% no-repeat,
+    linear-gradient(var(--muted), var(--muted)) 100% 0 / 3px 100% no-repeat;
+}
