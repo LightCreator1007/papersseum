@@ -1,0 +1,24 @@
+.tabs { display: block; }
+.list {
+  position: relative;
+  display: flex;
+  gap: var(--space-5);
+  overflow-x: auto;
+  box-shadow: inset 0 -1px 0 var(--rule);
+}
+.tab {
+  flex: none;
+  padding: var(--space-3) 0;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+  .tab:not([aria-selected="true"]):hover { color: var(--text); }
+}
+.panel { padding-top: var(--space-5); }
+/* Positioned by [data-tabs-indicator] in styles/motion.css. */
+.indicator { pointer-events: none; }

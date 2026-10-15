@@ -1,0 +1,61 @@
+/* Type scale, focus ring and the hairline grid language. */
+:root {
+  --text-xs: 12px; --text-sm: 13px; --text-md: 15px; --text-lg: 18px;
+  --text-xl: 21.6px; --text-2xl: 26px; --text-3xl: 31px; --text-4xl: 37.3px;
+  --text-display: clamp(2.5rem, 6vw + 1rem, 6rem);
+}
+
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 2px; }
+
+::selection { background: var(--ink); color: var(--paper); }
+
+.display {
+  font-size: var(--text-display);
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+.lede { font-size: var(--text-lg); line-height: 1.5; color: var(--muted); max-width: 56ch; text-wrap: pretty; }
+.eyebrow { font-family: var(--mono); font-size: var(--text-xs); color: var(--muted); letter-spacing: 0.02em; }
+.pixel { font-family: var(--font-pixel); letter-spacing: 0; }
+
+/* A cell of the hairline grid: 1px rule plus crosshair marks at two corners. */
+.grid-cell { position: relative; box-shadow: var(--hairline); }
+.grid-cell::before,
+.grid-cell::after {
+  content: "";
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--muted), var(--muted)) center / 1px 100% no-repeat,
+    linear-gradient(var(--muted), var(--muted)) center / 100% 1px no-repeat;
+}
+.grid-cell::before { top: -4px; left: -4px; }
+.grid-cell::after { bottom: -4px; right: -4px; }
+
+.ghost-type { opacity: 0.05; pointer-events: none; user-select: none; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* A bot name led by its pixel character. */
+.bot-tag { text-decoration: none; display: inline-flex; align-items: center; gap: 8px; color: var(--text); }
+.bot-tag svg { flex: none; }
+.bot-tag:hover span { text-decoration: underline; text-underline-offset: 3px; }
+.rank-cell { font-family: var(--font-pixel); font-size: 18px; }
+
+/* Visually hidden, still read by screen readers. */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Lighter emphasis throughout: the type system leans on size and tracking, not weight. */
+b, strong { font-weight: 500; }
+
+/* Dev-only fake login on /sign-in (lib/dev-auth.ts). */
+.dev-login { margin-top: var(--space-5); padding: var(--space-4); border: 1px dashed var(--rule); text-align: left; }
+.dev-login p { margin: 0 0 var(--space-2); }
+.dev-login ul { margin: 0; padding-left: var(--space-5); display: grid; gap: var(--space-1); }
