@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { signOut } from "@/features/auth/actions";
 import { LoadBoundary } from "@/components/load-boundary";
@@ -31,6 +32,7 @@ export function SiteFooter() {
             <FooterContent />
           </Suspense>
         </LoadBoundary>
+        <Link href="/privacy">Privacy</Link>
       </div>
     </footer>
   );
