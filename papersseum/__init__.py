@@ -72,11 +72,16 @@ def play(agent, vs=None, seed=7, render=None):
             The lobby is padded to 5 players with random agents.
     render: optional output path; writes an MP4 of the match if given.
 
-    Returns the match result dict (scores, placements, action_log, final_owner).
+    Returns the match result dict (scores, placements, action_log, final_owner),
+    plus players: [{"slot", "bot_name"}] naming the lobby, for a saved replay.
     """
     import os
     vs = vs or ["greedy", "safe_expander"]
     lobby = [_resolve_agent(agent)]
+    if isinstance(agent, str):
+        names = [os.path.splitext(os.path.basename(agent))[0]]
+    else:
+        names = [agent.__name__ if isinstance(agent, type) else type(agent).__name__]
     # your agent can load weights from config["weights_dir"] (its own folder)
     agent_dir = os.path.dirname(os.path.abspath(agent)) if isinstance(agent, str) else None
     weights_dirs = [agent_dir] + [None] * (constants.N_PLAYERS - 1)
@@ -84,11 +89,15 @@ def play(agent, vs=None, seed=7, render=None):
         if name not in BASELINES:
             raise ValueError(f"unknown baseline {name!r}; choose from {sorted(BASELINES)}")
         lobby.append(BASELINES[name]())
+        names.append(name)
     while len(lobby) < constants.N_PLAYERS:
         lobby.append(RandomAgent())
+        names.append("random")
     lobby = lobby[:constants.N_PLAYERS]
+    names = names[:constants.N_PLAYERS]
 
     result = run_match(seed, lobby, weights_dirs=weights_dirs)
+    result["players"] = [{"slot": i, "bot_name": n} for i, n in enumerate(names)]
     if render:
         from papersseum.render import render_replay_mp4
         render_replay_mp4(seed, result["action_log"], render)

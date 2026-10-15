@@ -94,6 +94,24 @@ def test_replay_roundtrip_jsonl_and_gz(tmp_path):
     assert (tmp_path / "r.jsonl").read_text().splitlines()[0].startswith('{"type":"header"')
 
 
+def test_play_save_replay_records_the_lobby_names(tmp_path, capsys):
+    from papersseum.cli import main
+    from papersseum.replay_io import load_replay
+    out = tmp_path / "game.jsonl.gz"
+    assert main(["play", "examples/my_agent.py", "--vs", "hunter", "--seed", "2",
+                 "--save-replay", str(out)]) == 0
+    names = [pl["bot_name"] for pl in load_replay(out)["players"]]
+    assert names == ["my_agent", "hunter", "random", "random", "random"]
+    assert [pl["slot"] for pl in load_replay(out)["players"]] == [0, 1, 2, 3, 4]
+
+
+def test_play_names_follow_the_lobby_it_builds():
+    from papersseum.agents import HunterAgent
+    res = p.play(HunterAgent, vs=["greedy", "safe_expander", "random", "hunter", "greedy"], seed=1)
+    assert [pl["bot_name"] for pl in res["players"]] == [
+        "HunterAgent", "greedy", "safe_expander", "random", "hunter"]     # truncated to 5 seats
+
+
 def test_replay_match_and_iter_frames_agree_with_live_match():
     lobby = [p.BASELINES["safe_expander"]() for _ in range(5)]
     res = p.run_match(5, lobby)
