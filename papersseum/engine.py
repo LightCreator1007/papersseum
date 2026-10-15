@@ -3,7 +3,7 @@ from papersseum.state import init_match, area_pct
 from papersseum.movement import intended_moves, apply_decision, rotate, step_delta
 from papersseum.trail import lay_trail, is_outside_own_land
 from papersseum.capture import close_trail
-from papersseum.death import resolve_headon, classify_entry, kill
+from papersseum.death import resolve_headon, resolve_cell_conflicts, classify_entry, kill
 from papersseum.respawn import tick_respawns
 
 
@@ -46,6 +46,7 @@ class Engine:
                 del moves[pid]                         # fully walled (shouldn't happen)
 
         killed_headon = resolve_headon(st, moves)
+        resolve_cell_conflicts(st, moves)      # one bot per cell: the others wait a tick
 
         for pid in sorted(moves):
             if pid in killed_headon or not st.players[pid].alive:

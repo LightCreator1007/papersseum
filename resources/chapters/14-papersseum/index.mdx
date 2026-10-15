@@ -1,5 +1,5 @@
 <Callout title="At a glance">
-**About 60 minutes.** This is where the course comes together. Papersseum is a five-player territory game, and in this chapter we treat it as an RL problem: what the states, actions and rewards are, why it is harder than anything so far, and how to train a first bot with the policy gradients from chapter 12. The bot we build is tiny, 371 numbers in total, and it holds on average about **32% of the map** against bots that hold around 6 to 14%. At the end, you will have a single `.py` file that is ready to submit. You need everything from the earlier chapters, especially chapters 10, 12 and 13.
+**About 60 minutes.** This is where the course comes together. Papersseum is a five-player territory game, and in this chapter we treat it as an RL problem: what the states, actions and rewards are, why it is harder than anything so far, and how to train a first bot with the policy gradients from chapter 12. The bot we build is tiny, 371 numbers in total, and it holds on average about **31% of the map** against bots that hold around 7 to 15%. At the end, you will have a single `.py` file that is ready to submit. You need everything from the earlier chapters, especially chapters 10, 12 and 13.
 </Callout>
 
 ## The game in one minute
@@ -88,13 +88,13 @@ Numbers from training can flatter a bot, so we test it on **30 fresh matches** (
 
 | Bot | Matches won (of 30) | Average share of the map held over the match |
 | --- | --- | --- |
-| Trained network | **23** | **32%** |
+| Trained network | **20** | **31%** |
 | Same network, random weights | 12 | 8% |
-| The hand-written `greedy`, `safe_expander`, `hunter` | 4 to 6 | roughly 6 to 14% |
+| The hand-written `greedy`, `safe_expander`, `hunter` | 5 to 8 | roughly 7 to 15% |
 
 Two lessons. First, **training worked**: the trained network holds about four times as much land as it did before training. Second, notice that the untrained network was already not hopeless. That is the effect of the features and the lean towards "straight" we gave it at the start. Good features are worth a lot.
 
-Then a harder test: a field with two `hunter` bots (which actively chase rivals), a `safe_expander` and a `greedy`. Here the trained bot holds about 20% and wins around one match in three, still ahead of any of the hand-written bots, but far from dominant. One more check: if the finished policy always takes its single most likely move instead of sampling, it still does well on the easy field (about 33% over 10 matches, though a sample that small is very noisy), so you can submit it either way.
+Then a harder test: a field with two `hunter` bots (which actively chase rivals), a `safe_expander` and a `greedy`. Here the trained bot holds about 22% and wins around one match in three (12 of 30 in our run), still ahead of any of the hand-written bots, but far from dominant. One more check: if the finished policy always takes its single most likely move instead of sampling, it still does well on the easy field (about 31% over 10 matches, though a sample that small is very noisy), so you can submit it either way.
 
 ## Honest limits
 
@@ -169,7 +169,7 @@ Matches are fully determined by their seed. Testing on matches the bot trained o
 - Papersseum as an MDP: an episode of 1,800 decisions, three actions, a state made of 16 pictures around the bot's head, a reward equal to the change in land owned (minus a penalty for dying).
 - It is harder than cart-pole because rewards are **lumpy**, danger comes from **other agents**, and those agents are a **moving target**.
 - **Feature engineering** summarises the picture into 19 numbers, plus a small memory of the current trip. Good features made even an untrained network respectable.
-- A **19-16-3 network** trained with **REINFORCE** and a baseline raised the average share of the map from about 8% to about 32% on fresh matches, and won 23 of 30.
+- A **19-16-3 network** trained with **REINFORCE** and a baseline raised the average share of the map from about 8% to about 31% on fresh matches, and won 20 of 30.
 - It is noisy and trained against a narrow set of opponents, so the next steps are better features, more training, and a **league** of varied opponents.
 - A submission is one `.py` file with the weights embedded. `pack`, `validate` and `eval` take you from a trained network to an upload.
 
