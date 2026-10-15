@@ -1,0 +1,39 @@
+/* Pixel bot. Every cell is a 1x1 rect on a 12x12 viewBox; anime.js moves layers and cells
+   (see character-idle.ts). Overflow stays visible so hops and the dead drop are not clipped. */
+.bot {
+  display: block;
+  flex: none;
+  overflow: visible;
+}
+
+.bot g,
+.bot rect {
+  transform-box: fill-box;
+}
+
+/* Hops squash from the feet, blinks close toward the middle of the eye row. */
+.bot [data-layer="figure"] {
+  transform-origin: 50% 100%;
+}
+.bot [data-layer="lids"] {
+  transform-origin: 50% 50%;
+}
+
+.body,
+.antenna {
+  fill: var(--text);
+}
+.accent {
+  fill: var(--bot-accent, var(--text));
+}
+/* Eyes and mouth are holes in the body: painted in the ground colour on top of it.
+   A surface other than --bg can set --bot-hole to match. */
+.eye,
+.mouth {
+  fill: var(--bot-hole, var(--bg));
+}
+
+/* Still poses: what reduced motion, no JS and the server render show. */
+.bot[data-state="dead"] {
+  opacity: 0.3;
+}

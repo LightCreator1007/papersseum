@@ -1,0 +1,44 @@
+/* Design tokens. Names below are a contract: app/learn/learn.css reads
+   --bg --surface --text --muted --rule --rule-soft --up --down --mono. */
+:root {
+  color-scheme: light dark;
+  --paper: #fafaf8; --ink: #111111;
+  --bg: var(--paper); --surface: #ffffff; --text: var(--ink);
+  --muted: #666666; --rule: #e4e4e0; --rule-soft: #efefeb;
+  --up: #1f7a4d; --down: #b23b2a;
+  /* Player colours: identical to papersseum/render.py */
+  --slot-0: #ff4d5e; --slot-1: #4d9dff; --slot-2: #35e07f; --slot-3: #ffd23f; --slot-4: #b36bff;
+  --slot-0-ghost: color-mix(in oklch, var(--slot-0) 8%, transparent);
+  --slot-1-ghost: color-mix(in oklch, var(--slot-1) 8%, transparent);
+  --slot-2-ghost: color-mix(in oklch, var(--slot-2) 8%, transparent);
+  --slot-3-ghost: color-mix(in oklch, var(--slot-3) 8%, transparent);
+  --slot-4-ghost: color-mix(in oklch, var(--slot-4) 8%, transparent);
+  --ground: #efefec; --head: #111111;
+  --dur-instant: 70ms; --dur-fast: 140ms; --dur-moderate: 240ms; --dur-slow: 420ms; --dur-loop: 1.6s;
+  --ease-smooth: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-swing: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-move: cubic-bezier(0.77, 0, 0.175, 1);
+  --press-scale: 0.96;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px;
+  --space-6: 24px; --space-7: 32px; --space-8: 48px; --space-9: 64px; --space-10: 96px;
+  --radius-1: 4px; --radius-2: 6px; --radius-3: 10px;
+  --z-base: 0; --z-raised: 10; --z-sticky: 30; --z-overlay: 50; --z-modal: 60; --z-popover: 70;
+  --hairline: 0 0 0 1px var(--rule);
+  --font-display: var(--font-geist-sans), -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --sans: var(--font-display);
+  --mono: var(--font-geist-mono), ui-monospace, Menlo, monospace;
+  --font-pixel: var(--font-geist-pixel-square), var(--mono);
+  --content: 1120px;
+}
+:root[data-theme="dark"] {
+  --paper: #121212; --ink: #e8e8e6; --surface: #181818;
+  --muted: #9a9a9a; --rule: #2a2a2a; --rule-soft: #222222;
+  --up: #5cc98f; --down: #ef7d6b; --ground: #1f1f1f; --head: #f5f5f5;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #121212; --ink: #e8e8e6; --surface: #181818;
+    --muted: #9a9a9a; --rule: #2a2a2a; --rule-soft: #222222;
+    --up: #5cc98f; --down: #ef7d6b; --ground: #1f1f1f; --head: #f5f5f5;
+  }
+}

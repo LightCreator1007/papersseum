@@ -1,0 +1,3 @@
+.skeleton { display: block; }
+.row { display: flex; align-items: center; height: 37px; border-bottom: 1px solid var(--rule-soft); }
+.bar { display: block; height: 10px; max-width: 100%; }

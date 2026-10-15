@@ -6,26 +6,39 @@ import { LiveRefresh } from "@/components/live-refresh";
 import { LoadBoundary } from "@/components/load-boundary";
 import { Placeholder } from "@/components/placeholder";
 import { ReplayViewer } from "@/features/replay/components/replay-viewer";
+import { ReplaySkeleton } from "@/features/replay/components/final-board";
+import { BotTag } from "@/components/bot-tag";
 import { Swatch } from "@/features/ladder/components/swatch";
+import { PLAYER_COLORS } from "@/features/ladder/colors";
 import { duration, elo, eloChange, percent, relativeTime, shortDateTime } from "@/features/ladder/format";
-import { botHref } from "@/features/ladder/links";
 import { getMatch, replayUrl, type MatchDetail, type SeatResult } from "@/features/ladder/queries";
+import { bannedNote, failureReason, versionLabel } from "./match-copy";
+import styles from "./match-page.module.css";
 
 export const metadata: Metadata = { title: "Match" };
 
-function BotName({ seat }: { seat: SeatResult }) {
+function BotName({ seat, note }: { seat: SeatResult; note?: string | null }) {
+  const version = versionLabel(seat.version);
   return (
     <>
-      <Swatch slot={seat.slot} />
-      {seat.name ? <Link href={botHref(seat.name)}>{seat.name}</Link> : <span className="muted">deleted bot</span>}
+      {seat.name ? (
+        <BotTag name={seat.name} accent={PLAYER_COLORS[seat.slot]} />
+      ) : (
+        <>
+          <Swatch slot={seat.slot} />
+          <span className="muted">deleted bot</span>
+        </>
+      )}
+      {version && <span className={styles.version}> {version}</span>}
       {seat.isHouse && <span className="muted small"> house</span>}
+      {seat.banned && (note ? <span className="error-text small"> {note}</span> : <span className="error-text small"> banned</span>)}
     </>
   );
 }
 
 function EloCell({ seat }: { seat: SeatResult }) {
   const change = eloChange(seat.eloBefore, seat.eloAfter);
-  if (!change) return <>—</>;
+  if (!change) return <>n/a</>;
   return (
     <>
       {elo(seat.eloBefore)} → {elo(seat.eloAfter)}{" "}
@@ -52,11 +65,11 @@ function Results({ match }: { match: MatchDetail }) {
         <tbody>
           {match.seats.map((s) => (
             <tr key={s.slot}>
-              <td>{s.placement ?? "—"}</td>
+              <td>{s.placement ?? "n/a"}</td>
               <td className="seat"><BotName seat={s} /></td>
               <td className="num">{percent(s.coverage)}</td>
-              <td className="num">{s.deaths ?? "—"}</td>
-              <td className="num">{s.strikes ?? "—"}</td>
+              <td className="num">{s.deaths ?? "n/a"}</td>
+              <td className="num">{s.strikes ?? "n/a"}</td>
               <td className={s.crashed ? undefined : "muted"}>{s.crashed ? "crashed" : "finished"}</td>
               <td className="num"><EloCell seat={s} /></td>
             </tr>
@@ -70,13 +83,41 @@ function Results({ match }: { match: MatchDetail }) {
 function SeatList({ match }: { match: MatchDetail }) {
   const bySlot = [...match.seats].sort((a, b) => a.slot - b.slot);
   return (
-    <ul className="list-plain">
+    <ul className={`list-plain ${styles.seats}`}>
       {bySlot.map((s) => (
-        <li key={s.slot} style={{ padding: "4px 0", whiteSpace: "nowrap" }}>
-          <BotName seat={s} />
+        <li key={s.slot}>
+          <BotName seat={s} note={bannedNote(match.status, s.banned)} />
         </li>
       ))}
     </ul>
+  );
+}
+
+function FailedNotice({ error }: { error: string | null }) {
+  const reason = failureReason(error);
+  return (
+    <div className={`notice ${styles.failed}`}>
+      <p>This match couldn&apos;t be played. {reason.summary}</p>
+      <p className="muted small">Failed matches don&apos;t change anyone&apos;s rating.</p>
+      {reason.raw && (
+        <details className={styles.raw}>
+          <summary>Error details</summary>
+          <pre>{reason.raw}</pre>
+        </details>
+      )}
+    </div>
+  );
+}
+
+// Rows and the viewer's frame at their final size, so the page doesn't jump when it loads.
+function MatchSkeleton() {
+  return (
+    <>
+      <Placeholder lines={7} />
+      <section className={styles.replay}>
+        <ReplaySkeleton />
+      </section>
+    </>
   );
 }
 
@@ -119,15 +160,19 @@ async function MatchContent({ params }: { params: PageProps<"/matches/[id]">["pa
 
       {match.status === "done" && (
         <>
-          <Results match={match} />
+          <LoadBoundary what="the results">
+            <Results match={match} />
+          </LoadBoundary>
           {match.replayPath ? (
-            <section style={{ marginTop: 28 }}>
-              <ReplayViewer
-                source={{ url: replayUrl(match.replayPath) }}
-                expected={match.seats.map((s) => ({
-                  slot: s.slot, name: s.name, placement: s.placement, coverage: s.coverage,
-                }))}
-              />
+            <section className={styles.replay}>
+              <LoadBoundary what="the replay">
+                <ReplayViewer
+                  source={{ url: replayUrl(match.replayPath) }}
+                  expected={match.seats.map((s) => ({
+                    slot: s.slot, name: s.name, placement: s.placement, coverage: s.coverage,
+                  }))}
+                />
+              </LoadBoundary>
               <p className="muted small" style={{ marginTop: 8 }}>
                 <a href={replayUrl(match.replayPath)} download>
                   Download replay
@@ -153,7 +198,7 @@ async function MatchContent({ params }: { params: PageProps<"/matches/[id]">["pa
 
       {match.status === "failed" && (
         <>
-          <p className="notice">This match couldn&apos;t be played.</p>
+          <FailedNotice error={match.error} />
           <SeatList match={match} />
         </>
       )}
@@ -164,7 +209,7 @@ async function MatchContent({ params }: { params: PageProps<"/matches/[id]">["pa
 export default function MatchPage(props: PageProps<"/matches/[id]">) {
   return (
     <LoadBoundary what="this match">
-      <Suspense fallback={<Placeholder lines={7} />}>
+      <Suspense fallback={<MatchSkeleton />}>
         <MatchContent params={props.params} />
       </Suspense>
     </LoadBoundary>

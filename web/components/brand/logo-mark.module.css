@@ -1,0 +1,21 @@
+.mark {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  overflow: visible;
+}
+.mark rect {
+  fill: var(--ink);
+}
+.mark rect[data-cell="c"] {
+  fill: var(--slot-4);
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mark[data-animate="hover"] {
+    transition: opacity var(--dur-instant) var(--ease-smooth);
+  }
+  .mark[data-animate="hover"][data-hover="true"] {
+    opacity: 0.7;
+  }
+}

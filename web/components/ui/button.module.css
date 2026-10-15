@@ -1,0 +1,161 @@
+/* Colours come from variables so a surface (the home CTA band) can recolour a button
+   without re-declaring its states:
+   --btn-bg --btn-fg   resting fill and label
+   --btn-fill --btn-fill-fg   the layer that rises in on hover, and the label over it
+   --btn-line   1px border colour (transparent unless a variant sets it)
+   No shadows or gradients: edges are borders, emphasis is colour. */
+.button {
+  --btn-bg: transparent;
+  --btn-fg: var(--text);
+  --btn-fill: var(--ink);
+  --btn-fill-fg: var(--paper);
+  --btn-line: transparent;
+  --btn-h: 36px;
+  --btn-radius: var(--radius-2);
+  box-sizing: border-box;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--btn-h);
+  padding: 0 var(--space-4);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  border: 1px solid var(--btn-line);
+  border-radius: var(--btn-radius);
+  background: var(--btn-bg) padding-box;
+  color: var(--btn-fg);
+  cursor: pointer;
+  transition:
+    color var(--dur-moderate) var(--ease-smooth) 40ms,
+    border-color var(--dur-moderate) var(--ease-smooth),
+    transform var(--dur-fast) var(--ease-smooth);
+}
+.sm { --btn-h: 28px; padding: 0 var(--space-3); font-size: var(--text-xs); }
+
+/* The fill. Rises from the bottom edge on enter and leaves through the top on exit:
+   transform-origin flips instantly while the scale eases, so the layer always travels
+   the same way, like a shutter. */
+.button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--btn-fill);
+  transform: scaleY(0);
+  transform-origin: 50% 0;
+  transition: transform var(--dur-slow) var(--ease-swing);
+}
+
+/* Primary actions light up in slot 3 yellow, with ink type on it, in both themes. */
+.ink { --btn-bg: var(--ink); --btn-fg: var(--paper); --btn-fill: var(--slot-3); --btn-fill-fg: #111111; }
+.ghost { --btn-line: var(--rule); }
+.link {
+  min-height: 0;
+  padding: var(--space-1) 0;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  overflow: visible;
+  transition: color var(--dur-fast) var(--ease-smooth);
+}
+/* A quiet rule is always there; an ink line draws over it from the left on hover and
+   retracts to the right on exit. */
+.link::before { content: none; }
+.link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: 100% 50%;
+  transition: transform var(--dur-slow) var(--ease-swing);
+}
+
+/* ---------- Label roll ---------- */
+/* One line tall window. The second copy waits one line below and both rows travel up
+   by exactly one line, so the swap lands on the same baseline. */
+.roll { position: relative; display: inline-flex; height: 1.25em; line-height: 1.25; overflow: hidden; }
+.row { display: inline-flex; }
+.rowNext { position: absolute; left: 0; top: 1.25em; }
+.char { display: inline-block; }
+.split .char,
+.roll:not(.split) .row {
+  transition: transform var(--dur-slow) var(--ease-smooth);
+  transition-delay: calc(min(var(--i, 0), 16) * 14ms);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .button:not(.link):hover:not([aria-disabled="true"]) { color: var(--btn-fill-fg); }
+  .button:not(.link):hover:not([aria-disabled="true"])::before { transform: scaleY(1); transform-origin: 50% 100%; }
+  .ghost:hover:not([aria-disabled="true"]) { --btn-line: var(--btn-fill); }
+  .button:hover:not([aria-disabled="true"]) .split .char,
+  .button:hover:not([aria-disabled="true"]) .roll:not(.split) .row { transform: translateY(-1.25em); }
+  .link:hover:not([aria-disabled="true"])::after { transform: scaleX(1); transform-origin: 0 50%; }
+}
+
+/* Keyboard focus gets the same state as hover, plus the ring. */
+.button:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.button:not(.link):focus-visible:not([aria-disabled="true"]) { color: var(--btn-fill-fg); }
+.button:not(.link):focus-visible:not([aria-disabled="true"])::before { transform: scaleY(1); transform-origin: 50% 100%; }
+.ghost:focus-visible:not([aria-disabled="true"]) { --btn-line: var(--btn-fill); }
+.button:focus-visible:not([aria-disabled="true"]) .split .char,
+.button:focus-visible:not([aria-disabled="true"]) .roll:not(.split) .row { transform: translateY(-1.25em); }
+.link:focus-visible { outline-offset: 2px; }
+.link:focus-visible::after { transform: scaleX(1); transform-origin: 0 50%; }
+
+/* Reduced motion: no travel. The fill and the new label cross-fade in place. */
+@media (prefers-reduced-motion: reduce) {
+  .button, .link { transition: color var(--dur-instant) var(--ease-smooth), border-color var(--dur-instant) var(--ease-smooth); }
+  .link::after { transform: scaleX(1); opacity: 0; transition: opacity var(--dur-instant) var(--ease-smooth); }
+  .link:hover::after, .link:focus-visible::after { opacity: 1; }
+  .button::before { transform: none; opacity: 0; transition: opacity var(--dur-instant) var(--ease-smooth); }
+  .button:not(.link):hover:not([aria-disabled="true"])::before,
+  .button:not(.link):focus-visible:not([aria-disabled="true"])::before { transform: none; opacity: 1; }
+  .rowNext { display: none; }
+  .split .char,
+  .roll:not(.split) .row { transition: none; }
+  .button:hover .split .char,
+  .button:hover .roll:not(.split) .row,
+  .button:focus-visible .split .char,
+  .button:focus-visible .roll:not(.split) .row { transform: none; }
+}
+
+.button[aria-disabled="true"] { cursor: default; }
+.button[aria-disabled="true"]:not([aria-busy="true"]) { opacity: 0.5; }
+
+/* The label stays in flow and sets the width. While pending it is only made transparent,
+   and the pending layer sits over it without adding width, so the button never resizes. */
+.stack { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+.label { display: inline-flex; align-items: center; }
+.label[data-hidden] { opacity: 0; }
+.pending {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.dots {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dots { animation: dot-pulse var(--dur-loop) var(--ease-move) infinite; }
+}
+@keyframes dot-pulse { 50% { opacity: 0.3; } }

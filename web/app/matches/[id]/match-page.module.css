@@ -1,0 +1,22 @@
+.version { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.seats li { padding: 4px 0; white-space: nowrap; }
+.replay { margin-top: 28px; }
+
+.failed p { margin: 0; }
+.failed p + p { margin-top: var(--space-2); }
+.raw { margin-top: var(--space-3); font-size: 13px; }
+.raw summary { cursor: pointer; color: var(--muted); }
+.raw summary:hover { color: var(--text); }
+.raw pre {
+  margin: var(--space-2) 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.failed + ul { margin-top: var(--space-4); }

@@ -1,0 +1,74 @@
+.root { position: fixed; inset: 0; z-index: var(--z-modal); }
+
+/* The backdrop fades faster than the panel travels, so the page is readable again
+   before the panel has finished leaving. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in oklch, var(--ink) 30%, transparent);
+  transition: opacity var(--dur-fast) var(--ease-smooth);
+}
+.backdrop[data-state="closed"] { opacity: 0; }
+@starting-style {
+  .backdrop { opacity: 0; }
+}
+
+.panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(440px, 100vw);
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  transition: transform var(--dur-slow) var(--ease-swing);
+}
+.panel[data-side="right"] { right: 0; box-shadow: -1px 0 0 var(--rule); }
+/* Enter swings in; exit retraces the same path to the right, a little quicker. */
+.panel[data-state="closed"] { transform: translateX(100%); transition-duration: var(--dur-moderate); }
+@starting-style {
+  .panel { transform: translateX(100%); }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--rule);
+}
+.title { margin: 0; font-size: var(--text-lg); font-weight: 500; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  font: inherit;
+  font-size: var(--text-xl);
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-1);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-smooth), background-color var(--dur-fast) var(--ease-smooth);
+}
+@media (hover: hover) and (pointer: fine) {
+  .close:hover { color: var(--text); background: var(--rule-soft); }
+}
+.body { flex: 1; min-height: 0; padding: var(--space-5); overflow-y: auto; overscroll-behavior: contain; }
+
+.root[inert] { pointer-events: none; }
+
+/* Reduced motion: the panel fades in place instead of travelling. */
+@media (prefers-reduced-motion: reduce) {
+  .panel { transition: opacity var(--dur-instant) var(--ease-smooth); }
+  .panel[data-state="closed"] { transform: none; opacity: 0; }
+  @starting-style {
+    .panel { transform: none; opacity: 0; }
+  }
+}

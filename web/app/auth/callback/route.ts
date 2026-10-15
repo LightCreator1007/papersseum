@@ -12,6 +12,8 @@ function siteOrigin(request: NextRequest): string {
   return process.env.NODE_ENV === "development" && host ? `${protocol}//${host}` : origin;
 }
 
+const FIRST_SIGN_IN_MS = 10 * 60_000;
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const origin = siteOrigin(request);
@@ -21,10 +23,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/sign-in?error=${kind}`);
   }
   const supabase = await createClient();
-  const { error } = await supabase.auth.exchangeCodeForSession(searchParams.get("code")!);
+  const { data, error } = await supabase.auth.exchangeCodeForSession(searchParams.get("code")!);
   if (error) {
     console.error("auth callback: code exchange failed", error);
     return NextResponse.redirect(`${origin}/sign-in?error=expired`);
   }
-  return NextResponse.redirect(`${origin}${safeNext(searchParams.get("next"))}`);
+  const next = safeNext(searchParams.get("next"));
+  // An account created moments ago is a first sign-in: show Welcome before anything else.
+  const created = data.user?.created_at ? Date.parse(data.user.created_at) : NaN;
+  if (Date.now() - created < FIRST_SIGN_IN_MS) {
+    return NextResponse.redirect(`${origin}/welcome?next=${encodeURIComponent(next)}`);
+  }
+  return NextResponse.redirect(`${origin}${next}`);
 }

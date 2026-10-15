@@ -1,0 +1,11 @@
+.header {
+  position: sticky; top: 0; z-index: var(--z-sticky);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur-moderate) var(--ease-swing);
+  view-transition-name: site-header;
+}
+.header[data-scrolled] { border-bottom-color: var(--rule); }
+.header .row { display: flex; align-items: center; justify-content: space-between; gap: 8px 24px; padding-top: 12px; padding-bottom: 12px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 500; letter-spacing: -0.01em; font-size: 16px; color: var(--text); }

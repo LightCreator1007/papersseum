@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { LiveRefresh } from "@/components/live-refresh";
+import { AutoRefresh } from "@/components/auto-refresh";
 import { LoadBoundary } from "@/components/load-boundary";
 import { MatchList } from "@/features/ladder/components/match-list";
 import { Placeholder } from "@/components/placeholder";
+import styles from "./matches-page.module.css";
 
 export const metadata: Metadata = { title: "Matches" };
 
@@ -16,13 +17,18 @@ async function Page({ searchParams }: { searchParams: PageProps<"/matches">["sea
 export default function MatchesPage(props: PageProps<"/matches">) {
   return (
     <>
-      <h1 style={{ marginBottom: 14 }}>Matches</h1>
+      <header className={styles.head}>
+        <h1>Matches</h1>
+        <p className="muted">Five bots, one board, every 15 minutes. Newest first.</p>
+        <div className={styles.stamp}>
+          <AutoRefresh stamp />
+        </div>
+      </header>
       <LoadBoundary what="matches">
         <Suspense fallback={<Placeholder lines={10} />}>
           <Page searchParams={props.searchParams} />
         </Suspense>
       </LoadBoundary>
-      <LiveRefresh table="matches" />
     </>
   );
 }

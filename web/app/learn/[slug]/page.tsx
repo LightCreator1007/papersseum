@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { LessonArt } from "@/features/learn/components/lesson-art";
+import { MarkOpened } from "@/features/learn/components/progress";
 import { Toc } from "@/features/learn/components/toc";
 import { chapterNumber, course, findPage, neighbours, readyPages, slugOf, titleOf } from "@/features/learn/manifest";
 
@@ -32,17 +34,25 @@ export default async function LessonPage({ params }: PageProps<"/learn/[slug]">)
   return (
     <div className="lesson-layout">
       <article className="lesson">
-        <p className="crumbs">
-          <Link href="/learn">Learn</Link>
-          {page.kind === "chapter" ? ` › Part ${page.part.id}: ${page.part.title}` : " › Reference"}
-        </p>
-        <h1>{page.kind === "chapter" ? `${chapterNumber(slug)}. ${title}` : title}</h1>
-        {page.kind === "chapter" ? (
-          <p className="lesson-meta small muted">
-            About {page.chapter.minutes} minutes
-            {page.chapter.maths.length ? ` · Maths used: ${page.chapter.maths.join(", ")}` : " · No maths needed"}
-          </p>
-        ) : null}
+        <MarkOpened slug={slug} />
+        <header className="lesson-head">
+          <div>
+            <p className="crumbs">
+              <Link href="/learn">Learn</Link>
+              {page.kind === "chapter" ? ` › Part ${page.part.id}: ${page.part.title}` : " › Reference"}
+            </p>
+            <h1>{page.kind === "chapter" ? `${chapterNumber(slug)}. ${title}` : title}</h1>
+            {page.kind === "chapter" ? (
+              <p className="lesson-meta small muted">
+                About {page.chapter.minutes} minutes
+                {page.chapter.maths.length ? ` · Maths used: ${page.chapter.maths.join(", ")}` : " · No maths needed"}
+              </p>
+            ) : null}
+          </div>
+          <div className="lesson-art">
+            <LessonArt slug={slug} />
+          </div>
+        </header>
 
         <div className="lesson-body">
           <Lesson />
