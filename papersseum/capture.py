@@ -1,5 +1,6 @@
 import numpy as np
 from papersseum.geometry import flood_reachable
+from papersseum.death import kill
 from papersseum.state import recount_areas
 
 
@@ -18,8 +19,11 @@ def close_trail(state, pid):
     reach = flood_reachable(passable)
     sealed = state.arena_mask & (state.owner != pid) & (~reach)
     before = int((state.owner == pid).sum())
+    trapped = [q.pid for q in state.players if q.alive and q.pid != pid and sealed[q.r, q.c]]
     state.owner[sealed] = pid
 
     recount_areas(state)
     newly = int((state.owner == pid).sum()) - before
+    for q in trapped:                         # a bot caught inside the loop has nowhere left to go
+        kill(state, q, killer=pid)
     return newly
