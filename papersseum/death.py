@@ -1,5 +1,5 @@
 import papersseum.constants as C
-from papersseum.state import recount_areas
+from papersseum.state import recount_areas, consolidate
 from papersseum.trail import is_outside_own_land
 
 
@@ -15,16 +15,22 @@ def classify_entry(state, pid, nr, nc):
 
 
 def kill(state, pid, killer=None):
-    """Kill player `pid`. If `killer` is given (and is a live, different player),
-    the victim's territory is transferred to the killer; otherwise it becomes
-    neutral. The victim's trail is always erased."""
+    """Kill player `pid`. If `killer` is given (and is a live, different player), the killer
+    takes the victim's land and the victim's trail cells that lay on neutral ground, but only
+    what ends up joined to the killer's own land: a bot's land is always one connected mass, so
+    the rest becomes neutral. The victim's trail is always erased."""
     p = state.players[pid]
+    takes = killer is not None and killer != pid and state.players[killer].alive
+    before = state.owner == killer if takes else None
+    claimed = [(r, c) for (r, c) in p.trail_cells if state.owner[r, c] == -1] if takes else []
     for (r, c) in p.trail_cells:
         if state.trail[r, c] == pid:
             state.trail[r, c] = -1
     state.trail[state.trail == pid] = -1
-    if killer is not None and killer != pid and state.players[killer].alive:
+    if takes:
         state.owner[state.owner == pid] = killer
+        for r, c in claimed:
+            state.owner[r, c] = killer
         state.players[killer].boost_timer = C.KILL_BOOST_TICKS   # reward the kill
     else:
         state.owner[state.owner == pid] = -1
@@ -34,6 +40,8 @@ def kill(state, pid, killer=None):
     p.respawn_timer = C.RESPAWN_DELAY_TICKS
     p.boost_timer = 0
     recount_areas(state)
+    if takes:
+        consolidate(state, killer, before)
 
 
 def is_laying_trail(state, pid):

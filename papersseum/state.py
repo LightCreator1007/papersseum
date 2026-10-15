@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from collections import deque
 import numpy as np
 import papersseum.constants as C
 import papersseum.geometry as G
@@ -37,6 +38,48 @@ def recount_areas(state):
     flat = state.owner[state.owner >= 0]
     counts = np.bincount(flat, minlength=C.N_PLAYERS)
     state.area = [int(counts[p]) for p in range(C.N_PLAYERS)]
+
+
+def land_pieces(mask):
+    """The 4-connected pieces of a boolean map: a list of (row array, column array)."""
+    h, w = mask.shape
+    seen = np.zeros_like(mask)
+    pieces = []
+    for y, x in zip(*np.nonzero(mask)):
+        if seen[y, x]:
+            continue
+        seen[y, x] = True
+        q, rows, cols = deque([(y, x)]), [], []
+        while q:
+            r, c = q.popleft()
+            rows.append(r)
+            cols.append(c)
+            for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                a, b = r + dr, c + dc
+                if 0 <= a < h and 0 <= b < w and mask[a, b] and not seen[a, b]:
+                    seen[a, b] = True
+                    q.append((a, b))
+        pieces.append((np.array(rows), np.array(cols)))
+    return pieces
+
+
+def consolidate(state, pid, before=None):
+    """Keep a bot's land in one piece. Land that has been cut off from the main mass becomes neutral.
+
+    `before` is the bot's land map from before the change; the piece that shares the most cells with it
+    is the main mass (ties: the bigger piece). Without it, the biggest piece is.
+    """
+    pieces = land_pieces(state.owner == pid)
+    if len(pieces) <= 1:
+        return
+    def weight(piece):
+        rows, cols = piece
+        return (int(before[rows, cols].sum()) if before is not None else 0, len(rows))
+    keep = max(pieces, key=weight)
+    for piece in pieces:
+        if piece is not keep:
+            state.owner[piece[0], piece[1]] = -1
+    recount_areas(state)
 
 
 def area_pct(state, pid):
