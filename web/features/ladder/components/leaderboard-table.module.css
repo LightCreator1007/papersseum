@@ -1,9 +1,7 @@
-/* The visitor's own row: tinted, marked, and pinned so it stays on screen while scrolling. */
+/* The visitor's own row: tinted and marked. Not sticky: the table sits in a horizontal scroll
+   box, so a sticky offset is measured from that box and pushed a top row onto the next one.
+   Outside the top 100, the table repeats the row at the bottom instead (windowLadder). */
 .row[data-mine] td {
-  position: sticky;
-  top: 60px;
-  bottom: 0;
-  z-index: 1;
   background: color-mix(in srgb, var(--slot-3) 14%, var(--bg));
   border-top: 1px solid var(--text);
   border-bottom: 1px solid var(--text);
