@@ -45,6 +45,12 @@ else
 fi
 chown -R root:root "$APP"            # the worker user can read the code, not change it
 
+log "worker environment"
+# Build it here, as root: the code folder is root-owned, so the worker user cannot rebuild the
+# editable library itself (uv would fail with "Cannot update time stamp of directory").
+( cd "$APP/worker" && UV_CACHE_DIR="$STATE/uv-cache" UV_PROJECT_ENVIRONMENT="$STATE/venv" HOME="$STATE" uv sync --frozen --quiet )
+chown -R papersseum:papersseum "$STATE"
+
 log "systemd units"
 install -m 0644 "$APP/deploy/vm/papersseum-worker.service" /etc/systemd/system/
 install -m 0644 "$APP/deploy/vm/papersseum-ping.service"   /etc/systemd/system/
