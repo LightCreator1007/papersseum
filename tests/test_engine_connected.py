@@ -1,9 +1,9 @@
 """A bot's land is always one connected mass (cells touching along an edge); it never splits into islands.
 
-* A kill gives the killer only the victim's land that touches the killer's own land. The rest becomes
-  neutral. The victim's trail cells are claimed only when they touch that mass too.
-* If a rival's loop cuts a bot's land in two, the bot keeps the piece with its own land, and the cut-off
-  piece becomes neutral.
+* A kill gives the killer all of the victim's land and the victim's trail cells on empty ground. Whatever is not
+  touching the killer's land is joined to it by a one-cell-wide strip over empty ground (the shortest way).
+* If a rival's loop cuts a bot's land in two, the bot keeps both pieces and they are joined the same way; only
+  if there is no way through empty ground does the cut-off piece become neutral.
 """
 
 from collections import deque
@@ -72,37 +72,49 @@ def setup_cut(st, a_land, b_land, b_trail=((60, 60), (60, 61), (60, 62))):
     return a, b
 
 
-def test_a_kill_far_from_the_killers_land_adds_no_islands():
+def test_a_kill_far_from_the_killers_land_takes_the_land_and_joins_it_with_a_thin_strip():
     eng, st = build()
     a, b = setup_cut(st, a_land=((70, 72), (60, 62)), b_land=((50, 51), (80, 82)))
-    before = st.area[0]
     eng.advance_tick(None)
     assert a.alive and not b.alive
-    assert st.area[0] == before == 9
-    assert pieces(st.owner == 0) == [9]
-    assert (st.owner[50:52, 80:83] == -1).all()                  # b's land is neutral, not a second island for a
+    assert (st.owner[50:52, 80:83] == 0).all()                   # b's land is a's now ...
+    assert (st.owner[70:73, 60:63] == 0).all()
+    assert pieces(st.owner == 0) == [st.area[0]]                 # ... in one piece: a strip joins the two
+    assert st.area[0] > 9 + 6                                    # the strip has cells of its own
     assert not (st.trail == 1).any()
 
 
-def test_victim_land_that_touches_the_killers_land_is_taken():
+def test_victim_land_that_touches_the_killers_land_joins_directly():
     eng, st = build()
     a, b = setup_cut(st, a_land=((70, 72), (60, 62)), b_land=((73, 74), (60, 62)))   # directly below a's land
     eng.advance_tick(None)
     assert not b.alive
-    assert pieces(st.owner == 0) == [15]
-    assert (st.owner[73:75, 60:63] == 0).all()
+    assert (st.owner[73:75, 60:63] == 0).all()                   # the land touching a's land joins it directly
+    assert len(pieces(st.owner == 0)) == 1                       # (b's trail cells, far from it, come with a strip)
 
 
-def test_victim_trail_cells_that_touch_the_killers_land_are_claimed():
+def test_victim_trail_cells_are_claimed_and_joined_to_the_killers_land():
     eng, st = build()
     a, b = setup_cut(st, a_land=((55, 60), (58, 59)), b_land=((90, 91), (90, 91)))   # land ends at (60, 59), next to the trail
     eng.advance_tick(None)
     assert not b.alive
     assert (st.owner[60, 60:63] == 0).all()
+    assert (st.owner[90:92, 90:92] == 0).all()
     assert len(pieces(st.owner == 0)) == 1
 
 
-def test_a_loop_that_cuts_a_rivals_land_in_two_leaves_it_one_piece():
+def test_a_strip_never_takes_land_from_other_bots():
+    eng, st = build()
+    land(st, 3, (60, 62), (90, 92))                              # a rival's land between the killer and the victim's land
+    land(st, 4, (55, 58), (70, 72))
+    a, b = setup_cut(st, a_land=((70, 72), (60, 62)), b_land=((50, 51), (80, 82)))
+    before = {pid: int((st.owner == pid).sum()) for pid in (2, 3, 4)}
+    eng.advance_tick(None)
+    assert {pid: int((st.owner == pid).sum()) for pid in (2, 3, 4)} == before
+    assert pieces(st.owner == 0) == [st.area[0]]
+
+
+def test_a_loop_that_cuts_a_rivals_land_in_two_keeps_it_in_one_piece():
     eng, st = build()
     land(st, 1, (59, 61), (50, 80))                              # b: a long bar, 3 x 31
     land(st, 0, (55, 55), (66, 66))                              # a: one cell its loop hooks onto
@@ -121,8 +133,8 @@ def test_a_loop_that_cuts_a_rivals_land_in_two_leaves_it_one_piece():
     assert pieces(st.owner == 1) == [3 * 31]
     eng.advance_tick(None)
     assert a.alive and b.alive
-    assert len(pieces(st.owner == 1)) == 1                       # the loop cut the bar in two: b keeps the west end,
-    assert (st.owner[59:62, 75:81] == -1).all()                  # the cut-off east end is neutral, not a second island
+    assert len(pieces(st.owner == 1)) == 1                       # the loop cut the bar in two, but b keeps both ends,
+    assert (st.owner[59:62, 75:81] == 1).all()                   # joined by a thin strip around the loop
     assert (st.owner[59:62, 50:65] == 1).all()
 
 

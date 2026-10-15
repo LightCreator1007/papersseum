@@ -1,7 +1,15 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { intervalMinutes } from "@/features/ladder/format";
+import { sortLadder } from "@/features/ladder/ladder-order";
 import type { Database } from "@/lib/supabase/database.types";
+import type { SeasonDates } from "@/lib/season-phase";
+import type { SeatRow } from "@/lib/stats/scorecards";
+import type { Notification } from "@/lib/notifications";
+import { callRpc } from "@/lib/server/rpc";
+import { DEV_PERSONAS, devPersona, personaForUser } from "@/lib/dev-auth";
+import { devBot, devHistory, devNotifications, devSubmissions, isDevBotId } from "@/lib/dev-fixtures";
 
 // Every read throws on failure so the nearest <LoadBoundary> shows
 // "Couldn't load …". Details go to the server log only.
@@ -56,7 +64,17 @@ export async function getSeason(): Promise<Season> {
   };
 }
 
+// A8: once opens_at, closes_at and final_at ship and database.types.ts is regenerated,
+// add them to this select and map them to opensAt, closesAt and finalAt.
+export async function getSeasonDates(): Promise<SeasonDates> {
+  const supabase = await createClient();
+  const row = check("the season dates", await supabase.from("season").select("frozen").eq("id", 1).single());
+  return { opensAt: null, closesAt: null, finalAt: null, frozen: row.frozen };
+}
+
 export async function getProfileHandle(userId: string): Promise<string | null> {
+  const persona = personaForUser(userId);
+  if (persona) return DEV_PERSONAS[persona].handle;
   const supabase = await createClient();
   const row = checkMaybe("your profile", await supabase.from("profiles").select("handle").eq("id", userId).maybeSingle());
   return row?.handle ?? null;
@@ -76,14 +94,23 @@ export type LeaderRow = {
   sigma: number;
   games: number;
   version: number | null;
+  activeSince: string | null;
 };
 
+// Ties (equal rank) go to more games, then the older bot, then name. The database orders the
+// same way so a `limit` cuts at the right row; sortLadder keeps it true whatever the driver does.
 export async function getLeaderboard(limit?: number): Promise<LeaderRow[]> {
   const supabase = await createClient();
-  let query = supabase.from("leaderboard").select("*").order("rank").order("name");
+  let query = supabase
+    .from("leaderboard")
+    .select("*")
+    .order("rank")
+    .order("games", { ascending: false })
+    .order("active_since", { ascending: true, nullsFirst: false })
+    .order("name");
   if (limit) query = query.limit(limit);
   const rows = check("the leaderboard", await query);
-  return rows.map((r) => ({
+  return sortLadder(rows.map((r) => ({
     rank: r.rank ?? 0,
     botId: r.bot_id!,
     name: r.name!,
@@ -94,7 +121,8 @@ export async function getLeaderboard(limit?: number): Promise<LeaderRow[]> {
     sigma: r.sigma ?? 0,
     games: r.games ?? 0,
     version: r.active_version,
-  }));
+    activeSince: r.active_since,
+  })));
 }
 
 export async function getLadderStats(): Promise<{ bots: number; matches: number }> {
@@ -108,7 +136,14 @@ export async function getLadderStats(): Promise<{ bots: number; matches: number 
   return { bots: bots.count ?? 0, matches: matches.count ?? 0 };
 }
 
-export type SeatSummary = { slot: number; name: string | null; placement: number | null; crashed: boolean | null };
+export type SeatSummary = {
+  slot: number;
+  name: string | null;
+  isHouse: boolean;
+  placement: number | null;
+  coverage: number | null;
+  crashed: boolean | null;
+};
 
 export type MatchSummary = {
   id: number;
@@ -132,7 +167,7 @@ export async function getMatches({
   const from = (page - 1) * pageSize;
   let query = supabase
     .from("matches")
-    .select("id, round_id, status, created_at, finished_at, match_players(slot, placement, crashed, bots(name))");
+    .select("id, round_id, status, created_at, finished_at, match_players(slot, placement, coverage, crashed, bots(name, is_house))");
   if (finishedOnly) query = query.eq("status", "done");
   const rows = check(
     "matches",
@@ -145,7 +180,14 @@ export async function getMatches({
     createdAt: m.created_at,
     finishedAt: m.finished_at,
     seats: m.match_players
-      .map((p) => ({ slot: p.slot, name: p.bots?.name ?? null, placement: p.placement, crashed: p.crashed }))
+      .map((p) => ({
+        slot: p.slot,
+        name: p.bots?.name ?? null,
+        isHouse: p.bots?.is_house ?? false,
+        placement: p.placement,
+        coverage: p.coverage,
+        crashed: p.crashed,
+      }))
       .sort((a, b) => (a.placement ?? 9) - (b.placement ?? 9) || a.slot - b.slot),
   }));
   return { matches, hasMore: rows.length > pageSize };
@@ -162,6 +204,8 @@ export type SeatResult = {
   crashed: boolean | null;
   eloBefore: number | null;
   eloAfter: number | null;
+  version: number | null;
+  banned: boolean;
 };
 
 export type MatchDetail = {
@@ -183,11 +227,12 @@ export async function getMatch(id: number): Promise<MatchDetail | null> {
     "this match",
     await supabase
       .from("matches")
-      .select("id, round_id, seed, status, error, replay_path, created_at, started_at, finished_at, match_players(slot, placement, coverage, deaths, strikes, crashed, elo_before, elo_after, bots(name, is_house))")
+      .select("id, round_id, seed, status, error, replay_path, created_at, started_at, finished_at, match_players(slot, submission_id, placement, coverage, deaths, strikes, crashed, elo_before, elo_after, bots(name, is_house, banned))")
       .eq("id", id)
       .maybeSingle(),
   );
   if (!m) return null;
+  const versions = await seatVersions(m.match_players.map((p) => p.submission_id));
   return {
     id: m.id,
     roundId: m.round_id,
@@ -210,9 +255,28 @@ export async function getMatch(id: number): Promise<MatchDetail | null> {
         crashed: p.crashed,
         eloBefore: p.elo_before,
         eloAfter: p.elo_after,
+        version: p.submission_id ? (versions.get(p.submission_id) ?? null) : null,
+        banned: !!p.bots?.banned,
       }))
       .sort((a, b) => (a.placement ?? 9) - (b.placement ?? 9) || a.slot - b.slot),
   };
+}
+
+// The version each seat played. Row-level security hides other players'
+// submissions (anon can't read the table at all), so this reads only the
+// version numbers with the server key; bots.active_version is public already.
+// A failure here leaves the versions blank rather than failing the page.
+async function seatVersions(ids: (string | null)[]): Promise<Map<string, number>> {
+  const wanted = ids.filter((id): id is string => !!id);
+  if (wanted.length === 0) return new Map();
+  try {
+    const { data, error } = await createAdminClient().from("submissions").select("id, version").in("id", wanted);
+    if (error) throw error;
+    return new Map(data.map((s) => [s.id, s.version]));
+  } catch (error) {
+    console.error("query failed: seat versions", error);
+    return new Map();
+  }
 }
 
 export function replayUrl(path: string): string {
@@ -300,6 +364,8 @@ export async function getBotHistory(botId: string, limit: number): Promise<Histo
 export type MyBot = { id: string; name: string; banned: boolean; activeVersion: number | null; rank: number | null };
 
 export async function getMyBot(userId: string): Promise<MyBot | null> {
+  const persona = personaForUser(userId);
+  if (persona) return devBot(persona);
   const supabase = await createClient();
   const bot = checkMaybe(
     "your bot",
@@ -337,7 +403,10 @@ function parseViolations(raw: unknown): Violation[] {
   return out;
 }
 
+export const MY_SUBMISSIONS_LIMIT = 50;
+
 export async function getMySubmissions(botId: string): Promise<MySubmission[]> {
+  if (isDevBotId(botId)) return devSubmissions(botId);
   const supabase = await createClient();
   const rows = check(
     "your uploads",
@@ -346,7 +415,7 @@ export async function getMySubmissions(botId: string): Promise<MySubmission[]> {
       .select("id, version, status, error, violations, created_at")
       .eq("bot_id", botId)
       .order("version", { ascending: false })
-      .limit(50),
+      .limit(MY_SUBMISSIONS_LIMIT),
   );
   return rows.map((s) => ({
     id: s.id,
@@ -356,4 +425,105 @@ export async function getMySubmissions(botId: string): Promise<MySubmission[]> {
     violations: parseViolations(s.violations),
     createdAt: s.created_at,
   }));
+}
+
+// PostgREST caps a response at max_rows (1000), so long reads page with .range().
+const PAGE_SIZE = 1000;
+
+async function readAllPages<T>(
+  what: string,
+  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+): Promise<T[]> {
+  const all: T[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const rows = check(what, await page(from, from + PAGE_SIZE - 1));
+    all.push(...rows);
+    if (rows.length < PAGE_SIZE) return all;
+  }
+}
+
+// Every finished match this bot played, with the other seats, oldest data first.
+// Feeds versionScorecards and milestones.
+export async function getSubmissionHistory(botId: string): Promise<SeatRow[]> {
+  if (isDevBotId(botId)) return devHistory(botId);
+  const supabase = await createClient();
+  const mine = await readAllPages("this bot's matches", (from, to) =>
+    supabase
+      .from("match_players")
+      .select("match_id, slot, submission_id, placement, coverage, crashed, elo_before, elo_after, matches!inner(status, finished_at), submissions(version)")
+      .eq("bot_id", botId)
+      .eq("matches.status", "done")
+      .order("match_id", { ascending: true })
+      .order("slot", { ascending: true })
+      .range(from, to),
+  );
+  const seats = mine.filter((r) => r.placement !== null && r.matches.finished_at !== null);
+  if (seats.length === 0) return [];
+
+  const ids = seats.map((r) => r.match_id);
+  const others = new Map<number, SeatRow["opponents"]>();
+  for (let i = 0; i < ids.length; i += 200) {
+    const chunkIds = ids.slice(i, i + 200);
+    const chunk = await readAllPages("the other seats in this bot's matches", (from, to) =>
+      supabase
+        .from("match_players")
+        .select("match_id, slot, placement, bots(name, is_house)")
+        .in("match_id", chunkIds)
+        .neq("bot_id", botId)
+        .order("match_id", { ascending: true })
+        .order("slot", { ascending: true })
+        .range(from, to),
+    );
+    for (const o of chunk) {
+      if (o.placement === null || !o.bots) continue;
+      const list = others.get(o.match_id) ?? [];
+      list.push({ name: o.bots.name, isHouse: o.bots.is_house, placement: o.placement });
+      others.set(o.match_id, list);
+    }
+  }
+
+  return seats.map((r) => ({
+    matchId: r.match_id,
+    finishedAt: r.matches.finished_at ?? "",
+    submissionId: r.submission_id,
+    version: r.submissions?.version ?? null,
+    placement: r.placement ?? 0,
+    coverage: r.coverage ?? 0,
+    crashed: r.crashed ?? false,
+    eloBefore: r.elo_before,
+    eloAfter: r.elo_after,
+    opponents: others.get(r.match_id) ?? [],
+  }));
+}
+
+type NotificationRow = {
+  id: number;
+  kind: Notification["kind"];
+  payload: Record<string, unknown> | null;
+  created_at: string;
+  read_at: string | null;
+};
+
+// A10: reads through my_notifications until the notifications table ships and
+// database.types.ts is regenerated; then this can select the table directly.
+export async function getNotifications(limit = 30): Promise<{ items: Notification[]; available: boolean; error: string | null }> {
+  const persona = await devPersona();
+  if (persona) return { items: devNotifications(persona).slice(0, limit), available: true, error: null };
+  const r = await callRpc<NotificationRow[] | null>(await createClient(), "my_notifications", { p_limit: limit });
+  if (!r.ok) {
+    if (r.reason === "unavailable") return { items: [], available: false, error: null };
+    console.error("notifications: read failed", r.reason, r.message);
+    return { items: [], available: true, error: "Couldn't load your inbox. Try again in a minute." };
+  }
+  return {
+    available: true,
+    error: null,
+    items: (r.data ?? []).map((n) => ({
+      id: n.id,
+      kind: n.kind,
+      payload: n.payload ?? {},
+      createdAt: n.created_at,
+      readAt: n.read_at,
+    })),
+  };
 }

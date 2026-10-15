@@ -1,7 +1,7 @@
 import numpy as np
 from papersseum.geometry import flood_reachable
 from papersseum.death import kill
-from papersseum.state import recount_areas, consolidate
+from papersseum.state import recount_areas, connect_land
 
 
 def close_trail(state, pid):
@@ -25,9 +25,9 @@ def close_trail(state, pid):
 
     recount_areas(state)
     newly = int((state.owner == pid).sum()) - before
-    for q, was in others.items():             # a loop can cut a rival's land in two: it keeps the main mass
+    for q, was in others.items():             # a loop can cut a rival's land in two: a thin strip joins it again
         if int((state.owner == q).sum()) != int(was.sum()):
-            consolidate(state, q, was)
+            connect_land(state, q, was)
     for q in trapped:                         # a bot caught inside the loop has nowhere left to go
         kill(state, q, killer=pid)
     return newly

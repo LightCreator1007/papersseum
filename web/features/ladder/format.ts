@@ -26,10 +26,12 @@ export function shortDateTime(iso: string): string {
   return `${shortDate(iso)}, ${clockTime(Date.parse(iso))}`;
 }
 
+// Every absolute time on the site is Kolkata time, so it says so.
 export function clockTime(ms: number): string {
-  return new Date(ms).toLocaleTimeString("en-GB", {
+  const time = new Date(ms).toLocaleTimeString("en-GB", {
     hour: "2-digit", minute: "2-digit", hour12: false, timeZone: TIME_ZONE,
   });
+  return `${time} IST`;
 }
 
 export function duration(startIso: string, endIso: string): string {
@@ -40,7 +42,12 @@ export function duration(startIso: string, endIso: string): string {
 }
 
 export function elo(n: number | null): string {
-  return n === null ? "—" : n.toFixed(1);
+  return n === null ? "-" : n.toFixed(1);
+}
+
+// A bot with no games has only the starting Elo, so it isn't rated yet (same as the leaderboard).
+export function rating(n: number | null, games: number): string {
+  return games === 0 ? "Not rated yet" : elo(n);
 }
 
 export function eloChange(before: number | null, after: number | null) {
@@ -52,7 +59,7 @@ export function eloChange(before: number | null, after: number | null) {
 }
 
 export function percent(n: number | null): string {
-  return n === null ? "—" : `${n.toFixed(1)}%`;
+  return n === null ? "-" : `${n.toFixed(1)}%`;
 }
 
 export function intervalMinutes(text: string): number {
@@ -62,6 +69,19 @@ export function intervalMinutes(text: string): number {
 
 export function nextRoundAt(now: number): number {
   return (Math.floor(now / ROUND_EVERY) + 1) * ROUND_EVERY;
+}
+
+export type RoundOutlook = { frozen: boolean; backlog: boolean; noPlayers?: boolean; at: number };
+
+// One sentence on when the next round runs. A backlogged arena skips rounds, so no clock time then.
+export function nextRoundSentence(
+  { frozen, backlog, noPlayers = false, at }: RoundOutlook,
+  { first = false }: { first?: boolean } = {},
+): string {
+  if (frozen) return "The season is frozen, so no rounds are scheduled.";
+  if (backlog) return "Next round after the queue clears.";
+  if (noPlayers) return "Rounds start once a player has a bot on the ladder.";
+  return first ? `The first round runs at ${clockTime(at)}.` : `Next round at ${clockTime(at)}.`;
 }
 
 export function minutesUntil(target: number, now: number): number {
