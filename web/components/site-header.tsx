@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { NavLinks, StaticNavLinks } from "@/components/nav-links";
-import { getProfileHandle } from "@/lib/queries";
+import { getProfileHandle } from "@/features/ladder/queries";
 import { getUserId } from "@/lib/supabase/server";
 
 async function AccountLink() {

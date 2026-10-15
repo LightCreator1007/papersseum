@@ -1,6 +1,6 @@
 """Chapter 11: train a DQN and save its weights as a small JSON file (used by the cart-pole demo on the website).
 
-    python export_policy.py ../../../../web/lib/learn/cartpole-policy.json
+    python export_policy.py ../../../../web/features/learn/cartpole-policy.json
 
 It trains with a few seeds, keeps the network that does best on fresh test episodes, rounds its weights to
 5 decimals, and writes them out. The file is plain numbers: layer sizes, weights, biases.

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { LiveRefresh } from "@/components/live-refresh";
 import { LoadBoundary } from "@/components/load-boundary";
-import { MatchList } from "@/components/match-list";
+import { MatchList } from "@/features/ladder/components/match-list";
 import { Placeholder } from "@/components/placeholder";
 
 export const metadata: Metadata = { title: "Matches" };

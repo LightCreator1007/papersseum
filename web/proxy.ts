@@ -23,7 +23,8 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-// Static files skip it, including the replay engine in public/engine/ (manifest, wheel, .mjs).
+// Static files skip it, including the replay engine in public/engine/ (manifest, wheel, .mjs)
+// and the downloadable lesson code in public/learn/code/ (the lesson pages under /learn still need it).
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|engine/|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|dat)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|engine/|learn/code/|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|dat)$).*)"],
 };

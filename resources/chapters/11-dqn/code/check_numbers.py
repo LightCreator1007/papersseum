@@ -11,7 +11,7 @@ from cartpole import average_score
 from dqn_cartpole import compare_tricks, greedy_action, train
 from export_policy import load
 
-POLICY_FILE = Path(__file__).resolve().parents[4] / "web" / "lib" / "learn" / "cartpole-policy.json"
+POLICY_FILE = Path(__file__).resolve().parents[4] / "web" / "features" / "learn" / "cartpole-policy.json"
 
 
 def close(a, b, tol=1e-9):

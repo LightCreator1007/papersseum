@@ -26,10 +26,10 @@ export const BATCH_FRAMES = 50;
 
 /**
  * @typedef {{
- *   meta: import("../../lib/engine-protocol").ReplayMeta;
+ *   meta: import("../../features/replay/engine-protocol").ReplayMeta;
  *   header: Uint8Array;
  *   nextBatch(frames: number): Uint8Array | null;
- *   result(): import("../../lib/engine-protocol").MatchResult;
+ *   result(): import("../../features/replay/engine-protocol").MatchResult;
  *   close(): void;
  * }} ReplayRun
  */

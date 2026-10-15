@@ -1,8 +1,8 @@
 import { Suspense } from "react";
-import { signOut } from "@/app/auth/actions";
+import { signOut } from "@/features/auth/actions";
 import { LoadBoundary } from "@/components/load-boundary";
 import { SubmitButton } from "@/components/submit-button";
-import { getSeason } from "@/lib/queries";
+import { getSeason } from "@/features/ladder/queries";
 import { getUserId } from "@/lib/supabase/server";
 
 async function FooterContent() {

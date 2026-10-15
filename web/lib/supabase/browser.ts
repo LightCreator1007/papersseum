@@ -1,5 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
-import type { Database } from "@/lib/database.types";
+import type { Database } from "@/lib/supabase/database.types";
 
 // Browser side: used only for Realtime subscriptions.
 export function createClient() {

@@ -1,15 +1,15 @@
 // @ts-check
 // The replay engine: Pyodide plus the papersseum wheel, in a module Web Worker
 // so the page never freezes. Served as-is from public/ (not bundled: Pyodide
-// 314 refuses classic workers). Protocol in lib/engine-protocol.ts; the Python
+// 314 refuses classic workers). Protocol in features/replay/engine-protocol.ts; the Python
 // calls are in ./runtime.mjs (shared with the Node determinism test).
 import { BATCH_FRAMES, PYODIDE_CDN, ReplayError, installEngine, openReplay, pythonReason } from "./runtime.mjs";
 
 /** @typedef {import("pyodide").PyodideAPI} PyodideAPI */
 /** @typedef {import("./runtime.mjs").EngineManifest} EngineManifest */
 /** @typedef {import("./runtime.mjs").ReplayRun} ReplayRun */
-/** @typedef {import("../../lib/engine-protocol").WorkerIn} WorkerIn */
-/** @typedef {import("../../lib/engine-protocol").WorkerOut} WorkerOut */
+/** @typedef {import("../../features/replay/engine-protocol").WorkerIn} WorkerIn */
+/** @typedef {import("../../features/replay/engine-protocol").WorkerOut} WorkerOut */
 
 /**
  * @param {WorkerOut} message

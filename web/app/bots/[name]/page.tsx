@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { EloLine } from "@/components/elo-line";
+import { EloLine } from "@/features/ladder/components/elo-line";
 import { LiveRefresh } from "@/components/live-refresh";
 import { LoadBoundary } from "@/components/load-boundary";
 import { Placeholder } from "@/components/placeholder";
-import { elo, eloChange, percent, relativeTime, shortDate } from "@/lib/format";
-import { matchHref } from "@/lib/links";
-import { getBot, getBotHistory } from "@/lib/queries";
+import { elo, eloChange, percent, relativeTime, shortDate } from "@/features/ladder/format";
+import { matchHref } from "@/features/ladder/links";
+import { getBot, getBotHistory } from "@/features/ladder/queries";
 
 export const metadata: Metadata = { title: "Bot" };
 
@@ -22,9 +22,10 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 async function BotContent({ params }: { params: PageProps<"/bots/[name]">["params"] }) {
+  const { name: raw } = await params;
   let name: string;
   try {
-    name = decodeURIComponent((await params).name);
+    name = decodeURIComponent(raw);
   } catch {
     notFound(); // malformed percent escape
   }

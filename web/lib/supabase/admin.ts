@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/database.types";
+import type { Database } from "@/lib/supabase/database.types";
 
 // Secret key: bypasses row-level security. Only the upload path uses it.
 export function createAdminClient() {

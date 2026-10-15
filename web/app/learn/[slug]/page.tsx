@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Toc } from "@/components/learn/toc";
-import { chapterNumber, course, findPage, neighbours, readyPages, slugOf, titleOf } from "@/lib/learn/manifest";
+import { Toc } from "@/features/learn/components/toc";
+import { chapterNumber, course, findPage, neighbours, readyPages, slugOf, titleOf } from "@/features/learn/manifest";
 
 export function generateStaticParams() {
   return readyPages().map((p) => ({ slug: slugOf(p) }));

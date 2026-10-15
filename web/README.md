@@ -34,9 +34,23 @@ For data to look at, seed players and run a worker as described in
 without it a new version stays on "Checking…" and never becomes Active or
 Rejected.
 
+## Layout
+
+| Folder | What goes there |
+|---|---|
+| `app/` | Routes only: pages, layouts, route handlers. Folders match URLs. |
+| `features/<name>/` | One feature's logic, with its React components in `components/`: `auth`, `ladder` (seasons, leaderboard, matches, bots), `learn`, `replay` (the in-browser replay viewer and its engine client), `upload`. |
+| `components/` | Shared site shell and UI pieces (header, footer, loading states, live refresh). |
+| `lib/supabase/` | Supabase clients and the generated database types. |
+| `public/` | Static files. `public/engine/` is the replay engine's Web Worker, served as-is at `/engine/*`. |
+| `tests/` | `unit/` mirrors the source tree (`features/ladder/format.ts` is tested in `tests/unit/features/ladder/format.test.ts`); `integration/` needs local Supabase; `pyodide/` runs the engine in Pyodide; `fixtures/` holds their data. |
+| `scripts/` | Build-time scripts (Learn sync, engine wheel, home-page replay and board). |
+
+`mdx-components.tsx` and `proxy.ts` stay at the root because Next.js looks for them there.
+
 ## The Learn section
 
-`/learn` is a free course on reinforcement learning. Its lessons live in `../resources/` (plain Markdown, LaTeX and Python), not in this folder: see `../resources/README.md`. `scripts/sync-learn.mjs` copies them in before `dev` and `build` (it also checks them, and fails the build on a broken lesson), and the pages are generated statically from the copy in `generated/` (git-ignored). Demos are components in `components/learn/` with their logic in `lib/learn/`.
+`/learn` is a free course on reinforcement learning. Its lessons live in `../resources/` (plain Markdown, LaTeX and Python), not in this folder: see `../resources/README.md`. `scripts/sync-learn.mjs` copies them in before `dev` and `build` (it also checks them, and fails the build on a broken lesson), and the pages are generated statically from the copy in `generated/` (git-ignored). Demos are components in `features/learn/components/` with their logic in `features/learn/`.
 
 On Vercel the project's root directory is `web/`, so turn on *Project Settings > General > Include source files outside of the Root Directory in the Build Step*, or the build cannot see `resources/`.
 
@@ -50,5 +64,5 @@ On Vercel the project's root directory is `web/`, so turn on *Project Settings >
 | `npm run test:pyodide` | Runs the committed engine wheel in real Pyodide (Node; downloads numpy from the Pyodide CDN) and checks it reproduces a natively recorded match |
 | `npm run typecheck` | Generates route types, then `tsc` |
 | `npm run lint` | ESLint |
-| `npm run gen:types` | Regenerates `lib/database.types.ts` after a migration |
+| `npm run gen:types` | Regenerates `lib/supabase/database.types.ts` after a migration |
 | `uv run --frozen python web/scripts/build_engine.py` | From the repo root: rebuilds the replay engine wheel in `public/engine/` and the Pyodide test fixture. Run it after any change under `papersseum/` |

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { course } from "@/lib/learn/manifest";
+import { course } from "@/features/learn/manifest";
 
 export const metadata: Metadata = {
   title: "Learn",
