@@ -5,11 +5,11 @@ import { Suspense } from "react";
 import { LiveRefresh } from "@/components/live-refresh";
 import { LoadBoundary } from "@/components/load-boundary";
 import { Placeholder } from "@/components/placeholder";
-import { ReplayViewer } from "@/components/replay-viewer";
-import { Swatch } from "@/components/swatch";
-import { duration, elo, eloChange, percent, relativeTime, shortDateTime } from "@/lib/format";
-import { botHref } from "@/lib/links";
-import { getMatch, replayUrl, type MatchDetail, type SeatResult } from "@/lib/queries";
+import { ReplayViewer } from "@/features/replay/components/replay-viewer";
+import { Swatch } from "@/features/ladder/components/swatch";
+import { duration, elo, eloChange, percent, relativeTime, shortDateTime } from "@/features/ladder/format";
+import { botHref } from "@/features/ladder/links";
+import { getMatch, replayUrl, type MatchDetail, type SeatResult } from "@/features/ladder/queries";
 
 export const metadata: Metadata = { title: "Match" };
 

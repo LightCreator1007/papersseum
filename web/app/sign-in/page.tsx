@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { SignInButton } from "@/components/sign-in-button";
-import { signInErrorMessage } from "@/lib/auth-errors";
-import { getSeason } from "@/lib/queries";
-import { safeNext } from "@/lib/redirect";
+import { SignInButton } from "@/features/auth/components/sign-in-button";
+import { signInErrorMessage } from "@/features/auth/auth-errors";
+import { getSeason } from "@/features/ladder/queries";
+import { safeNext } from "@/features/auth/redirect";
 import { getUserId } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Sign in" };

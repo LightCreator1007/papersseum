@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { signInErrorKind } from "@/lib/auth-errors";
-import { safeNext } from "@/lib/redirect";
+import { signInErrorKind } from "@/features/auth/auth-errors";
+import { safeNext } from "@/features/auth/redirect";
 import { createClient } from "@/lib/supabase/server";
 
 // `next dev` reports request.url as localhost whatever the browser used, so a

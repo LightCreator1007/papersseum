@@ -3,7 +3,7 @@
     uv run --frozen python web/scripts/build_engine.py      (from the repo root)
 
 Writes web/public/engine/<wheel> and manifest.json (served to the browser) and
-web/lib/fixtures/match.jsonl.gz (a natively recorded match the Pyodide test
+web/tests/fixtures/match.jsonl.gz (a natively recorded match the Pyodide test
 must reproduce). Rerun after any change under papersseum/; tests/test_web_engine.py
 fails until you do.
 """
@@ -20,7 +20,7 @@ from papersseum.replay_io import write_replay
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 OUT = ROOT / "web" / "public" / "engine"
-FIXTURE = ROOT / "web" / "lib" / "fixtures" / "match.jsonl.gz"
+FIXTURE = ROOT / "web" / "tests" / "fixtures" / "match.jsonl.gz"
 FIXTURE_SEED = 7
 FIXTURE_NAMES = ["greedy", "hunter", "safe_expander", "hunter", "greedy"]
 

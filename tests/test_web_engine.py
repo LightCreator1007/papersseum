@@ -12,7 +12,7 @@ from papersseum.replay_io import load_replay
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ENGINE = ROOT / "web" / "public" / "engine"
-FIXTURE = ROOT / "web" / "lib" / "fixtures" / "match.jsonl.gz"
+FIXTURE = ROOT / "web" / "tests" / "fixtures" / "match.jsonl.gz"
 HINT = "rebuild with: uv run --frozen python web/scripts/build_engine.py"
 
 
