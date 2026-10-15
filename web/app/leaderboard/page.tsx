@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { LeaderboardTable } from "@/components/leaderboard-table";
+import { LeaderboardTable } from "@/features/ladder/components/leaderboard-table";
 import { LiveRefresh } from "@/components/live-refresh";
 import { LoadBoundary } from "@/components/load-boundary";
-import { NextRound } from "@/components/next-round";
+import { NextRound } from "@/features/ladder/components/next-round";
 import { Placeholder } from "@/components/placeholder";
-import { getSeason } from "@/lib/queries";
+import { getSeason } from "@/features/ladder/queries";
 
 export const metadata: Metadata = { title: "Leaderboard" };
 

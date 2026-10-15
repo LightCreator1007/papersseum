@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { unstable_rethrow } from "next/navigation";
-import type { Database } from "@/lib/database.types";
+import type { Database } from "@/lib/supabase/database.types";
 
 // Per request, with the visitor's session. Row-level security decides access.
 export async function createClient() {

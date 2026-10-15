@@ -65,7 +65,7 @@ Every chapter follows the same shape, so readers always know where they are:
 
 <Check q="A question?">The answer, hidden until the reader opens it. Equations like $x^2$ work here too.</Check>
 
-<BanditCasino />   {/* an interactive demo; see web/components/learn/ */}
+<BanditCasino />   {/* an interactive demo; see web/features/learn/components/ */}
 ````
 
 Equations are LaTeX: `$x^2$` inline and `$$ ... $$` on their own lines. They are checked at build time, and a mistake fails the build.
@@ -84,4 +84,4 @@ CI runs all of this (`tests/test_resources.py`).
 
 ## Interactive demos
 
-Demos are React components in `web/components/learn/`, with their logic in plain, tested TypeScript in `web/lib/learn/`. Register the component in `web/mdx-components.tsx` so lessons can use it as a tag. Seed any randomness so the first render is the same on the server and in the browser; call `Math.random()` only inside event handlers.
+Demos are React components in `web/features/learn/components/`, with their logic in plain, tested TypeScript in `web/features/learn/`. Register the component in `web/mdx-components.tsx` so lessons can use it as a tag. Seed any randomness so the first render is the same on the server and in the browser; call `Math.random()` only inside event handlers.

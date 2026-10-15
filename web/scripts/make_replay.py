@@ -3,7 +3,7 @@
     uv run --frozen python web/scripts/make_replay.py web/public/home-replay.dat   (from the repo root)
 
 Writes gzip of the PSRP frame file from papersseum/frames.py (layout documented
-there; read by web/lib/replay-format.ts). tests/test_frames.py fails when the
+there; read by web/features/replay/replay-format.ts). tests/test_frames.py fails when the
 committed file no longer matches the engine.
 """
 import gzip

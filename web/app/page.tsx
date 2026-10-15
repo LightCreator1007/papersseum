@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { BoardReplay } from "@/components/board-replay";
-import { LeaderboardTable } from "@/components/leaderboard-table";
+import { BoardReplay } from "@/features/replay/components/board-replay";
+import { LeaderboardTable } from "@/features/ladder/components/leaderboard-table";
 import { LiveRefresh } from "@/components/live-refresh";
 import { LoadBoundary } from "@/components/load-boundary";
-import { MatchList } from "@/components/match-list";
-import { NextRound } from "@/components/next-round";
+import { MatchList } from "@/features/ladder/components/match-list";
+import { NextRound } from "@/features/ladder/components/next-round";
 import { Placeholder } from "@/components/placeholder";
-import { SignInButton } from "@/components/sign-in-button";
-import { getLadderStats, getSeason } from "@/lib/queries";
+import { SignInButton } from "@/features/auth/components/sign-in-button";
+import { getLadderStats, getSeason } from "@/features/ladder/queries";
 import { getUserId } from "@/lib/supabase/server";
 
 async function SeasonLine() {

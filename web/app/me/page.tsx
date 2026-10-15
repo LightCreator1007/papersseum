@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { UploadForm } from "@/app/me/upload-form";
+import { UploadForm } from "@/features/upload/components/upload-form";
 import { LiveRefresh } from "@/components/live-refresh";
 import { LoadBoundary } from "@/components/load-boundary";
 import { Placeholder } from "@/components/placeholder";
-import { SUBMISSION_STATUS, shortDateTime } from "@/lib/format";
-import { botHref } from "@/lib/links";
-import { getMyBot, getMySubmissions, getSeason, type MySubmission } from "@/lib/queries";
+import { SUBMISSION_STATUS, shortDateTime } from "@/features/ladder/format";
+import { botHref } from "@/features/ladder/links";
+import { getMyBot, getMySubmissions, getSeason, type MySubmission } from "@/features/ladder/queries";
 import { getUserId } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Your bot" };

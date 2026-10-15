@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ReplayDrop } from "@/components/replay-drop";
+import { ReplayDrop } from "@/features/replay/components/replay-drop";
 
 export const metadata: Metadata = { title: "Replay" };
 

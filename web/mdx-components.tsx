@@ -1,24 +1,24 @@
 import type { MDXComponents } from "mdx/types";
 import Link from "next/link";
 import type { ComponentProps } from "react";
-import { AgentLoop } from "@/components/learn/agent-loop";
-import { BanditCasino } from "@/components/learn/bandit-casino";
-import { Callout } from "@/components/learn/callout";
-import { Check } from "@/components/learn/check";
-import { DiscountPlayground } from "@/components/learn/discount-playground";
-import { CartPoleStage } from "@/components/learn/cartpole-stage";
-import { CheeseHunt } from "@/components/learn/cheese-hunt";
-import { CodeBlock } from "@/components/learn/code-block";
-import { GradientDescent } from "@/components/learn/gradient-descent";
-import { GridWorld } from "@/components/learn/grid-world";
-import { MonteCarloGrid } from "@/components/learn/monte-carlo-grid";
-import { NeuralPlayground } from "@/components/learn/neural-playground";
-import { PolicyNudge } from "@/components/learn/policy-nudge";
-import { RpsLearners } from "@/components/learn/rps-learners";
-import { EloCalculator } from "@/components/learn/elo-calculator";
-import { QLearningLab } from "@/components/learn/q-learning-lab";
-import { SlopeExplorer } from "@/components/learn/slope-explorer";
-import { ValueExplorer } from "@/components/learn/value-explorer";
+import { AgentLoop } from "@/features/learn/components/agent-loop";
+import { BanditCasino } from "@/features/learn/components/bandit-casino";
+import { Callout } from "@/features/learn/components/callout";
+import { Check } from "@/features/learn/components/check";
+import { DiscountPlayground } from "@/features/learn/components/discount-playground";
+import { CartPoleStage } from "@/features/learn/components/cartpole-stage";
+import { CheeseHunt } from "@/features/learn/components/cheese-hunt";
+import { CodeBlock } from "@/features/learn/components/code-block";
+import { GradientDescent } from "@/features/learn/components/gradient-descent";
+import { GridWorld } from "@/features/learn/components/grid-world";
+import { MonteCarloGrid } from "@/features/learn/components/monte-carlo-grid";
+import { NeuralPlayground } from "@/features/learn/components/neural-playground";
+import { PolicyNudge } from "@/features/learn/components/policy-nudge";
+import { RpsLearners } from "@/features/learn/components/rps-learners";
+import { EloCalculator } from "@/features/learn/components/elo-calculator";
+import { QLearningLab } from "@/features/learn/components/q-learning-lab";
+import { SlopeExplorer } from "@/features/learn/components/slope-explorer";
+import { ValueExplorer } from "@/features/learn/components/value-explorer";
 
 // Components every lesson can use without importing them.
 const components: MDXComponents = {
