@@ -55,6 +55,7 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
   const cellsRef = useRef(new Uint8Array(0));
   const imageRef = useRef<ImageData | null>(null);
   const frameRef = useRef(0);
+  const seekedRef = useRef(false); // a seek happened: playback restarts its step clock
   const endedRef = useRef(false); // the run failed: no more frames will arrive
   const finishedRef = useRef(false); // verdict shown, or failed after frames arrived: never re-run
   const expectedRef = useRef(expected);
@@ -208,6 +209,10 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
     const tick = (now: number) => {
       const store = storeRef.current;
       if (!store) return;
+      if (seekedRef.current) {
+        seekedRef.current = false;
+        last = now; // count the next step from the seek, not from before it
+      }
       const step = STEP_MS / speed;
       let steps = 0;
       while (now - last >= step && frameRef.current < store.available - 1 && steps < MAX_CATCH_UP) {
@@ -245,6 +250,7 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
     }
     draw();
     setFrame(to);
+    seekedRef.current = true;
   };
 
   const toggle = () => {

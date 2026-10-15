@@ -22,9 +22,10 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 async function BotContent({ params }: { params: PageProps<"/bots/[name]">["params"] }) {
+  const { name: raw } = await params;
   let name: string;
   try {
-    name = decodeURIComponent((await params).name);
+    name = decodeURIComponent(raw);
   } catch {
     notFound(); // malformed percent escape
   }
