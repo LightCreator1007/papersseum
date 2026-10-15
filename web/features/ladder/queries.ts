@@ -72,12 +72,13 @@ export async function getSeasonDates(): Promise<SeasonDates> {
   return { opensAt: null, closesAt: null, finalAt: null, frozen: row.frozen };
 }
 
-export async function getProfileHandle(userId: string): Promise<string | null> {
+// The owner name: the person's Google account name, or null if the account has none.
+export async function getProfileName(userId: string): Promise<string | null> {
   const persona = personaForUser(userId);
-  if (persona) return DEV_PERSONAS[persona].handle;
+  if (persona) return DEV_PERSONAS[persona].name;
   const supabase = await createClient();
-  const row = checkMaybe("your profile", await supabase.from("profiles").select("handle").eq("id", userId).maybeSingle());
-  return row?.handle ?? null;
+  const row = checkMaybe("your profile", await supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle());
+  return row?.display_name ?? null;
 }
 
 export type MatchStatus = Database["public"]["Enums"]["match_status"];
@@ -114,7 +115,7 @@ export async function getLeaderboard(limit?: number): Promise<LeaderRow[]> {
     rank: r.rank ?? 0,
     botId: r.bot_id!,
     name: r.name!,
-    owner: r.is_house ? null : r.handle,
+    owner: r.is_house ? null : r.owner_name,
     isHouse: !!r.is_house,
     rating: r.conservative ?? 0,
     elo: r.elo ?? 0,
@@ -304,7 +305,7 @@ export async function getBot(name: string): Promise<BotProfile | null> {
     "this bot",
     await supabase
       .from("bots")
-      .select("id, name, is_house, banned, elo, games, active_version, active_since, profiles(handle)")
+      .select("id, name, is_house, banned, elo, games, active_version, active_since, profiles(display_name)")
       .eq("name", name)
       .maybeSingle(),
   );
@@ -316,7 +317,7 @@ export async function getBot(name: string): Promise<BotProfile | null> {
   return {
     id: bot.id,
     name: bot.name,
-    owner: bot.profiles?.handle ?? null,
+    owner: bot.profiles ? (bot.profiles.display_name ?? "an unnamed player") : null,
     isHouse: bot.is_house,
     banned: bot.banned,
     elo: bot.elo,
@@ -361,7 +362,15 @@ export async function getBotHistory(botId: string, limit: number): Promise<Histo
   }));
 }
 
-export type MyBot = { id: string; name: string; banned: boolean; activeVersion: number | null; rank: number | null };
+export type MyBot = {
+  id: string;
+  name: string;
+  banned: boolean;
+  activeVersion: number | null;
+  rank: number | null;
+  // The bot's name before this season's rename, or null if the rename is still unused.
+  renamedFrom: string | null;
+};
 
 export async function getMyBot(userId: string): Promise<MyBot | null> {
   const persona = personaForUser(userId);
@@ -369,14 +378,25 @@ export async function getMyBot(userId: string): Promise<MyBot | null> {
   const supabase = await createClient();
   const bot = checkMaybe(
     "your bot",
-    await supabase.from("bots").select("id, name, banned, active_version").eq("owner_id", userId).maybeSingle(),
+    await supabase
+      .from("bots")
+      .select("id, name, banned, active_version, bot_name_aliases(old_name)")
+      .eq("owner_id", userId)
+      .maybeSingle(),
   );
   if (!bot) return null;
   const ladder = checkMaybe(
     "your rank",
     await supabase.from("leaderboard").select("rank").eq("bot_id", bot.id).maybeSingle(),
   );
-  return { id: bot.id, name: bot.name, banned: bot.banned, activeVersion: bot.active_version, rank: ladder?.rank ?? null };
+  return {
+    id: bot.id,
+    name: bot.name,
+    banned: bot.banned,
+    activeVersion: bot.active_version,
+    rank: ladder?.rank ?? null,
+    renamedFrom: bot.bot_name_aliases[0]?.old_name ?? null,
+  };
 }
 
 export type Violation = { line: number; kind: string; detail: string };

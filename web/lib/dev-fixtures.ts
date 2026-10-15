@@ -12,9 +12,9 @@ const sub = (b: number, v: number) => `00000000-0000-4000-8000-0000000${b}${Stri
 
 const BOTS: Record<DevPersona, MyBot | null> = {
   // New accounts get a bot named after the email handle, often a roll number (FigJam Identity).
-  newcomer: { id: bot(1), name: "23bcs101", banned: false, activeVersion: null, rank: null },
-  player: { id: bot(2), name: "ash_bot", banned: false, activeVersion: 3, rank: 12 },
-  banned: { id: bot(3), name: "rule_bender", banned: true, activeVersion: 1, rank: null },
+  newcomer: { id: bot(1), name: "23bcs101", banned: false, activeVersion: null, rank: null, renamedFrom: null },
+  player: { id: bot(2), name: "ash_bot", banned: false, activeVersion: 3, rank: 12, renamedFrom: "23bcs042" },
+  banned: { id: bot(3), name: "rule_bender", banned: true, activeVersion: 1, rank: null, renamedFrom: null },
   organiser: null, // organisers run the season; they needn't have a bot
 };
 

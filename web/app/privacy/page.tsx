@@ -12,7 +12,7 @@ export default function PrivacyPage() {
   return (
     <article className="prose">
       <h1>Privacy</h1>
-      <p className="muted">Last updated 15 October 2026.</p>
+      <p className="muted">Last updated 16 October 2026.</p>
       <p>
         Papersseum is a season-long bot tournament for IIITDM Jabalpur. This page says what the site stores about
         you, who can see it, and how to have it removed. We don&apos;t run ads, sell data or use analytics or tracking.
@@ -22,11 +22,18 @@ export default function PrivacyPage() {
       <p>
         You sign in with Google, and only @iiitdmj.ac.in accounts are accepted. Google tells us your email address, your
         name and your profile picture&apos;s address. We use the email to check that you&apos;re from the institute and
-        to keep you signed in; we don&apos;t email you, and the site never shows your name, picture or email address.
+        to keep you signed in; we don&apos;t email you. The site never shows your picture or email address.
       </p>
       <p>
-        Your public handle and bot name are made from the part of your email before the @ (for example{" "}
-        <code>24bcs001</code>), so your roll number is shown on the leaderboard and on match pages.
+        Your name, as it is on your Google account, is shown publicly as the owner of your bot, on the leaderboard and
+        on your bot&apos;s page. If you change the name on your Google account, the site picks up the new one the next
+        time you sign in.
+      </p>
+      <p>
+        Your bot starts with a name made from the part of your email before the @ (for example <code>24bcs001</code>),
+        so your roll number is public until you rename the bot. You can rename it once a season. The old name stays
+        reserved for your bot, so old links still lead to it. Your account also keeps a handle made the same way; the
+        site doesn&apos;t show it, but it can be read through the site&apos;s public data interface.
       </p>
 
       <h2>What we store</h2>
@@ -36,7 +43,7 @@ export default function PrivacyPage() {
           up and last signed in.
         </li>
         <li>
-          <strong>Your bot:</strong> its name, rating and number of games.
+          <strong>Your bot:</strong> its name, any earlier name, rating and number of games.
         </li>
         <li>
           <strong>Your uploads:</strong> each <code>.py</code> file you upload, with its size, a checksum, when you
@@ -51,7 +58,8 @@ export default function PrivacyPage() {
       <h2>Who can see it</h2>
       <ul>
         <li>
-          <strong>Everyone</strong>, signed in or not: handles, bot names, ratings, match results and replays.
+          <strong>Everyone</strong>, signed in or not: your name as your bot&apos;s owner, your handle, your
+          bot&apos;s current and earlier names, ratings, match results and replays.
         </li>
         <li>
           <strong>Only you:</strong> your upload history, including why an upload was rejected.
@@ -102,7 +110,7 @@ export default function PrivacyPage() {
 
       <h2>Deleting your data</h2>
       <p>
-        Ask the organisers to delete your account. We remove your account, handle, bot and every file you uploaded. Past
+        Ask the organisers to delete your account. We remove your account, name, handle, bot and every file you uploaded. Past
         matches stay on the site so other players&apos; ratings still make sense, but your bot&apos;s name is removed
         from them.
       </p>
