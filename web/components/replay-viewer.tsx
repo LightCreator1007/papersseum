@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Swatch } from "@/components/swatch";
 import { engineClient } from "@/lib/engine-client";
 import type { ErrorStage, ReplayMeta, WorkerOut } from "@/lib/engine-protocol";
@@ -39,6 +39,11 @@ type Props = { source: ReplaySource; expected?: ExpectedSeat[] };
 
 // Re-runs a match with the real engine in the browser and plays it. A Retry
 // remounts the inner run, so every attempt starts from clean state.
+//
+// Next keeps left pages alive but hidden (React <Activity>): hiding runs the
+// effects' cleanups (cancelling a run in progress) and showing runs them again
+// with state and refs kept. So a finished run is not run again on return, and a
+// run interrupted by leaving restarts from a fully reset player.
 export function ReplayViewer(props: Props) {
   const [attempt, setAttempt] = useState(0);
   return <ViewerRun key={attempt} {...props} onRetry={() => setAttempt((a) => a + 1)} />;
@@ -51,6 +56,8 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
   const imageRef = useRef<ImageData | null>(null);
   const frameRef = useRef(0);
   const endedRef = useRef(false); // the run failed: no more frames will arrive
+  const finishedRef = useRef(false); // verdict shown, or failed after frames arrived: never re-run
+  const expectedRef = useRef(expected);
   const themeRef = useRef<Theme>("light");
   const tableRef = useRef<Uint8ClampedArray | null>(null);
   const [frames, setFrames] = useState(0); // 0 until the header arrives
@@ -91,8 +98,19 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
     return () => dark.removeEventListener("change", apply);
   }, [draw]);
 
-  // Fetch (match page) or take the bytes (drop page), then run the engine.
+  // Pause when the page is hidden, so the button reads "Play" on return.
+  useLayoutEffect(() => () => setPlaying(false), []);
+
+  // Read through a ref so a new (equal) array from a re-render doesn't restart the run.
   useEffect(() => {
+    expectedRef.current = expected;
+  }, [expected]);
+
+  // Fetch (match page) or take the bytes (drop page), then run the engine.
+  const url = "url" in source ? source.url : null;
+  const givenBytes = "bytes" in source ? source.bytes : null;
+  useEffect(() => {
+    if (finishedRef.current) return; // shown again after it finished: keep the board and verdict
     let cancelled = false;
     let cancelRun = () => {};
     let meta: ReplayMeta | null = null;
@@ -108,8 +126,12 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
           const store = new FrameStore(m.header);
           storeRef.current = store;
           cellsRef.current = store.initial.slice();
+          // A restart (left mid-run and came back) begins playback afresh too.
           frameRef.current = 0;
-          setNames(seatNames(m.meta.players, expected));
+          endedRef.current = false;
+          setFrame(0);
+          setPlaying(false);
+          setNames(seatNames(m.meta.players, expectedRef.current));
           setFrames(store.frames);
           setAvailable(store.available);
           draw();
@@ -124,6 +146,7 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
           } catch (error) {
             cancelRun();
             endedRef.current = true;
+            finishedRef.current = true;
             setPhase({ kind: "error", stage: "run", message: String(error) });
             return;
           }
@@ -133,6 +156,7 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
         }
         case "done": {
           if (!meta) return;
+          const expected = expectedRef.current;
           const v = verdict({
             shippedHash: meta.shippedHash,
             engineHash: meta.engineHash,
@@ -140,11 +164,13 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
             recorded: parseResult(meta.recorded),
             expected,
           });
+          finishedRef.current = true;
           setPhase({ kind: "done", text: verdictText(v, seatNames(meta.players, expected)) });
           break;
         }
         case "error":
           endedRef.current = true;
+          if (storeRef.current) finishedRef.current = true; // the frames so far stay playable
           setPhase({ kind: "error", stage: m.stage, message: m.message });
           break;
       }
@@ -152,11 +178,11 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
 
     (async () => {
       let bytes: Uint8Array;
-      if ("bytes" in source) {
-        bytes = source.bytes;
+      if (givenBytes) {
+        bytes = givenBytes;
       } else {
         try {
-          const res = await fetch(source.url);
+          const res = await fetch(url!);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           bytes = new Uint8Array(await res.arrayBuffer());
         } catch (error) {
@@ -171,7 +197,7 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
       cancelled = true;
       cancelRun();
     };
-  }, [source, expected, draw]);
+  }, [url, givenBytes, draw]);
 
   // Playback: advance at 10 decisions per second times the speed, waiting at
   // the edge of what the engine has computed so far.
