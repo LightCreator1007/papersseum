@@ -1,0 +1,167 @@
+<Callout title="At a glance">
+**About 60 minutes.** In the last chapter we described each situation by a few hand-picked numbers, and learned how to weigh them. This chapter removes the hand-picking: a **neural network** learns its own features. You will build one from scratch, see why a single neuron is not enough for some problems, and work out **backpropagation**, the method that trains every modern network, as nothing more than the chain rule from school. You need the dot product, the chain rule and gradient descent.
+</Callout>
+
+## Play first
+
+Below is a puzzle. Points of two colours are scattered on a square, and a tiny network will try to learn which colour belongs where. It starts out knowing nothing. Press **Train 50 steps** a few times and watch the coloured regions it paints behind the points.
+
+Start with **Two blobs**. Then switch to **XOR**, where the colours sit in opposite corners, like a chessboard. Set hidden neurons to **1** and try to train it. Then set it to **4**. What changes?
+
+<NeuralPlayground />
+
+With one hidden neuron, XOR is hopeless: the network never gets better than about three-quarters right, however long you train. With four, it learns it almost perfectly. By the end of this chapter you will know exactly why.
+
+## A neuron is a weighted sum with a bend
+
+A **neuron** in a neural network is a very small thing. It takes some numbers in, multiplies each by a weight, adds them up, adds a number called a **bias**, and then passes the result through a "bend", called an **activation function**. You already know the first half: it is the dot product from the maths toolkit.
+
+$$
+z = w_1 x_1 + w_2 x_2 + \cdots + b, \qquad \text{output} = \text{activation}(z).
+$$
+
+A tiny example. Inputs $x = [1, 2]$, weights $w = [0.5, -1]$, bias $b = 0.25$:
+
+$$
+z = 0.5 \times 1 + (-1) \times 2 + 0.25 = -1.25.
+$$
+
+Now the bend. Three common ones:
+
+- **ReLU** ("rectified linear unit"): output $z$ if it is positive, otherwise 0. Here, $\text{ReLU}(-1.25) = 0$.
+- **Sigmoid**: squashes any number into the range between 0 and 1, like a probability. $\text{sigmoid}(-1.25) = \frac{1}{1 + e^{1.25}} \approx 0.2227$.
+- **Tanh**: squashes any number into the range between $-1$ and $1$. $\tanh(-1.25) \approx -0.8483$.
+
+Why bother with the bend at all? Because without it, a whole stack of neurons would be pointless. Here is the proof by example. Suppose one layer turns $x$ into $h = W_1 x$ with $W_1 = \begin{bmatrix} 1 & 2 \\ 3 & 4 \end{bmatrix}$, and a second layer turns that into $y = W_2 h$ with $W_2 = \begin{bmatrix} 1 & 1 \end{bmatrix}$. For $x = [1, 1]$:
+
+$$
+h = \begin{bmatrix} 1 + 2 \\ 3 + 4 \end{bmatrix} = \begin{bmatrix} 3 \\ 7 \end{bmatrix}, \qquad y = 3 + 7 = 10.
+$$
+
+But the two layers together are the same as one layer with weights $W_2 W_1 = [4, 6]$, which gives $4 + 6 = 10$. **Two layers of plain weighted sums collapse into one.** All the cleverness of a deep network comes from putting a bend between the layers, so that the layers cannot be merged.
+
+## Layers and the forward pass
+
+A **layer** is a group of neurons that all look at the same inputs. A **network** is layers feeding one into the next. The numbers flow forward, and that is called the **forward pass**.
+
+Here is a small one: 2 inputs, a hidden layer of 2 ReLU neurons, and 1 output. The input is $x = [1, 0.5]$. The first neuron has weights $[0.2, -0.5]$ and bias 0, and the second has weights $[0.4, 0.3]$ and bias 0.1.
+
+- First neuron: $0.2 \times 1 + (-0.5) \times 0.5 + 0 = -0.05$, and ReLU turns that into $0$.
+- Second neuron: $0.4 \times 1 + 0.3 \times 0.5 + 0.1 = 0.65$, which ReLU leaves as $0.65$.
+
+The output neuron has weights $[1, 2]$ and bias $0.5$: $1 \times 0 + 2 \times 0.65 + 0.5 = 1.8$.
+
+In matrix form, a layer is just "multiply by a grid of weights, add the biases, then bend". That is exactly the matrix times vector from the maths toolkit, and it is why computers can do it so fast. And note that this forward pass is all a trained network ever does when it is *used*. The final chapter shows how to run one inside a Papersseum bot with a few lines of NumPy.
+
+## How wrong is it? The loss
+
+To learn, the network needs a number saying how badly it is doing. We use the **loss**. For predicting a number, a standard choice is the **mean squared error**: the average of $(\text{prediction} - \text{target})^2$. If the network predicts 3 and the target is 4, the squared error is $(3 - 4)^2 = 1$. (For yes/no problems like the playground, a related measure called cross-entropy is more common, but the idea is identical: a number that is small when the network is right.)
+
+Learning means making the loss small by changing the weights. And we know how to do that from the last chapter: **gradient descent**. All we need is the slope of the loss with respect to every weight. A modern network has millions of weights, so we need a clever, efficient way to find all those slopes. That way is called backpropagation.
+
+## Backpropagation is the chain rule
+
+Here is the surprise: backpropagation sounds fearsome, but it is the chain rule from school, applied carefully. Let us do it by hand on the smallest network that shows everything: one input, one hidden neuron with ReLU, and one output.
+
+$$
+z = w_1 x, \qquad h = \text{ReLU}(z), \qquad y = w_2 h, \qquad \text{loss} = \tfrac{1}{2}(y - t)^2.
+$$
+
+Take $x = 2$, $w_1 = 0.5$, $w_2 = 3$ and target $t = 4$.
+
+**Forward pass** (just compute): $z = 0.5 \times 2 = 1$, $h = \text{ReLU}(1) = 1$, $y = 3 \times 1 = 3$, and the loss is $\tfrac{1}{2}(3 - 4)^2 = 0.5$.
+
+**Backward pass.** We want the slope of the loss with respect to each weight. Start at the end and work backwards, one link of the chain at a time.
+
+- How does the loss change with the output $y$? The slope of $\tfrac{1}{2}(y - t)^2$ is $y - t = 3 - 4 = -1$.
+- How does the loss change with $w_2$? The output is $y = w_2 h$, so changing $w_2$ by a little changes $y$ by $h$ times as much. By the chain rule: $-1 \times h = -1 \times 1 = -1$.
+- How does the loss change with $h$? Changing $h$ changes $y$ by $w_2$ times as much: $-1 \times w_2 = -1 \times 3 = -3$.
+- How does it change with $z$? ReLU has slope 1 when $z$ is positive (and 0 when negative), so the slope stays $-3 \times 1 = -3$.
+- How does it change with $w_1$? Since $z = w_1 x$, changing $w_1$ changes $z$ by $x$ times as much: $-3 \times x = -3 \times 2 = -6$.
+
+So the slopes are $-1$ for $w_2$ and $-6$ for $w_1$. Both are negative, which means the loss falls if we *increase* either weight. Notice the pattern: **each slope is the slope arriving from the right, multiplied by the local slope at that step.** The slope "flows backwards" through the network, picking up a factor at every link. That is all backpropagation is.
+
+Now take a gradient descent step. With a small step size of 0.01, $w_1$ becomes $0.5 - 0.01 \times (-6) = 0.56$ and $w_2$ becomes $3 + 0.01 = 3.01$. The new output is $3.01 \times \text{ReLU}(0.56 \times 2) = 3.01 \times 1.12 = 3.37$, and the new loss is about 0.198, down from 0.5.
+
+But try a bigger step of 0.1. Then $w_1 = 1.1$ and $w_2 = 3.1$, the output jumps to $3.1 \times 2.2 = 6.82$, and the loss becomes about **3.98**. It went *up*. This is the overshooting from the last chapter: the slope is only accurate very close to where you stand, so a big step can leap past the valley.
+
+For a real network, there are many layers and many neurons per layer, but the recipe is unchanged. Going backwards from the last layer, each layer does two things: it works out the slopes for its own weights (from what flowed *in* and the slope arriving from the right), and it passes a slope back to the layer before (by multiplying by its weights and by the slope of the bend). The Python file for this chapter does exactly that, in about a dozen lines.
+
+## Checking your work
+
+How do you know your backpropagation code is right? There is a lovely test. The slope of the loss with respect to any one weight can also be found by brute force: nudge that weight up a tiny bit, nudge it down, and see how the loss changes. If backpropagation is correct, the two answers must agree.
+
+We ran this **gradient check** on a network with three layers (3, 5, 4 and 2 neurons) and checked every single weight and bias. The largest disagreement was far smaller than one part in a million. That is rounding error, so the backpropagation is correct. Whenever you write a network from scratch, run this check first. It catches almost every bug.
+
+## Why one neuron cannot learn XOR
+
+Back to the puzzle from the start. XOR has four examples: inputs $(0,0)$ and $(1,1)$ should give 0, and inputs $(0,1)$ and $(1,0)$ should give 1.
+
+We trained networks with 1, 2 and 4 hidden neurons for 3,000 steps:
+
+| Hidden neurons | Final loss | What it outputs for the four inputs |
+| --- | --- | --- |
+| 1 | 0.25 | 0.5, 0.5, 0.5, 0.5 |
+| 2 | about 0 | 0, 1, 1, 0 |
+| 4 | about 0 | 0, 1, 1, 0 |
+
+With one hidden neuron, the network gives up and answers 0.5 for everything. That is the best constant guess: it is wrong by 0.5 on every example, so its squared error is $0.5^2 = 0.25$.
+
+Why can one neuron not do it? A single neuron draws **one bend along one direction**. Whatever the weights, its output changes smoothly in one direction across the square. But XOR needs the answer to go 0, then 1, then 0 as you cross the square: no single direction does that. Two neurons can each draw a different boundary, and the output layer combines them: "one boundary says this, the other says that, and together they pick out the two opposite corners". That is the power of a **hidden layer**: it lets the network build new features out of the inputs, and then combine them.
+
+The playground shows the same thing with a circle of one colour inside a ring of the other. No single straight boundary can separate them, but a handful of hidden neurons can wrap a curved region around it.
+
+## Learning a curve
+
+One more experiment, to connect with the last chapter. There we picked features by hand. Here the network picks its own. We asked a network with one input, 16 hidden neurons and one output to fit a sine curve, using 60 points between $-\pi$ and $\pi$. At the start, the loss was 0.127. After 6,000 steps of gradient descent it was 0.00218, about 60 times smaller, and the network's curve traces the sine wave closely.
+
+Nobody told the network what a sine wave looks like, or what features to use. Its hidden neurons found a useful set of features on their own, which is exactly what we wanted at the end of the last chapter.
+
+## Where this goes next
+
+In reinforcement learning, we will use a network as the formula that estimates values: feed in a description of the situation, and get out an estimate of how good each move is. The next chapter does this, and finds that it needs two special tricks to stop the learning from falling apart.
+
+## Run it yourself
+
+At the bottom of this page you can download:
+
+- `mlp.py` is a complete neural network in plain NumPy: the forward pass, backpropagation, the gradient check, and the XOR and sine experiments.
+- `check_numbers.py` checks every number quoted in this chapter.
+
+Try changing the number of hidden neurons in `mlp.py`. How few can learn the sine curve? What happens with a very large step size?
+
+## Check yourself
+
+<Check q="A neuron has inputs [2, −1], weights [1, 3] and bias 0.5. What is z, and what does ReLU turn it into?">
+$z = 2 \times 1 + (-1) \times 3 + 0.5 = -0.5$. ReLU gives 0 for negative numbers, so the output is 0.
+</Check>
+
+<Check q="One layer multiplies its input by 3, and the next multiplies by 4, with no bend in between. What single layer does the same job?">
+One that multiplies by $3 \times 4 = 12$. Without a bend between them, the two layers merge into one. This is why neural networks need an activation function.
+</Check>
+
+<Check q="Take x = 1, w1 = 2, w2 = 0.5, target 0, with a ReLU hidden neuron and loss ½(y − t)². Find the slope of the loss with respect to w2 and with respect to w1.">
+Forward: $z = 2 \times 1 = 2$, $h = 2$, $y = 0.5 \times 2 = 1$. The slope of the loss with respect to $y$ is $y - t = 1$. With respect to $w_2$: $1 \times h = 2$. With respect to $h$: $1 \times w_2 = 0.5$. ReLU's slope is 1 here, so the slope with respect to $z$ is 0.5, and with respect to $w_1$: $0.5 \times x = 0.5$. So the slopes are 2 for $w_2$ and 0.5 for $w_1$.
+</Check>
+
+<Check q="Why can one hidden neuron not learn XOR, while two can?">
+One neuron produces an output that changes smoothly in a single direction across the inputs, but XOR needs the answer to go 0, 1, 0 as you cross the square, which no single direction does. With two neurons, each draws its own boundary, and the output layer combines them to pick out the two opposite corners.
+</Check>
+
+<Check q="What does the gradient check do, and what did it show?">
+It compares the slopes found by backpropagation with slopes found by brute force: nudge each weight up and down by a tiny amount and see how the loss changes. If the two agree, backpropagation is correct. Here the biggest disagreement was about two parts in a hundred million, which is just rounding error.
+</Check>
+
+## Recap
+
+- A **neuron** takes a weighted sum of its inputs plus a **bias**, then applies a **bend** (an activation such as ReLU, sigmoid or tanh).
+- Without the bends, stacked layers collapse into a single layer. The **bends** are what give depth its power.
+- A **network** is layers feeding forward. The **forward pass** is matrix multiplications with bends.
+- The **loss** measures how wrong the network is. Learning means reducing it by **gradient descent**.
+- **Backpropagation** is the **chain rule** applied from the end of the network back to the start: each slope is the slope arriving from the right times the local slope.
+- A **gradient check** compares backpropagation with brute-force slopes, and catches almost every bug.
+- A **hidden layer** lets a network build its own features, which is why two hidden neurons can solve XOR and one cannot.
+
+## Where next
+
+We now have a formula flexible enough to learn its own features. Next we plug it into Q-learning, and meet the two tricks that make a network a safe place to keep Q-values: the replay buffer and the target network.

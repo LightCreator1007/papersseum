@@ -1,0 +1,114 @@
+Every formula in the course on one page. Symbols first, then the formulas, grouped by chapter.
+
+## Symbols
+
+| Symbol | Meaning |
+| --- | --- |
+| $s$, $s'$ | a state, and the next state |
+| $a$ | an action |
+| $r$, $R$ | a reward |
+| $\gamma$ | discount factor, between 0 and 1 |
+| $G_t$ | the return from time $t$ |
+| $\pi(a \mid s)$ | probability the policy picks $a$ in state $s$ |
+| $V(s)$ | value of a state |
+| $Q(s, a)$ | value of taking $a$ in state $s$ |
+| $\alpha$ | step size (learning rate) |
+| $\varepsilon$ | exploration probability |
+
+## Averages and bandits
+
+Expected value of a quantity that takes value $x_i$ with probability $p_i$:
+
+$$
+E[X] = \sum_i p_i x_i.
+$$
+
+Running average, after a new observation $x$ (this is the pattern behind nearly every update in the course):
+
+$$
+\text{new estimate} = \text{old estimate} + \alpha\,(x - \text{old estimate}).
+$$
+
+## Returns and MDPs
+
+$$
+G_t = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \cdots
+$$
+
+## Bellman equations
+
+$$
+V^\pi(s) = \sum_a \pi(a \mid s) \sum_{s'} P(s' \mid s, a)\,\big[r + \gamma V^\pi(s')\big]
+$$
+
+$$
+V^*(s) = \max_a \sum_{s'} P(s' \mid s, a)\,\big[r + \gamma V^*(s')\big]
+$$
+
+## Learning from experience
+
+Monte Carlo: move the estimate toward the return of the whole episode.
+
+$$
+V(s) \leftarrow V(s) + \alpha\,\big(G - V(s)\big)
+$$
+
+TD(0): move it toward the reward plus the estimate of the next state.
+
+$$
+V(s) \leftarrow V(s) + \alpha\,\big(r + \gamma V(s') - V(s)\big)
+$$
+
+SARSA (on-policy):
+
+$$
+Q(s,a) \leftarrow Q(s,a) + \alpha\,\big(r + \gamma Q(s',a') - Q(s,a)\big)
+$$
+
+Q-learning (off-policy):
+
+$$
+Q(s,a) \leftarrow Q(s,a) + \alpha\,\big(r + \gamma \max_{a'} Q(s',a') - Q(s,a)\big)
+$$
+
+## Gradient descent and networks
+
+Step against the slope of the error $E$ with respect to a weight $w$:
+
+$$
+w \leftarrow w - \alpha \,\frac{dE}{dw}.
+$$
+
+A neuron: a weighted sum, then a bend (an activation function such as the ReLU, which is $\max(0, z)$):
+
+$$
+\text{output} = f\big(w_1 x_1 + w_2 x_2 + \cdots + b\big).
+$$
+
+## DQN
+
+Target and loss:
+
+$$
+\text{target} = r + \gamma \max_{a'} Q_{\text{target net}}(s', a'), \qquad \text{loss} = \big(Q(s,a) - \text{target}\big)^2.
+$$
+
+## Policy gradients
+
+Softmax:
+
+$$
+\pi(a) = \frac{e^{\theta_a}}{\sum_j e^{\theta_j}}.
+$$
+
+For a softmax, the slope of $\ln \pi(a)$ with respect to the scores is "one-hot minus probabilities". The update after taking action $a$ with advantage $A$:
+
+$$
+\theta \leftarrow \theta + \alpha\, A\, \nabla \ln \pi(a).
+$$
+
+## Elo
+
+$$
+E_A = \frac{1}{1 + 10^{(R_B - R_A)/400}}, \qquad R_A \leftarrow R_A + K\,(S_A - E_A).
+$$

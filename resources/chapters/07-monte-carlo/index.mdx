@@ -1,0 +1,150 @@
+<Callout title="At a glance">
+**About 40 minutes.** In Part B we always knew the rules: every chance and every reward was written down. From here on, we do not. This chapter shows the simplest way to learn without a rule book: play lots of games and average what happened. You will use averages and the "error shrinks like one over root n" idea from earlier chapters, and nothing new.
+</Callout>
+
+## No map this time
+
+Imagine the student's evening again, but this time **you cannot read the table**. Nobody tells you the chance that studying leaves you tired, or what each evening is worth. You can only *live* evenings, one after another, and write down what happened.
+
+Is that enough to find out how good a plan is?
+
+Yes, and the idea is almost embarrassingly simple. Remember what a value is: the **expected return**, the long-run average of the total reward you collect from a starting point. We learned in the maths toolkit that averages of many trials settle down to the expected value. So to estimate a value, we do not need any rule book at all:
+
+> **Play many episodes from there, work out the return of each one, and take the average.**
+
+This is called the **Monte Carlo method**, named after the famous casino in Monaco, because it works by playing lots of games of chance and averaging. It needs no knowledge of how the world works. We only need to be able to play it.
+
+## Estimating a value by playing
+
+Let us try it. We hide the student's table inside a black box, so the learner can only play and watch the rewards. Then we estimate the value of "study when fresh, rest when tired", starting fresh, with $\gamma = 0.9$. We know the true answer from chapter 5: about 20.09.
+
+Here is what the average of the returns looked like as we played more episodes:
+
+| Episodes played | Estimated value | Typical error |
+| --- | --- | --- |
+| 10 | 19.42 | 0.39 |
+| 100 | 20.26 | 0.28 |
+| 1,000 | 20.03 | 0.09 |
+| 10,000 | 20.13 | 0.03 |
+
+With 10 episodes, we are already in the right neighbourhood, but a bit off. With 10,000, we are within about 0.03 of the truth. The estimate homes in on 20.09, exactly as the law of large numbers promised.
+
+The "typical error" column has a pattern, and you saw its cousin in the Python chapter. One episode's return varies a good deal: it has a spread of about 2.7. And the typical error of an average of $n$ episodes is that spread divided by $\sqrt{n}$:
+
+$$
+\text{typical error} \approx \frac{2.7}{\sqrt{n}}.
+$$
+
+Check it: with $n = 100$ that is $2.7/10 = 0.27$, and with $n = 10{,}000$ it is $2.7/100 = 0.027$. Both match the table. The lesson is the same as before: **ten times more accuracy costs a hundred times more episodes.**
+
+## Returns from a recorded episode
+
+How do we get the return of an episode in practice? We play it to the end, write down the rewards, and then work out each step's return **backwards**, using the trick from the Markov decision process chapter: the return from now is the reward next plus $\gamma$ times the return from the step after.
+
+Let us do it on the grid world. Suppose the agent walks up, up, right, right, right and reaches the goal: five steps. The first four each cost 0.04, and the last one earns +1. With $\gamma = 0.9$, working backwards from the end:
+
+| Step | Reward | Return from that step |
+| --- | --- | --- |
+| 5 (into the goal) | +1 | 1.00 |
+| 4 | −0.04 | $-0.04 + 0.9 \times 1.00 = 0.86$ |
+| 3 | −0.04 | $-0.04 + 0.9 \times 0.86 = 0.734$ |
+| 2 | −0.04 | $-0.04 + 0.9 \times 0.734 = 0.621$ |
+| 1 (the start) | −0.04 | $-0.04 + 0.9 \times 0.621 = 0.519$ |
+
+Notice these numbers are exactly the values dynamic programming gave us for those cells in the last chapter. That is no accident. This path is the best one, nothing was random, so the returns equal the true values. In a world with slipping, each episode would give a *different* return for the same cell, and we would average over many.
+
+One practical detail. A cell might be visited more than once in a single episode. The simple choice, called **first-visit** Monte Carlo, only counts the return after the *first* time the agent was in a cell during that episode.
+
+## Control: finding a good policy
+
+Estimating the value of a policy is useful, but what we really want is a *good* policy. For that, we need to compare moves. In Part B we did that by looking one step ahead using the rules: "if I do this, I land there with this chance." But now we do not know the rules, so we cannot look ahead. Instead, we estimate the value of **each move in each state** directly, the action value $Q(s, a)$ from the Bellman chapter, from the returns that followed it.
+
+Here is the whole method:
+
+1. **Play an episode.** In each cell, pick the move that looks best right now, except with a small probability $\varepsilon$ (epsilon) pick a random move instead. (This is the exploring idea from the bandit chapter.)
+2. **Work out the returns** backwards, as above.
+3. **Nudge each estimate.** For each cell and move the agent tried, move its $Q$ estimate a little toward the return that followed it:
+
+$$
+Q \leftarrow Q + \alpha \,(G - Q).
+$$
+
+4. **Repeat**, exploring a little less as time goes on.
+
+Look at step 3. It is the same shape you have met twice already: **new estimate = old estimate + step size × (surprise)**. The surprise is the return you actually got, $G$, minus what you expected, $Q$. The step size $\alpha$ (alpha) says how far to move. We use a fixed $\alpha = 0.1$, so recent episodes count a bit more than old ones, which is helpful because the policy keeps improving as it learns.
+
+Notice the exploring step too. If the agent always picked its current favourite move, it could get stuck with a bad habit and never find out that something else is better, just like the greedy slot-machine player in the bandit chapter.
+
+Try it. The agent below knows nothing about the grid. Press **One episode** to watch it play, **Ten** or **A hundred** to speed up, and watch the arrows appear.
+
+<MonteCarloGrid />
+
+Here are some things to try.
+
+- Play a handful of episodes first. Which cells get arrows? Only the ones the agent has actually visited. The cells it has never been to stay blank.
+- Play a few hundred. Notice how the arrows near the goal settle first, and how the values spread outward from the goal, much like the ripple from the dynamic programming chapter, but built from experience instead of rules.
+- Set the exploring slider to 0 and start over. Now the agent only ever does what looks best so far. It still gets somewhere, but often settles on a worse route and never questions it. (We tried 20 fresh agents for 1,000 episodes each: 12 of them had learned the best route along the top row with no exploring, against 18 of 20 with exploring at 0.1.)
+- Raise the slip. The agent now has to cope with moves that do not always go where it wanted.
+
+## What the experiment showed
+
+We ran this agent (with exploring decreasing from 0.5 down to 0.02) for 3,000 episodes on the no-slip grid. In that run, the top row came out at 0.73, 0.86 and 1.00. The exact values from dynamic programming are 0.734, 0.860 and 1.000. The start cell was estimated at 0.51, against the exact 0.519. Every cell chose a best move that dynamic programming agrees with, and nobody ever told this agent what the moves do.
+
+But a single run can flatter. When we repeated the experiment with ten different random seeds, the agent chose an optimal move in **8.6 of the 9 cells on average**, and never fewer than 7. The ones that went wrong tend to be the same kind of cell: rarely visited ones. In our first run, the cell next to the pit was estimated at 0.26 when its true value is 0.62, simply because the agent seldom ended up there and had little to learn from.
+
+That is a fair summary of Monte Carlo: **it learns well about the places it goes, and little about the places it does not.**
+
+## The catch
+
+Monte Carlo is wonderfully simple, but it has limits.
+
+- **It must wait for the episode to end.** You cannot work out a return until you know all the rewards that follow. So it only works for tasks that end, and it learns nothing in the middle of an episode, however long that is.
+- **It is noisy.** Each return is a long chain of random events added up, so a single return can be far from the average. That is why it needs so many episodes.
+- **It learns slowly in long episodes.** A match with 1,800 decisions would give you one learning signal per match.
+
+Wouldn't it be better to learn from *every step*, without waiting for the end? There is a clever way to do exactly that, and it is the most influential idea in the whole subject. That is the next chapter.
+
+## Run it yourself
+
+At the bottom of this page you can download:
+
+- `mc_student.py` estimates the student's value by playing episodes, printing the table from this chapter. It needs only NumPy.
+- `mc_grid.py` runs Monte Carlo control on the grid world and prints the best move and value of every cell.
+- `check_numbers.py` checks every number quoted in this chapter, including the ten-seed experiment.
+
+Try changing the number of episodes in `mc_grid.py`, or the step size `alpha`. What happens to the rarely visited cells?
+
+## Check yourself
+
+<Check q="An episode has rewards −1, −1, then +5, with no discounting (γ = 1). What is the return from each of the three steps?">
+Work backwards. The last step's return is just 5. The step before: $-1 + 5 = 4$. The first step: $-1 + 4 = 3$. So the returns are 3, 4 and 5.
+</Check>
+
+<Check q="One episode's return has a spread of about 2.7. Roughly how many episodes do you need for a typical error of 0.1?">
+The typical error is $2.7/\sqrt{n}$. Setting that to 0.1 gives $\sqrt{n} = 27$, so $n = 27^2 = 729$ episodes.
+</Check>
+
+<Check q="Why does Monte Carlo control estimate the value of each move, Q, rather than just the value of each state?">
+Because it does not know the rules. With only state values, you would need to know where each move leads in order to compare moves, and that is exactly the knowledge it lacks. Estimating the value of each move directly, from the returns that followed it, lets it compare moves without any model.
+</Check>
+
+<Check q="Why does the learner keep exploring, rather than always taking the best-looking move?">
+Because early estimates are rough. If it only ever repeated the move that looked best first, it would never gather evidence about the others, and could be stuck with a poor habit forever. A little exploring keeps every move getting tried, so estimates can be corrected.
+</Check>
+
+<Check q="Why can Monte Carlo not learn from a task that never ends?">
+Because it needs a complete return, the total reward from a step until the end, and a task that never ends never completes its returns. It must wait until an episode finishes before it can learn anything from it.
+</Check>
+
+## Recap
+
+- **Monte Carlo** estimates a value by playing many episodes and **averaging the returns**. It needs no model of the world, only the ability to play.
+- Returns are worked out **backwards** from the end of an episode.
+- The typical error of the average shrinks like **spread divided by the square root of n**: ten times more accuracy costs a hundred times more episodes.
+- **Control** estimates the value of each move, $Q(s, a)$, nudging it toward the returns it sees: **$Q \leftarrow Q + \alpha\,(G - Q)$**. The agent **explores** a little so that every move gets tried.
+- It learns well where it goes and poorly where it does not.
+- It must **wait for the end of an episode**, so it is noisy and slow for long ones.
+
+## Where next
+
+Can we learn *during* an episode, one step at a time, without waiting for the end? Yes, and the trick is the heart of modern reinforcement learning: temporal-difference learning, and its famous cousin Q-learning.

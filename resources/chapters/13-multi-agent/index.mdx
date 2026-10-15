@@ -1,0 +1,144 @@
+<Callout title="At a glance">
+**About 45 minutes.** Everything so far assumed the world holds still while you learn about it. When the other players are learning too, that stops being true. In this chapter you will watch two learners chase each other around in circles, see why playing against yourself is such a powerful way to improve, and learn how **Elo ratings** turn a pile of match results into a fair ranking. You need probability and the idea of a logistic curve (an S-shaped curve).
+</Callout>
+
+## A learner meets a learner
+
+Rock, paper, scissors. Paper beats rock, scissors beats paper, rock beats scissors. A win scores +1, a loss −1, a draw 0.
+
+The demo below has two settings. First, leave it on **against a bot that plays rock half the time**, and press **1,000**. The learner keeps a score for each move, turns the scores into chances, and nudges them toward whatever just worked (it is the policy-gradient idea from the last chapter). Watch which move it settles on.
+
+Then switch to **two learners against each other**, and press **5,000** a few times. Watch the line for the chance of rock.
+
+<RpsLearners />
+
+Against the rock-heavy bot, the learner finds **paper** and sticks with it. That makes sense: against a bot that plays rock 50%, paper 25% and scissors 25%, playing paper earns $0.5 \times 1 + 0.25 \times 0 + 0.25 \times (-1) = +0.25$ per round, playing rock earns 0, and playing scissors loses 0.25. In our ten test runs, the learner's chance of paper ended at 98% or 99% every time.
+
+Two learners behave very differently. Neither settles. When A leans towards rock, B discovers that paper beats it and starts playing more paper. Then A discovers scissors beats paper. Then B discovers rock beats scissors. And round it goes. In ten runs of 20,000 rounds, the chance of rock kept swinging by more than 0.3 late in training in all ten, ranging anywhere from 0.02 to 0.96.
+
+## The moving target
+
+This is the heart of multi-agent learning. Back in Part A, a bandit's machines paid out the same way forever, so more experience always meant a better estimate. Here, **what was best a moment ago stops being best**, because the other player changes in response to you.
+
+In the language of MDPs: from your point of view, the other players are part of the environment. When they learn, the environment's rules change under your feet. The assumption that made our proofs work, that the transition probabilities stay fixed, no longer holds. This is called **non-stationarity**.
+
+Is there anything stable in the chaos? Yes, and it is a nice fact. Look at the numbers again. Although the chance of rock swings wildly, its **average over the whole run** stayed within 0.04 of one third for every run in our test. The learners keep circling around the one balanced strategy: play each move a third of the time. That strategy cannot be beaten, because against it every move earns exactly 0. It is a **Nash equilibrium**: a pair of strategies where neither player can gain by changing alone.
+
+But notice what the learners did *not* do: they did not settle on it. Two simple learners can chase each other forever without ever sitting still on the balanced strategy. Games with an equilibrium are easier to understand than they are to learn.
+
+## Why not just play yourself?
+
+Here is a thought. To get good at a two-player game, you need opponents. Good opponents are scarce. So: **play against a copy of yourself.** This is **self-play**.
+
+It works better than it sounds, for a few reasons:
+
+- **The opponent is always at the right level.** A fixed opponent that is too weak teaches you nothing, and one that is too strong gives you only losses. A copy of yourself improves exactly as fast as you do.
+- **It is free.** You can play millions of games, as fast as the computer can run them, with no human involved.
+- **It forces you to fix your own weaknesses.** If you have a flaw, so does your copy, and your copy will exploit it.
+
+But the rock, paper, scissors demo showed the catch. A learner that only ever plays the *latest* copy of itself can end up going in circles: it beats its previous habit by adopting the opposite one, which a later copy beats again. It can even forget how to beat an old strategy that it has stopped meeting.
+
+The standard remedy is to play against a **league**: a collection of past versions and different styles, not only the latest one. The learner must beat the whole collection, so it cannot win just by swinging to the opposite extreme. This is how training for many large game-playing systems is organised, in one form or another.
+
+## Rating the players
+
+Now suppose a league exists, and you want to know how good each player is. Match results are noisy: a strong player sometimes loses, and a weak player sometimes gets lucky. What you want is a single number for each player, such that **a bigger number means stronger**, and the gap between two numbers tells you how often the stronger one should win.
+
+The classic answer is the **Elo rating**, invented for chess. It has two small formulas.
+
+**Part 1: predict.** If A has rating $R_A$ and B has rating $R_B$, the expected score of A (1 for a win, 0 for a loss, 0.5 for a draw; so you can read it as the chance of winning) is
+
+$$
+E_A = \frac{1}{1 + 10^{(R_B - R_A)/400}}.
+$$
+
+This is a logistic curve. Check the edges. If the ratings are equal, the exponent is 0, $10^0 = 1$, and $E_A = 1/2$: a coin flip. If A is far ahead, $R_B - R_A$ is very negative, the power of 10 is tiny, and $E_A$ is close to 1. The 400 is just a scale: every 400 points of gap multiplies the odds by 10.
+
+The table shows how often the stronger player is expected to win:
+
+| Rating gap | Expected score of the stronger player |
+| --- | --- |
+| 0 | 0.500 |
+| 100 | 0.640 |
+| 200 | 0.760 |
+| 400 | 0.909 |
+| 800 | 0.990 |
+
+**Part 2: correct.** After a game, compare what happened with what was expected, and move the rating by the surprise:
+
+$$
+R_A^{\text{new}} = R_A + K \times (S_A - E_A).
+$$
+
+$S_A$ is the actual score, and $K$ is a step size, like the learning rate in gradient descent. Note the family resemblance: this is "nudge toward what you saw, in proportion to the error", the same shape as the TD update in Part C.
+
+A worked example. A is rated 1000, B is rated 1200, and $K = 32$.
+
+- Expected score of A: $E_A = 1/(1 + 10^{200/400}) = 1/(1 + 3.162) = 0.2403$. A is the underdog.
+- If **A wins** ($S_A = 1$): A gains $32 \times (1 - 0.2403) = 24.31$ points, so A moves to **1024.31**. B loses the same amount.
+- If **A loses** ($S_A = 0$): A loses $32 \times 0.2403 = 7.69$ points, so A drops to **992.31**.
+
+An upset moves a lot of points, and an expected result moves few. And whatever one player gains, the other loses, so the total never changes.
+
+Try it yourself below. Set up different matchups, and see how the numbers move.
+
+<EloCalculator />
+
+## Do the ratings find the truth?
+
+Suppose four players have true strengths 1000, 1100, 1200 and 1400, and we do not tell the system. Everyone starts at 1000, and we let random pairs play, with each result drawn at random using the true win chances. We use $K = 16$ and repeat each experiment 30 times. Here is what the ratings look like after different numbers of games:
+
+| Games played | Typical largest rating error | Runs (of 30) with the players in the right order |
+| --- | --- | --- |
+| 100 | 96 points | 25 |
+| 500 | 48 points | 28 |
+| 2,000 | 42 points | 28 |
+| 10,000 | 41 points | 28 |
+
+Two things to notice. First, the ratings find the right order quickly: after 100 games, 25 of 30 runs have it. Second, the error stops improving at around 40 points. That is not a bug. With a fixed $K$, every game still moves each rating by several points, so the numbers keep jittering around the truth, and they never freeze. A smaller $K$ gives steadier ratings but reacts more slowly to real change. Chess systems use bigger $K$ for new players and smaller for established ones, for exactly this reason.
+
+Notice also what Elo is and is not. It rates players by how they perform *against the opponents they actually played*. It cannot tell you everything: in rock, paper, scissors style games where A beats B, B beats C and C beats A, a single number per player cannot capture the circle. It is a very good summary, not the whole truth.
+
+## Run it yourself
+
+At the bottom of this page you can download:
+
+- `rps_selfplay.py` has the rock, paper, scissors learners: one against the rock-heavy bot, and two against each other.
+- `elo.py` has the two Elo formulas, plus the simulation above.
+- `check_numbers.py` checks every number quoted in this chapter. It runs in a few seconds.
+
+Try changing the step size $\alpha$ for the two learners. Does a smaller one make the circling slower, or make it stop? Then try three learners.
+
+## Check yourself
+
+<Check q="A bot plays rock 50%, paper 25%, scissors 25%. What is the average score per round for playing scissors against it?">
+Scissors beats paper (+1), draws with scissors (0), and loses to rock (−1): $0.25 \times 1 + 0.25 \times 0 + 0.5 \times (-1) = -0.25$. So scissors loses a quarter of a point per round on average. Paper, at +0.25, is the best reply.
+</Check>
+
+<Check q="Why do two learners playing each other at rock, paper, scissors not settle down, even though a good strategy (a third each) exists?">
+Each learner is adapting to the other's current habit. When one leans towards a move, the other learns to beat that move, which in turn makes the first one's counter-move good, and so on round the circle. The environment each one faces keeps changing because the other is learning. Their long-run average does hover near one third each, but neither sits still there.
+</Check>
+
+<Check q="Why is it a problem for the MDP framework when the other players are learning?">
+An MDP assumes the rules of the environment, the transition probabilities, stay fixed. When the other players learn and change how they act, the environment from one player's point of view changes over time. What worked yesterday may not work today.
+</Check>
+
+<Check q="A 1400-rated player faces a 1000-rated player, with K = 32. What happens to the favourite's rating if they win, and if they lose?">
+The favourite's expected score is $1/(1 + 10^{-400/400}) = 1/(1.1) = 0.909$. A win moves them by $32 \times (1 - 0.909) = +2.9$ points, a tiny gain, since the win was expected. A loss moves them by $32 \times (0 - 0.909) = -29.1$ points, a big drop, since it was a shock.
+</Check>
+
+<Check q="Why is it better to train against a league of past opponents than only against the latest copy of yourself?">
+Against only the latest copy, a learner can win simply by swinging to the opposite habit, and then later be beaten by the habit it dropped, going round in circles and forgetting old skills. Against a whole collection of past versions and styles, it has to be good against all of them at once, so it can't win by lurching to one extreme.
+</Check>
+
+## Recap
+
+- When the other players learn too, the environment keeps changing. This is **non-stationarity**, and it breaks the fixed-rules assumption behind MDPs.
+- In rock, paper, scissors, a learner beats a fixed bot easily, but **two learners circle forever**. Their long-run average sits near the balanced strategy (a **Nash equilibrium**: no player gains by changing alone), without ever settling on it.
+- **Self-play** gives an opponent that is always at the right level, for free. Training against a **league** of past versions guards against circling and forgetting.
+- **Elo** predicts a score with a logistic curve, $E_A = 1/(1 + 10^{(R_B - R_A)/400})$, and corrects it by $K \times (\text{actual} - \text{expected})$. Upsets move many points, and expected results move few.
+- With a fixed $K$, ratings find the right order quickly but keep jittering by a few tens of points.
+
+## Where next
+
+You now have the full toolkit: values, policies, networks, and the ideas for learning among other learners. The last chapter puts it all to work on a real game, with five players on one board, each trying to claim territory. We look at what that game looks like as an MDP, and build a first working agent.

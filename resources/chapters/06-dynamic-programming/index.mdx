@@ -1,0 +1,164 @@
+<Callout title="At a glance">
+**About 45 minutes.** Last chapter we could solve for values exactly, but only by solving a whole system of equations at once. Here we turn the Bellman equation into a simple *procedure*: guess, update, repeat. You will meet three classic methods (policy evaluation, policy iteration and value iteration), and then play with a grid world where you can watch value spread out from a goal. You need the Bellman equation and one logarithm from the maths toolkit.
+</Callout>
+
+## Planning when you know the rules
+
+Suppose someone hands you a complete map of a game: every state, every action, exactly what each one does and how likely each result is. Nothing is hidden. How would you work out the best way to play?
+
+You would be **planning**, and the methods for doing it are called **dynamic programming**. (The name is historical and a bit unfortunate. It is not about programming, and nothing about it is especially dynamic. It just means solving a big problem by building on solutions to smaller ones.)
+
+In the last chapter we wrote down the Bellman equation, which links the value of each state to the values of the states around it. Dynamic programming turns that equation into a **recipe you can repeat**. It works even when there are far too many states to solve a system of equations directly.
+
+## From an equation to a procedure
+
+Here is the key idea, shown on the smallest example we can make. A corridor has three cells and then a goal. You always step right. Reaching the goal pays 1, and everything else pays 0. The discount factor is $\gamma = 0.9$.
+
+The Bellman equation says: **a cell's value is the reward you get next, plus $\gamma$ times the value of the next cell.** Let us treat that as an instruction instead of a fact. Start by guessing that every cell is worth 0. Then update every cell using the equation, over and over. Each full round of updates is called a **sweep**.
+
+- **Start:** the three cells are worth $[0, 0, 0]$.
+- **Sweep 1:** the cell next to the goal gets reward 1, so it becomes 1. The other two see nothing yet, because they only look at neighbours worth 0. Values: $[0, 0, 1]$.
+- **Sweep 2:** the middle cell now sees its neighbour worth 1, so it becomes $0.9 \times 1 = 0.9$. The first cell still sees 0. Values: $[0, 0.9, 1]$.
+- **Sweep 3:** the first cell sees 0.9, so it becomes $0.9 \times 0.9 = 0.81$. Values: $[0.81, 0.9, 1]$.
+- **Sweep 4:** nothing changes. We are done.
+
+Watch what happened: the value **rippled backwards** from the goal, one cell per sweep. The goal's reward leaked into its neighbour, then into the neighbour's neighbour, each time shrunk by the discount. And the final numbers, 0.81, 0.9 and 1, are exactly the right values.
+
+That ripple is the whole idea of dynamic programming. Each update uses only the *current guess* for the neighbours, and the guesses get better each time.
+
+## Policy evaluation: sweeping for a policy's value
+
+Let us use this to value a policy on the student from the last two chapters. The policy is "study when fresh, rest when tired", with $\gamma = 0.9$. We start with both values at 0 and apply the Bellman equation as an update:
+
+$$
+V_F \leftarrow 3 + 0.9\,(0.6\,V_F + 0.4\,V_T), \qquad V_T \leftarrow 0 + 0.9\,(0.7\,V_F + 0.3\,V_T).
+$$
+
+(The arrow means "replace the left side with the value computed on the right".) Using the old values on the right at each sweep:
+
+| Sweeps | Value when fresh | Value when tired |
+| --- | --- | --- |
+| 0 | 0 | 0 |
+| 1 | 3 | 0 |
+| 2 | 4.62 | 1.89 |
+| 3 | 6.18 | 3.42 |
+| 10 | 13.44 | 10.68 |
+| 20 | 17.77 | 15.02 |
+
+Let us check the second row by hand. For the fresh state: $3 + 0.9\,(0.6 \times 3 + 0.4 \times 0) = 3 + 1.62 = 4.62$. For the tired state: $0 + 0.9\,(0.7 \times 3 + 0.3 \times 0) = 1.89$. Good.
+
+The values climb and flatten out toward 20.09 and 17.34, the same numbers we got last chapter by solving the equations. It is the same answer reached by a different route. Instead of solving the whole system in one go, we crept up on it.
+
+### Why does it settle?
+
+It is a fair question. Why should this process end up at the right answer, rather than wandering around forever? Here is the reason.
+
+Look at the **error**: how far the current guess is from the true values. Each sweep multiplies the biggest error by **at most $\gamma$**. Why? Because every new value is a reward plus $\gamma$ times an average of old values, and an average of numbers that are each off by at most some amount is off by at most that amount, before the extra factor of $\gamma$ shrinks it.
+
+So after $k$ sweeps, the error is at most $\gamma^k$ times the starting error. In our example the starting error is about 20.09 (we started from 0), and $\gamma = 0.9$, so we can ask: how many sweeps until the error is below 0.01? We need
+
+$$
+20.09 \times 0.9^k < 0.01 \quad\Longleftrightarrow\quad k > \frac{\ln(20.09 / 0.01)}{\ln(1 / 0.9)} \approx \frac{7.61}{0.1054} \approx 72.2.
+$$
+
+So 73 sweeps are guaranteed to be enough. Checking our actual run, the error first drops below 0.01 after 72 sweeps. The guarantee holds, and it is nearly exact. Here you used the logarithm from the maths toolkit to turn "shrink by 0.9 each time" into "how many times".
+
+A smaller $\gamma$ means faster settling. A $\gamma$ close to 1 means a long wait, because the future matters a lot and the ripple has to travel far.
+
+## Improving the policy
+
+Last chapter we saw that values tell you how to **improve** a policy: in each state, switch to the action with the highest $Q$. That suggests a loop.
+
+**Policy iteration:** start with any policy. Then repeat two steps until nothing changes:
+
+1. **Evaluate** the current policy, finding its values (by sweeping, or by solving).
+2. **Improve** it, switching each state to its best-looking action.
+
+Let us run it on the student, starting from the lazy policy "always rest".
+
+**Round 0.** Evaluating "always rest" gives values of 8.90 (fresh) and 7.68 (tired). Now improve. When fresh, studying is worth $3 + 0.9\,(0.6 \times 8.90 + 0.4 \times 7.68) = 10.57$, which beats resting's 8.90. So switch to *study* when fresh. When tired, studying is worth 7.63 and resting is worth 7.68, so resting is still (just) better. Keep *rest* when tired. The new policy is "study when fresh, rest when tired".
+
+**Round 1.** Evaluating that policy gives 20.09 and 17.34, a huge jump. Improving again, we saw last chapter that nothing beats it. The policy no longer changes, so we stop.
+
+Just two rounds, and we have the best policy. In general policy iteration is guaranteed to improve at every round and to stop, and it usually needs very few rounds.
+
+## Value iteration: do both at once
+
+Policy iteration evaluates fully before improving. **Value iteration** is a leaner idea: fold the improvement *into* every sweep. Use the Bellman optimality update, with a "take the best action" step:
+
+$$
+V(s) \leftarrow \max_a \left[ R(s, a) + \gamma \sum_{s'} P(s' \mid s, a)\, V(s') \right].
+$$
+
+Start from zeros. For the student, on the first sweep each state simply takes the best immediate reward: studying while fresh pays 3 (beating resting's 1), and studying while tired pays 0.5 (beating resting's 0). Values: $[3, 0.5]$.
+
+On the second sweep, a fresh student who studies gets $3 + 0.9\,(0.6 \times 3 + 0.4 \times 0.5) = 4.8$, beating resting's 3.475. A tired student who rests gets $0.9\,(0.7 \times 3 + 0.3 \times 0.5) = 2.025$, beating studying's 1.4. Values: $[4.8, 2.025]$. Already we can see the right policy forming: study when fresh, and *rest* when tired.
+
+It carries on in the same way, and settles at 20.09 and 17.34. Once the values have settled, you read off the policy by choosing the best action in each state. Value iteration and policy iteration reach the same answer, by different roads.
+
+## A grid world to play with
+
+Here is a richer world. The agent moves around a small grid. Reaching the green +1 ends the game happily, falling into the red −1 pit ends it badly, there is a wall in the way, and every step costs a little (0.04), which nudges the agent to hurry. Press **Sweep once** and watch value ripple out from the goal.
+
+<GridWorld />
+
+Try these.
+
+1. **Sweep once, a few times, with slip at 0.** The cell next to the +1 is worth 1.0, the next one back is worth about 0.86, then 0.73, 0.62, and the start cell about 0.52. Each step back multiplies by $\gamma = 0.9$ and subtracts the 0.04 step cost: $0.9 \times 1.0 - 0.04 = 0.86$, then $0.9 \times 0.86 - 0.04 \approx 0.73$, and so on. With no slipping, the values settle after just 6 sweeps.
+2. **Now raise the slip to 0.2.** Slipping means the agent only goes where it meant to 80% of the time, and slides sideways the rest. The values settle more slowly (29 sweeps) and are lower overall: the start cell drops from 0.52 to about 0.37. More interesting, the *best moves change*. Look at the bottom-right cell, right under the pit. With slipping, the best move there is to go left, away from the pit, even though that is a longer way round. The agent has learned that getting too close to danger is risky when you cannot fully control your moves.
+3. **Change $\gamma$.** With a small $\gamma$, only cells close to the goal feel its pull, and values far away stay near zero. With $\gamma$ near 1, the goal's value spreads across the whole grid.
+
+## What dynamic programming can and cannot do
+
+Dynamic programming is beautiful, and it underpins almost everything that follows. But it has two big limits.
+
+**It needs a model.** To apply the Bellman update, you must know the transition probabilities and the rewards: exactly what each action does. In a game against other learning players, or the real world, you usually do not have that table. You have to learn from experience instead, which is the subject of the next part.
+
+**It sweeps over every state.** Our student has two states, and the grid has eleven. Papersseum's board has so many possible configurations that you could never list them, let alone sweep over them. This is called the **curse of dimensionality**. Later chapters replace the table of values with a compact formula, a neural network, that can guess values for states it has never seen.
+
+Even so, the ideas here do not go away. Learning methods are, in a sense, ways of doing these same updates using samples instead of a model. The ripple of value spreading backwards from rewards is exactly what you will see again.
+
+## Run it yourself
+
+At the bottom of this page you can download:
+
+- `dp_student.py` runs policy evaluation, policy iteration and value iteration on the student, printing each method's progress. It needs only NumPy.
+- `gridworld_dp.py` solves the grid world with and without slipping and prints the values and best moves.
+- `check_numbers.py` checks every number quoted in this chapter.
+
+Try changing the grid layout in `gridworld_dp.py`: move the pit, or add a second wall. Does the agent still find the goal?
+
+## Check yourself
+
+<Check q="In the three-cell corridor, what are the settled values if the discount factor is 0.5 instead of 0.9?">
+The cell next to the goal is worth 1. The middle cell is worth $0.5 \times 1 = 0.5$, and the first cell $0.5 \times 0.5 = 0.25$. So the values are $[0.25, 0.5, 1]$.
+</Check>
+
+<Check q="On the first sweep of value iteration for the student, why does the tired state get the value 0.5?">
+With all values starting at 0, each state's update is just the best immediate reward. For the tired state, studying pays 0.5 and resting pays 0, so the best is 0.5.
+</Check>
+
+<Check q="Each sweep shrinks the biggest error by at least a factor of the discount factor. If the error starts at 8 and the discount factor is 0.5, after how many sweeps is it guaranteed to be below 0.1?">
+After $k$ sweeps the error is at most $8 \times 0.5^k$. We need $8 \times 0.5^k < 0.1$, so $0.5^k < 0.0125$, which gives $k > \ln 80 / \ln 2 \approx 6.3$. So 7 sweeps. Check: $8/2^6 = 0.125$ is still too big, while $8/2^7 = 0.0625$ is below 0.1.
+</Check>
+
+<Check q="In the grid world, why does the agent choose a longer, safer route when slipping is turned up?">
+When moves can slip sideways, getting close to the pit means there is a real chance of sliding into it, which costs −1. A longer route that keeps away from the pit avoids that risk, and since each extra step only costs a little (0.04), the safer route has the higher expected return.
+</Check>
+
+<Check q="Why can we not use dynamic programming directly to play Papersseum?">
+Two reasons. First, dynamic programming needs the full model, the exact probabilities of what happens next, but in Papersseum the other players' choices make that unknown. Second, it sweeps over every state, and there are far too many possible boards to list. We need methods that learn from experience and can generalise to states they have never seen.
+</Check>
+
+## Recap
+
+- Dynamic programming turns the Bellman equation into a **procedure**: start with a guess, and **sweep** over the states updating each from its neighbours, until nothing changes.
+- **Policy evaluation** sweeps to find the value of a policy. Each sweep shrinks the biggest error by at least $\gamma$, so it always settles.
+- **Policy iteration** alternates evaluating a policy and improving it, and usually needs only a few rounds.
+- **Value iteration** folds the improvement into every sweep using a max over actions, then reads the best policy from the final values.
+- Value **ripples backwards** from rewards, shrinking by $\gamma$ each step.
+- Dynamic programming **needs a model** and **sweeps all states**, which limits it to small problems. The next part learns without a model.
+
+## Where next
+
+So far we have always known how the world works. Part C removes that crutch: what do you do when you do not know the rules, and can only learn by playing? We begin with the simplest idea of all: play a lot of games, and average what happened.

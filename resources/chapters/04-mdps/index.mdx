@@ -1,0 +1,177 @@
+<Callout title="At a glance">
+**About 40 minutes.** In the bandit chapter, each choice stood alone. Real problems are chains of choices where each one changes what comes next. In this chapter you will learn the standard way to describe such a problem (a Markov decision process), what a policy and a return are, and why we count the future as worth a little less than now. You need the discount idea from the maths toolkit, and nothing more.
+</Callout>
+
+## A story with decisions
+
+Picture a student, and one evening after another.
+
+On any evening, the student is in one of two conditions: **fresh** or **tired**. And on any evening they choose what to do: **study** or **rest**. Neither choice has a guaranteed result. Studying while fresh usually goes well but can leave you worn out. Resting while tired probably helps you recover, but not always.
+
+We can write the whole situation down as a table. Each row says what happens if the student, in some condition, makes some choice. The "reward" is a number for how well that evening went, and the last two columns give the chances of what condition they are in the next evening.
+
+| Condition | Choice | Reward | Fresh next | Tired next |
+| --- | --- | --- | --- | --- |
+| Fresh | Study | 3 | 0.6 | 0.4 |
+| Fresh | Rest | 1 | 0.9 | 0.1 |
+| Tired | Study | 0.5 | 0.2 | 0.8 |
+| Tired | Rest | 0 | 0.7 | 0.3 |
+
+Read the first row: a fresh student who studies earns 3 points, and the next evening is fresh with probability 0.6 and tired with probability 0.4. Each row's two chances add up to 1, as probabilities must.
+
+The question we will chase through the next few chapters: **what should the student do, in each condition, to earn the most over a whole term?** Studying while fresh earns the most today. But maybe it is wiser to rest sometimes, so you are fresh more often later. That tension, between a reward now and a better position later, is what makes sequences of choices harder than a single one.
+
+## Putting names on the pieces
+
+Every problem like this has the same ingredients, and we have already named them in the first chapter. Let us make them precise, using the student as our example.
+
+- A **state** describes the situation the agent is in. For the student, the state is Fresh or Tired.
+- An **action** is something the agent can choose. Here it is Study or Rest.
+- A **reward** is the number the agent receives after acting. It is 3, 1, 0.5 or 0 in the table above.
+- The **transition probabilities** say what the next state will be, given the current state and the action. They are the last two columns of the table.
+
+We have a little notation for the timeline. At step $t$, the agent is in state $S_t$, chooses action $A_t$, receives reward $R_{t+1}$, and lands in state $S_{t+1}$. (The reward carries the subscript $t+1$ because it arrives together with the next state.) So a stretch of the student's life looks like this:
+
+$$
+S_0, A_0, R_1, S_1, A_1, R_2, S_2, \dots
+$$
+
+The student's evening is an example of a **Markov decision process**, or MDP for short. It is "decision" because the agent chooses actions, and "Markov" for a reason we explain next.
+
+## The Markov property: the present is enough
+
+Look again at the table. The next state depends only on the *current* state and the *current* action. It does not matter how the student got to be tired: whether they had a good week or a terrible one, a tired student who rests has the same 0.7 chance of being fresh tomorrow.
+
+This is the **Markov property**: **the present state contains everything that matters for the future.** The past is already baked into it.
+
+Chess is a good example. To decide your next move, you only need the board as it is now. How the pieces got there does not change what is possible from here.
+
+What if reality is not like that? Suppose a student's tiredness really depends on how many nights in a row they have studied. Then "Fresh or Tired" is not enough, because two tired students with different histories behave differently. The fix is simple: **put the missing information into the state.** Make the state "Tired, after 3 nights of studying" and the Markov property holds again. A lot of the art of RL is choosing a state that carries what matters.
+
+## A policy is a plan
+
+A **policy** is the agent's rule for choosing an action in each state. For the student, a policy has two entries: what to do when fresh, and what to do when tired. For example:
+
+- "Always study": study when fresh, study when tired.
+- "Study when fresh, rest when tired": a bit more careful.
+- "Always rest": a very relaxed term.
+
+A policy can also be random, such as "when tired, rest with probability 0.8", but we will keep to simple ones for now. The goal of RL, as we said in the first chapter, is to find the policy that collects the most reward. To compare policies, we need a single number measuring how well a policy does over a whole stretch of time. That number is called the return.
+
+## The return: adding up a whole future
+
+The **return**, written $G_t$, is the total reward collected from step $t$ onwards, with later rewards counting for less. You met the idea in the maths toolkit. With a discount factor $\gamma$ between 0 and 1:
+
+$$
+G_t = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \cdots
+$$
+
+Each step further into the future multiplies by another $\gamma$. Let us try a small example. Suppose the rewards over four steps are 1, 0, 0 and 5, and $\gamma = 0.9$. Then
+
+$$
+G = 1 + 0.9 \times 0 + 0.9^2 \times 0 + 0.9^3 \times 5 = 1 + 0.729 \times 5 = 4.645.
+$$
+
+The big reward of 5 is worth only $0.729 \times 5 = 3.645$ today, because it arrives three steps away.
+
+Why do we discount at all? There are three good reasons.
+
+1. **The future is uncertain.** A reward promised far away may never come.
+2. **Sooner is better.** Just as with money, a reward in your hand beats the same reward later.
+3. **It keeps the totals finite.** An agent that goes on forever and collects a reward every step would have an infinite total without discounting. With $\gamma < 1$, the geometric series from the maths toolkit gives a finite answer. For a constant reward of 1 and $\gamma = 0.9$, it is $\frac{1}{1 - 0.9} = 10$.
+
+The choice of $\gamma$ changes what the agent wants. Try it. Below are two ways to collect rewards over ten steps: a small reward every step, or nothing at all until a big prize on the last step. Slide $\gamma$ and see which one is worth more.
+
+<DiscountPlayground />
+
+When $\gamma$ is small, the agent is impatient and the steady trickle wins. When $\gamma$ is large, the agent is patient and the big prize wins. In this example, the two are worth exactly the same at about $\gamma = 0.92$. At $\gamma = 0.5$ the trickle is worth about 2.0 and the prize almost nothing (0.03). At $\gamma = 0.95$ the prize wins: about 9.45 against 8.03.
+
+A small word on terms. Some problems have a natural end, like one trip down the cheese corridor, or one match of a game. These are **episodic** tasks, and each run from start to finish is an **episode**. Other problems just go on and on, and are called **continuing**. Discounting handles both.
+
+## Work backwards: a neat trick
+
+There is a lovely way to see the return that will matter a great deal in the next chapter. Look at the sum again and factor $\gamma$ out of everything after the first reward:
+
+$$
+G_t = R_{t+1} + \gamma \left( R_{t+2} + \gamma R_{t+3} + \cdots \right) = R_{t+1} + \gamma \, G_{t+1}.
+$$
+
+In words: **the return from now is the reward you get next, plus $\gamma$ times the return from the next step onwards.** The future return has the same shape as the one we started with, just one step later.
+
+That means you can work out a return from the end, step by step. Take the same rewards as before, 1, 0, 0, 5, with $\gamma = 0.9$. Start at the last step and walk backwards:
+
+- At the end, the return is just the last reward: $5$.
+- One step earlier: $0 + 0.9 \times 5 = 4.5$.
+- One step earlier: $0 + 0.9 \times 4.5 = 4.05$.
+- At the start: $1 + 0.9 \times 4.05 = 4.645$.
+
+The same answer as before, 4.645, with much less arithmetic. This "return equals reward plus discounted return from next" pattern is the seed of the **Bellman equation**, the central idea of the next chapter.
+
+## Which policy is best? Let us measure
+
+Now we can answer the question we asked at the start. We took the student MDP and simulated 4,000 evenings under each policy, starting fresh, with $\gamma = 0.9$ and 100 steps each. We then averaged the returns. This is what we found:
+
+| Policy | Average return from Fresh |
+| --- | --- |
+| Always study | 15.90 |
+| Study when fresh, rest when tired | **20.09** |
+| Always rest | 8.91 |
+
+The best policy is the careful one: **study when fresh, rest when tired.** It even beats "always study", even though studying earns more reward each evening. By resting when tired, the student gets back to the high-paying fresh state more often. A reward now at the cost of a worse position later is not always a good deal. That is a small but real example of **planning ahead**, and it came straight out of the return.
+
+Of course, with just two states and two actions, we could try every policy. Real problems have far too many states for that. The next chapters show how to compute the value of a policy directly, without simulating, and how to find the best one.
+
+## Papersseum as an MDP
+
+Even the territory game on this site fits the mould. At least in outline:
+
+- the **state** is the board: who owns which cells, where everyone's head and trail are;
+- an **action** is one of three choices (left, straight or right), made 10 times a second;
+- a natural **reward** is how much your share of the map changes;
+- an **episode** is a whole 180-second match, which is 1,800 decisions.
+
+A real bot does not get to see the entire state, only a view of it, so the fit is not perfect. But thinking of the game as an MDP is a very useful lens, and it is how we will approach it in the final chapter.
+
+## Run it yourself
+
+At the bottom of this page you can download:
+
+- `student_mdp.py` defines the student MDP, simulates evenings under different policies, and measures their returns. It needs only NumPy.
+- `check_numbers.py` checks every number quoted in this chapter, including the exact values of each policy.
+
+Try changing the numbers in the table at the top of `student_mdp.py`. What if studying while tired were rewarded more, or resting were less effective? Does the best policy change?
+
+## Check yourself
+
+<Check q="In the student MDP, what is the chance that a fresh student who studies is tired the next evening? What do the two next-state chances in each row always add up to?">
+It is 0.4. In every row the two chances add up to 1, because the student must end up in one of the two conditions.
+</Check>
+
+<Check q="Compute the return for the rewards 2, 0, 3 with a discount factor of 0.5.">
+$G = 2 + 0.5 \times 0 + 0.5^2 \times 3 = 2 + 0 + 0.25 \times 3 = 2.75$.
+</Check>
+
+<Check q="The return from the next step onwards is 10, the next reward is 2, and the discount factor is 0.9. What is the return from now?">
+Use the backwards rule $G_t = R_{t+1} + \gamma G_{t+1}$. That gives $2 + 0.9 \times 10 = 11$.
+</Check>
+
+<Check q="Starting fresh and always studying, what is the chance of being fresh after exactly two evenings?">
+There are two ways to be fresh after two evenings. Fresh then fresh: $0.6 \times 0.6 = 0.36$. Fresh then tired then fresh: $0.4 \times 0.2 = 0.08$. Add them: $0.36 + 0.08 = 0.44$.
+</Check>
+
+<Check q="Is chess a Markov decision process? What would you do if a game's next position depended on something that is not in the current state?">
+Yes in spirit: the current board contains everything needed to decide what happens next, so the Markov property holds. If something else mattered, such as how many times a position had been repeated, you would add that information to the state, which makes the Markov property true again.
+</Check>
+
+## Recap
+
+- A **Markov decision process** has **states**, **actions**, **rewards** and **transition probabilities** that say what happens next.
+- The **Markov property** means the present state contains everything that matters for the future. If it does not, put the missing information into the state.
+- A **policy** is the agent's rule for choosing an action in each state.
+- The **return** $G_t$ is the discounted total of future rewards, and the **discount factor** $\gamma$ sets how far ahead the agent looks.
+- The return has a **recursive shape**: $G_t = R_{t+1} + \gamma G_{t+1}$. You can compute it by working backwards from the end.
+- The best policy is not always the one with the biggest reward right now: in the student MDP, resting when tired beats pushing on.
+
+## Where next
+
+We can now say what a good policy is, in terms of return. But measuring returns by simulating thousands of evenings is slow. Next, we learn to work out the value of a situation directly, with a small system of equations you can solve by hand.

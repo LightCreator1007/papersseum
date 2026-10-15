@@ -1,0 +1,189 @@
+<Callout title="At a glance">
+**About 50 minutes.** This is the chapter the whole course has been building toward. Monte Carlo had to wait until an episode ended before it could learn anything. Temporal-difference learning learns from *every single step*, by correcting a guess using the next guess. You will see it beat Monte Carlo on a small problem, meet Q-learning and SARSA, and watch them take very different routes along a cliff. You need the "new = old + step × surprise" shape, and nothing else.
+</Callout>
+
+## Don't wait until you arrive
+
+You are riding to college. Before you leave, you estimate: "about 30 minutes". Ten minutes in, you hit a traffic jam, and you think: "this is going to be 40, not 30."
+
+Notice what just happened. You did not wait to *arrive* before updating your estimate. You updated it the moment something unexpected happened, by comparing two guesses: your guess from before, and your new, better-informed guess from a little further along. That is the whole idea of temporal-difference learning.
+
+Monte Carlo, from the last chapter, would be like refusing to correct your estimate until you had actually reached college, and only then saying "that took 40, so my 30 was too low." It works, but it throws away everything you learned along the way.
+
+## The idea: correct a guess using the next guess
+
+Remember the Bellman equation: the value of a state is the reward you get next, plus $\gamma$ times the value of the state you land in:
+
+$$
+V(s) = R + \gamma \, V(s').
+$$
+
+Monte Carlo ignored this structure and waited for the real, complete return. Temporal-difference learning, usually shortened to **TD**, **uses it**. After taking a single step from state $s$, getting reward $R$ and landing in $s'$, we have a new, slightly better guess for the value of $s$:
+
+$$
+\text{TD target} = R + \gamma \, V(s').
+$$
+
+We compare that with our old guess $V(s)$. The difference is the **TD error**, written $\delta$ (delta):
+
+$$
+\delta = R + \gamma \, V(s') - V(s).
+$$
+
+It is exactly the "surprise" you have been meeting since the bandit chapter. If the next step turns out better than expected, $\delta$ is positive. If worse, negative. And the update is the same shape as always:
+
+$$
+V(s) \leftarrow V(s) + \alpha \, \delta \qquad\text{that is,}\qquad V(s) \leftarrow V(s) + \alpha \,\big(R + \gamma V(s') - V(s)\big).
+$$
+
+The odd thing, and the clever thing, is that the target contains our own *estimate* of the next state, $V(s')$. We are correcting one guess using another guess. This is called **bootstrapping**, from the old story of pulling yourself up by your own bootstraps. It sounds like it should not work, because neither guess is reliable. But the target also contains a *real* piece of information, the actual reward $R$ we just saw, and that anchors things. Over many steps, the real rewards seep in, and the guesses get better together.
+
+Here is how it compares with Monte Carlo:
+
+| | Monte Carlo | Temporal-difference |
+| --- | --- | --- |
+| **Target for $V(s)$** | the whole return that followed | the next reward plus $\gamma V(s')$ |
+| **When it can learn** | only at the end of an episode | after every single step |
+| **Works for tasks that never end** | no | yes |
+| **Noise in the target** | high: a long chain of random events | low: just one step of randomness |
+
+## Five houses
+
+Let us see it work on the smallest possible example.
+
+A walker stands outside house C on a street of five houses, A B C D E. Every step, it moves one house left or right with equal chance. If it falls off the left end, it gets 0 and the episode stops. If it falls off the right end, it gets 1 and the episode stops. What is each house worth? That is, from each house, what is the chance of finishing on the right?
+
+By symmetry, C is worth one half. The exact values turn out to be $\tfrac{1}{6}, \tfrac{2}{6}, \tfrac{3}{6}, \tfrac{4}{6}, \tfrac{5}{6}$. You can check them: each house's value is the average of its two neighbours' (with 0 beyond the left end and 1 beyond the right end). For house A, $(0 + \tfrac{2}{6})/2 = \tfrac{1}{6}$. For house E, $(\tfrac{4}{6} + 1)/2 = \tfrac{5}{6}$. For house C, $(\tfrac{2}{6} + \tfrac{4}{6})/2 = \tfrac{3}{6}$. 
+
+Now pretend we do not know these, and try to learn them by walking. Start by guessing 0.5 for every house, and use a step size $\alpha = 0.1$. Suppose the first walk goes C, D, E, and then off the right end, earning 1.
+
+**With TD.** We update after every step.
+- C to D: the reward is 0, and $V(\text{D})$ is 0.5, the same as $V(\text{C})$. So the surprise is $0 + 0.5 - 0.5 = 0$. Nothing changes.
+- D to E: same story. Nothing changes.
+- E to off the right end: the reward is 1, and there is nothing after it. The surprise is $1 - 0.5 = 0.5$, so $V(\text{E})$ becomes $0.5 + 0.1 \times 0.5 = 0.55$.
+
+Only house E has moved. If the same walk happens again, house D finally sees the news: it moves toward $V(\text{E}) = 0.55$, becoming $0.505$, and E rises to $0.595$. The information from the reward **leaks backwards one house per walk**, like the ripple in dynamic programming, but driven by experience.
+
+**With Monte Carlo.** We wait until the end, learn that the outcome was 1, and nudge *every* house we visited toward it: C, D and E all become $0.5 + 0.1 \times 0.5 = 0.55$ at once.
+
+At first glance, Monte Carlo looks faster: it updated three houses where TD updated one. But that outcome of 1 was partly luck. The walker could just as easily have fallen off the left. Monte Carlo trusts each lucky or unlucky result completely, while TD only relies on the next step and on what it already knows. Over many episodes, who learns better?
+
+## The race
+
+We ran both methods for 100 episodes, 300 times over, and measured how far the estimates were from the true values (the "average error" below; smaller is better). Both used the same step size, $\alpha = 0.05$.
+
+| Episodes | TD error | Monte Carlo error |
+| --- | --- | --- |
+| 0 | 0.236 | 0.236 |
+| 5 | 0.203 | 0.201 |
+| 10 | 0.175 | 0.177 |
+| 25 | 0.111 | 0.138 |
+| 50 | 0.055 | 0.124 |
+| 100 | **0.037** | 0.119 |
+
+They start neck and neck. But TD pulls ahead and keeps improving, while Monte Carlo stalls around 0.12. After 100 episodes, TD's error is about **a third** of Monte Carlo's. With a bigger step size of 0.1, TD reaches an error of 0.057 against Monte Carlo's 0.166.
+
+Why does TD win here? Each Monte Carlo update contains the whole rest of the walk, with all its luck. Each TD update contains just one step and a guess that is already averaged over many past experiences. Less noise in the target means steadier learning. TD pays a price: its target is a guess, so it starts out slightly biased, but that bias fades as the guesses improve.
+
+TD does not win everywhere, and there are methods that sit between the two. But it learns faster on a very wide range of problems, and it can learn in the middle of an episode, and in tasks that never end. That is why it sits at the heart of modern RL.
+
+## From values to actions: SARSA
+
+So far we estimated the value of states. To *choose actions* without knowing the rules, we do what Monte Carlo control did and estimate the value of each move, $Q(s, a)$. The TD version of that is called **SARSA**, and the name is the recipe. It uses the five things it sees: the **S**tate, the **A**ction, the **R**eward, the next **S**tate, and the next **A**ction:
+
+$$
+Q(s, a) \leftarrow Q(s, a) + \alpha \,\Big( R + \gamma \, Q(s', a') - Q(s, a) \Big).
+$$
+
+Here $a'$ is the move the agent will *actually make* next, which might be an exploring move. After each step, the agent nudges its estimate toward "the reward I got, plus how good my next move looks".
+
+## Q-learning: always assume the best
+
+There is a tiny change to SARSA that makes a surprisingly big difference. Instead of using the value of the move the agent will actually make next, use the value of the **best** move available in the next state:
+
+$$
+Q(s, a) \leftarrow Q(s, a) + \alpha \,\Big( R + \gamma \, \max_{a'} Q(s', a') - Q(s, a) \Big).
+$$
+
+This is **Q-learning**. It learns what would happen if you played the *best* policy from the next step on, whatever the agent is actually doing. That makes it an **off-policy** method: it learns about one policy (the best one) while following another (the exploring one). SARSA is **on-policy**: it learns the value of the very policy it follows, exploring moves and all.
+
+Does the difference matter? Let us find out, on a famous test.
+
+## A cliff to compare them
+
+The world below has a cliff along the bottom edge. The agent starts at the bottom-left and wants to reach the goal at the bottom-right. Every step costs 1, so it wants to be quick. But the cells between start and goal are a cliff: stepping on one costs 100 and sends the agent back to the start. And, as always, the agent tries a random move now and then.
+
+Press **One episode** a few times, then **A hundred** several times. Compare the two learners.
+
+<QLearningLab />
+
+Here is what we found, running each learner for 500 episodes with $\alpha = 0.5$ and exploring at 0.1, across 20 different random seeds.
+
+- **Q-learning always found the shortest route:** 9 steps, straight along the edge right next to the cliff (up one, seven across, down one). In all 20 runs.
+- **SARSA took a longer, safer route:** 11 or 13 steps, up away from the edge, across the top, and down the far side.
+- **But while learning, SARSA scored better.** Over the last 100 episodes, Q-learning averaged about **−31.7** per episode and SARSA about **−21.6**. (Higher is better, and the shortest possible route would score −9.)
+
+How can that be? The answer comes from the one tiny difference between them.
+
+Q-learning assumes that from the next step on, it will play the best move. So it values the edge route highly: *if* it never slipped, that is the quickest way. But the agent does not always play the best move. One time in ten it moves at random, and beside a cliff, a random move can mean falling off and losing 100. So Q-learning keeps stepping off the cliff while it is still exploring, and its score while learning is poor.
+
+SARSA, in contrast, learns the value of the policy it is *really following*, random slips included. It notices that being right beside the cliff, with some chance of a random step, is dangerous, and it learns a route that keeps a safe distance. It does worse on paper in the best case, but it does better in practice.
+
+Neither is simply "better". If you care most about the **best final policy**, and you will stop exploring when you deploy it, Q-learning finds the shorter route. If you care about **how well the agent does while it is still learning and exploring**, SARSA behaves more sensibly. Turn the exploring slider down to zero and the two learners start to agree, because there are no random slips to worry about.
+
+## Choosing the knobs
+
+Every method here has a few settings worth knowing about:
+
+- **Step size $\alpha$.** Large values learn fast but jumpy, small values learn slowly but steadily. In the five-house race, 0.1 learned quickly and then settled at a noisier level than 0.05 did.
+- **Discount $\gamma$.** As before: how far ahead the agent looks.
+- **Exploring $\varepsilon$.** Often started higher and reduced over time, so the agent explores while it is ignorant and then settles down.
+
+## The catch: tables
+
+All the methods in Part C store their estimates in a **table**: one number per state, or one per state and move. That is fine for a street of five houses or a grid of 32 cells. It is hopeless for a game like Papersseum, where the number of possible boards is beyond astronomical. The final chapter of this part shows how to replace the table with a formula that can make good guesses about situations it has never seen.
+
+## Run it yourself
+
+At the bottom of this page you can download:
+
+- `random_walk_td.py` runs the five-house race, TD against Monte Carlo, and prints the error table above. It needs only NumPy.
+- `cliff_walk.py` trains Q-learning and SARSA on the cliff, then prints the route each one takes and its score while learning.
+- `check_numbers.py` checks every number quoted in this chapter, including the 20-seed experiment.
+
+Try changing `alpha` and `epsilon` in `cliff_walk.py`. With a very small `epsilon`, do the two methods still take different routes?
+
+## Check yourself
+
+<Check q="A state has estimated value 2. You take a step, receive reward 1, and land in a state with estimated value 3. With γ = 0.9, what is the TD error? With a step size of 0.5, what is the new value of the first state?">
+The TD target is $1 + 0.9 \times 3 = 3.7$, so the TD error is $3.7 - 2 = 1.7$. The new value is $2 + 0.5 \times 1.7 = 2.85$.
+</Check>
+
+<Check q="A Q-learning update: Q(s, a) is 0.5, the reward is −1, γ = 1, the best Q in the next state is −3, and α = 0.5. What is the new Q(s, a)?">
+The target is $-1 + 1 \times (-3) = -4$. The surprise is $-4 - 0.5 = -4.5$. The new value is $0.5 + 0.5 \times (-4.5) = -1.75$.
+</Check>
+
+<Check q="The same update, but done by SARSA, where the move actually taken next was an unlucky exploring move whose Q-value is −10. What does SARSA get?">
+SARSA's target uses the move actually taken: $-1 + 1 \times (-10) = -11$. The surprise is $-11 - 0.5 = -11.5$, so the new value is $0.5 + 0.5 \times (-11.5) = -5.25$. Q-learning would have ignored the unlucky move and used −3, giving −1.75. That difference is exactly why SARSA keeps away from the cliff.
+</Check>
+
+<Check q="Why can temporal-difference learning learn in the middle of an episode, when Monte Carlo cannot?">
+Its target needs only the next reward and the current estimate of the next state, both of which are known after a single step. Monte Carlo's target is the whole return, which is not known until the episode ends.
+</Check>
+
+<Check q="On the cliff, Q-learning finds the shorter route but scores worse while learning. Why?">
+Q-learning assumes it will take the best move from the next step on, so it values the risky route along the cliff edge. But the agent still explores at random some of the time, and beside a cliff a random move can mean falling off, which costs 100. So it falls often while learning, even though the route it has learned is the shortest.
+</Check>
+
+## Recap
+
+- **Temporal-difference learning** corrects a guess using the next guess: **$V(s) \leftarrow V(s) + \alpha\,\big(R + \gamma V(s') - V(s)\big)$**. The bracket is the **TD error**.
+- Using an estimate to update an estimate is called **bootstrapping**. It lets TD learn **after every step**, even in tasks that never end.
+- TD has **less noise** than Monte Carlo, because its target is one step of randomness rather than a whole episode's. In the five-house race it reached about a third of Monte Carlo's error.
+- **SARSA** learns $Q(s, a)$ with the move it will actually make next (**on-policy**). **Q-learning** uses the best next move (**off-policy**).
+- On the cliff, Q-learning finds the shortest route but falls often while exploring, while SARSA takes a safer route and scores better while learning.
+- All of this uses a **table**, which is far too small for big problems.
+
+## Where next
+
+Tables work for tiny worlds. Next we meet the idea that frees RL from them: guess the value of a situation from a few numbers describing it, using a formula whose parameters we tune. That is also where we first need to roll a ball downhill.

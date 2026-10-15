@@ -1,0 +1,178 @@
+<Callout title="At a glance">
+**About 60 minutes.** This is where the course comes together. Papersseum is a five-player territory game, and in this chapter we treat it as an RL problem: what the states, actions and rewards are, why it is harder than anything so far, and how to train a first bot with the policy gradients from chapter 12. The bot we build is tiny, 371 numbers in total, and it holds on average about **32% of the map** against bots that hold around 6 to 14%. At the end, you will have a single `.py` file that is ready to submit. You need everything from the earlier chapters, especially chapters 10, 12 and 13.
+</Callout>
+
+## The game in one minute
+
+Five bots start on a circular board. Each owns a small patch of land, about 1% of the map. A bot decides ten times per second, for 180 seconds, and each time it chooses one of three moves: **straight, left or right**.
+
+The idea is to grow. When a bot walks outside its own land, it draws a **trail** behind it. If it comes back home and closes the loop, **everything inside the loop becomes its own**, even land that belonged to somebody else. The danger is that if a rival's head touches your trail while you are out, **you die** and the rival takes your land. Crossing your own trail is harmless. The best score is the largest share of the map at the end.
+
+That is all you need. (The full rules are in the competition guide that comes with the `papersseum` library.)
+
+## Papersseum as an MDP
+
+Take the vocabulary from chapter 4 and fill it in.
+
+- **Episode.** One match: 1,800 decisions.
+- **Action.** Three choices: 0 straight, 1 left, 2 right.
+- **State.** What the bot sees at each decision. The library hands it a stack of 16 pictures, each 31 by 31 cells, cut out around the bot's own head and **rotated so the bot always faces up**. The pictures show: its own land, its own trail and its own head; the same three for each of the four rivals; and the edge of the board. That is 15,376 numbers per decision.
+- **Reward.** The change in the share of the map it owns. Closing a big loop gives a big reward. Dying gives a loss of land, and we add a further penalty of 3 points.
+- **Discount.** Rewards far in the future matter less. We use $\gamma = 0.98$, so the learner looks ahead about 50 decisions, or five seconds.
+
+So far, so familiar. But this problem has three things that make it harder than cart-pole:
+
+1. **The reward is lumpy.** Walking in a straight line outside home earns nothing. Only the moment the loop closes pays. The learner has to connect a payoff to decisions made many steps earlier (chapter 7's problem again).
+2. **Death is sudden and the danger is other players.** Whether a move is safe depends on where the rivals are, and they are moving too.
+3. **The opponents are other agents.** As chapter 13 explained, the world a bot faces is made of other players, so it is a moving target.
+
+## Choosing what the policy sees
+
+A neural network could take all 15,376 numbers. But a bigger input means a bigger network, a slower bot (each decision must take under 50 milliseconds), and far more training. For a first bot, we use another approach: **we decide what matters, and hand the network a short summary.** This is called **feature engineering**, and it is a perfectly respectable way to get a lot done with a little.
+
+Our summary has 19 numbers:
+
+| Numbers | What they say |
+| --- | --- |
+| 1 | Am I standing on my own land? |
+| 1 | How long have I been outside on this trip? |
+| 4 | Which way am I facing, compared with when I left home? (a one-hot, as in chapter 10) |
+| 1 | How long since my last turn? |
+| 4 | Is a rival's **head** nearby: ahead, behind, left, right? |
+| 4 | How much rival **trail** is nearby: ahead, behind, left, right? |
+| 3 | Is the cell ahead / to the left / to the right my own land? |
+| 1 | How much of the map do I hold? |
+
+"Nearby" means within 10 cells, in a strip 11 cells wide. Because the pictures are rotated to face up, "ahead" is just the rows above the bot's head, with no trigonometry needed.
+
+Notice the entries about the trip. The bot sees only a snapshot, but loops are built over many steps ("go out, turn right, go on, turn right again..."), so it needs to **remember a little**. The agent therefore keeps three counters (steps outside, the turns made, steps since the last turn), which is the same trick as adding the velocity to a state to make it Markov (chapter 4).
+
+The network itself is small: **19 inputs, 16 hidden neurons with tanh, and 3 outputs** that become probabilities with a softmax. Counting up, that is $19 \times 16 + 16 + 16 \times 3 + 3 = 371$ numbers.
+
+## Training it
+
+We use REINFORCE (chapter 12) with the baseline idea. In plain words, one round of training goes like this:
+
+1. Play **20 full matches** against random mixes of the library's built-in bots (`greedy`, `safe_expander`, `hunter` and `random`). The learner picks its moves by drawing from its own probabilities, so it explores as it plays.
+2. For each decision, work out the **discounted return** from that point on.
+3. Turn the returns into **advantages** by subtracting their average and dividing by their spread (a baseline, plus a rescaling that keeps the step sizes sensible).
+4. Nudge the network so that moves with a positive advantage become more likely and moves with a negative one less likely. This is chapter 12's update: advantage times the slope of the log-probability, with the slopes computed by backpropagation from chapter 10.
+
+The heart of it in code:
+
+```python
+dz = -probs                      # slope of log pi: "one-hot minus the probabilities" ...
+dz[action] += 1.0                # ... for the move that was actually taken
+dz *= advantage                  # more of what worked, less of what did not
+grad_w2 += np.outer(dz, hidden)  # then the usual backpropagation through the two layers
+```
+
+We repeat for 150 rounds, which means 3,000 matches. On a laptop with ten cores, this took about 35 minutes. Training uses its own seeds, so it never sees the matches we use for testing.
+
+The average land held during training, in blocks of 25 rounds (this includes the random exploring):
+
+| Rounds | Average share of the map held (time-averaged) |
+| --- | --- |
+| 1 to 25 | about 9% |
+| 26 to 50 | about 13% |
+| 51 to 75 | about 19% |
+| 76 to 100 | about 19% |
+| 101 to 125 | about 21% |
+| 126 to 150 | about 24% |
+
+The climb is bumpy: single rounds ranged widely, because 20 matches is a small sample and the opponents change from round to round. But the trend is clear.
+
+## How good is it?
+
+Numbers from training can flatter a bot, so we test it on **30 fresh matches** (seeds 0 to 29) against a field of `greedy`, `safe_expander`, `random` and `greedy`. We compare three things: our trained bot, the same network with its **random starting weights**, and the library's hand-written bots.
+
+| Bot | Matches won (of 30) | Average share of the map held over the match |
+| --- | --- | --- |
+| Trained network | **23** | **32%** |
+| Same network, random weights | 12 | 8% |
+| The hand-written `greedy`, `safe_expander`, `hunter` | 4 to 6 | roughly 6 to 14% |
+
+Two lessons. First, **training worked**: the trained network holds about four times as much land as it did before training. Second, notice that the untrained network was already not hopeless. That is the effect of the features and the lean towards "straight" we gave it at the start. Good features are worth a lot.
+
+Then a harder test: a field with two `hunter` bots (which actively chase rivals), a `safe_expander` and a `greedy`. Here the trained bot holds about 20% and wins around one match in three, still ahead of any of the hand-written bots, but far from dominant. One more check: if the finished policy always takes its single most likely move instead of sampling, it still does well on the easy field (about 33% over 10 matches, though a sample that small is very noisy), so you can submit it either way.
+
+## Honest limits
+
+It is a first bot, and it is worth being clear about what it does not do.
+
+- **It is noisy.** In the same 30 matches its final share of the map ranged from 0% to nearly 100%, and it died more than twice per match on average. It plays a risky, snowballing style: big gains, but also big losses.
+- **It trained against only four kinds of opponent.** A cleverer rival, or a copy of this very bot, may exploit it, and chapter 13 warned about exactly this. The remedy there was a **league**: train against past versions of yourself and a variety of styles.
+- **It sees a summary.** The 19 numbers throw away most of the picture. A rival's trail two cells beyond the strip is invisible to it, as is the shape of the land.
+- **Short training.** 150 rounds is a taste. More rounds, more matches per round, and a smaller step size at the end would help.
+
+## Where to go from here
+
+Here are directions, roughly from easy to ambitious. Try one at a time and measure each change with `papersseum eval` on at least 30 matches, because with this much noise a single match tells you almost nothing.
+
+1. **Tweak the reward.** Add a bonus for kills, or change the death penalty. See how the style changes.
+2. **Add features.** Distance to the nearest rival, the shape of the nearest edge, time left in the match.
+3. **Make the network bigger or deeper**, using the same code. Watch the 50 ms limit.
+4. **Use the whole picture.** Feed the full 31 by 31 view to a small convolutional network (the library's `papersseum.nn` can run one with only NumPy), trained with PyTorch or anything you like.
+5. **Train in a league.** Keep a collection of your own past bots among the opponents.
+6. **Replace REINFORCE** with something with lower variance, such as an actor-critic method, or try DQN.
+
+## Pack it and submit it
+
+A submission is **one Python file**. The weights travel inside it as text, so there are no extra files. The workflow, with the file from this chapter:
+
+```bash
+python train.py                                                      # about 35 minutes; writes learned_weights.npz
+papersseum pack learned_weights.npz --into learned_agent.py          # embeds the weights in the file
+papersseum validate learned_agent.py                                 # the exact check the platform runs on upload
+papersseum eval learned_agent.py --games 30                          # how good is it, honestly?
+```
+
+The finished file is about 6 kilobytes, and its slowest decision took about 0.2 milliseconds, against a limit of 50. The packing step stores the numbers in a compact form (16-bit), and we checked that this changes each weight by less than 0.001.
+
+If `validate` says **PASSED**, the upload check will pass too. The competition guide has the full list of rules and limits.
+
+## Run it yourself
+
+At the bottom of this page you can download:
+
+- `learned_agent.py` is the finished agent: features, network and the trained weights, all in one file. It is ready to validate and upload.
+- `train.py` is the training program, which plays the matches in parallel. Run it with `--fast` for a one-minute demonstration.
+- `learned_weights.npz` holds the trained numbers, and `training_log.txt` the log of the run quoted above.
+- `check_numbers.py` plays the matches behind the table above and checks them. It needs the `papersseum` library installed (`pip install papersseum`) and takes a few minutes.
+
+Your own results will differ a little from ours: the matches are deterministic, but tiny differences between computers can change a long match.
+
+## Check yourself
+
+<Check q="Papersseum's reward is the change in land owned. Why is that harder to learn from than cart-pole's +1 per step?">
+Cart-pole pays something every step, so every decision gets immediate feedback. In Papersseum most steps (walking out) earn nothing, and the payoff arrives in a lump when the loop closes, many decisions later. The learner has to work out which earlier moves deserve the credit, which needs returns over many steps and many matches.
+</Check>
+
+<Check q="Why does the agent keep counters (steps outside, turns made) even though it could look at the picture again each time?">
+A single picture does not say how long the bot has been out, or how many turns it has made since leaving home, and a loop is a sequence of steps. By keeping a small memory, the agent turns its input into something closer to the full state, so the policy can learn rules like "after going out a while, turn".
+</Check>
+
+<Check q="In training, why do we subtract the average return and rescale before nudging the network?">
+This is the baseline idea from chapter 12. Without it, almost every return is positive (or all similar), so every move looks good and the updates are noisy. Subtracting the average turns "everything is fine" into "this move was better or worse than usual", which gives a clearer signal. Rescaling keeps the step sizes sensible however large the returns are.
+</Check>
+
+<Check q="The trained bot beat the untrained one by a wide margin, but won only about one match in three against two hunters. What does that tell you?">
+Training made it better against the opponents it practised on, but it is not strong against styles that expose its weaknesses. The result depends on who it plays, which is chapter 13's point about moving targets. To get more robust, train against a wider and stronger set of opponents, such as a league that includes past versions of the bot.
+</Check>
+
+<Check q="Why test on seeds 0 to 29 when training used seeds from 1000 upward?">
+Matches are fully determined by their seed. Testing on matches the bot trained on would measure how well it remembers those exact games rather than how well it plays in general. Fresh seeds give an honest estimate.
+</Check>
+
+## Recap
+
+- Papersseum as an MDP: an episode of 1,800 decisions, three actions, a state made of 16 pictures around the bot's head, a reward equal to the change in land owned (minus a penalty for dying).
+- It is harder than cart-pole because rewards are **lumpy**, danger comes from **other agents**, and those agents are a **moving target**.
+- **Feature engineering** summarises the picture into 19 numbers, plus a small memory of the current trip. Good features made even an untrained network respectable.
+- A **19-16-3 network** trained with **REINFORCE** and a baseline raised the average share of the map from about 8% to about 32% on fresh matches, and won 23 of 30.
+- It is noisy and trained against a narrow set of opponents, so the next steps are better features, more training, and a **league** of varied opponents.
+- A submission is one `.py` file with the weights embedded. `pack`, `validate` and `eval` take you from a trained network to an upload.
+
+## Where next
+
+That is the end of the course, and the start of the fun. You now know how an agent can learn from rewards, from a single slot machine up to a neural network playing against other learners. The reference pages, the [glossary](/learn/glossary) and the [maths cheat sheet](/learn/cheatsheet), are there to look things up. Everything else is experimenting: change something, measure it honestly, and see what happens.

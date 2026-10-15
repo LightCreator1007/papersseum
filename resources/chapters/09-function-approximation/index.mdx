@@ -1,0 +1,214 @@
+<Callout title="At a glance">
+**About 50 minutes.** Everything so far stored its estimates in a table: one number per situation. That works for a street of five houses. It is hopeless for a real game. In this chapter you will see why, learn the idea that replaces the table (a *formula* whose weights we tune), and build the engine that tunes them: gradient descent. You will use derivatives, slopes and minima from the maths toolkit, plus one geometric sequence.
+</Callout>
+
+## More boards than atoms
+
+Let us count how many different situations Papersseum can be in. The arena has 11,304 playable cells. Each cell is owned by one of five players, or by nobody. That is 6 choices per cell, so the number of ways to colour in the board is
+
+$$
+6^{11{,}304} \approx 10^{8796}.
+$$
+
+That is a 1 followed by almost nine thousand zeros. For comparison, the number of atoms in the whole observable universe is around $10^{80}$. (Our count is loose, since it ignores the trails and heads and some layouts that could never happen, but it gives the right sense of scale.)
+
+A table with one entry per board is impossible. There is not enough memory in the universe to hold it. And worse, even if there were, we could never learn it, because **we would almost never see the same board twice**. A match has 1,800 decisions, so it visits about 1,800 boards, and each is brand new.
+
+So an agent has to **generalise**: if two boards look *similar*, their values should be *similar*, and what it learned about one should carry over to the other. A table cannot do that, because every entry is separate. We need something that can.
+
+## Describe the situation with a few numbers
+
+Here is the idea. Instead of storing a value for every situation, describe each situation with a short list of numbers, called **features**, and compute the value from those numbers with a formula.
+
+For a territory game, features might be things like: the share of the map I own, the share my nearest rival owns, how far my head is from the nearest opponent, how long my trail is. A handful of numbers instead of a whole board. We write the list of features for situation $s$ as $x(s)$.
+
+The simplest formula is a **weighted sum**, which you met as the dot product in the maths toolkit:
+
+$$
+\hat{V}(s) = w_1 x_1 + w_2 x_2 + \cdots + w_n x_n = w \cdot x(s).
+$$
+
+The hat on $V$ reminds us it is an *estimate*. The numbers $w_1, \dots, w_n$ are the **weights**: how much each feature matters. The weights are what we learn, and there are only a few of them, no matter how many situations exist. Because similar situations have similar features, they get similar values automatically.
+
+The question now becomes: **how do we find good weights?**
+
+## Learning means making the error small
+
+Suppose we have a situation $s$ and a target $U$ for its value, such as the TD target $R + \gamma \hat{V}(s')$ from the last chapter. Our formula says $w \cdot x$, but we wanted $U$. The mistake is $U - w \cdot x$. To make it count the same whether it is too high or too low, we square it. Our measure of "how wrong we are" is
+
+$$
+\text{error} = \tfrac{1}{2}\,(U - w \cdot x)^2.
+$$
+
+(The $\tfrac{1}{2}$ is only there to tidy up a later step.) Learning means **adjusting the weights to make this error small**. In school you would find the lowest point of a curve by setting its derivative to zero and solving. That works for a simple curve, but for a formula with thousands or millions of weights, there is no neat answer to solve for. Instead, we do something that sounds almost too simple to work: **walk downhill.**
+
+## Gradient descent in one variable
+
+Imagine standing on the side of a bowl-shaped valley in thick fog. You cannot see the bottom, but you can feel which way the ground slopes under your feet. What do you do? Take a small step downhill. Then feel the slope again, and step again. Eventually you reach the bottom.
+
+That is **gradient descent**, and the slope is the derivative from the maths toolkit. Take a bowl described by $f(w) = (w - 3)^2$. Its lowest point is at $w = 3$ (where $f = 0$), but pretend we do not know that. Its slope is $2(w - 3)$. At $w = 0$, the slope is $-6$: steeply downhill to the right.
+
+The rule is: **move against the slope**, by a distance set by a **step size** $\alpha$ (alpha):
+
+$$
+w \leftarrow w - \alpha \times \text{slope}.
+$$
+
+Let us try it, starting at $w = 0$ with $\alpha = 0.1$.
+
+- Step 1: the slope at 0 is $-6$, so $w = 0 - 0.1 \times (-6) = 0.6$.
+- Step 2: the slope at 0.6 is $2(0.6 - 3) = -4.8$, so $w = 0.6 + 0.48 = 1.08$.
+- Step 3: the slope at 1.08 is $-3.84$, so $w = 1.08 + 0.384 = 1.464$.
+
+It is creeping toward 3, taking smaller steps as the ground flattens. After 10 steps, $w \approx 2.678$.
+
+### The step size matters enormously
+
+Why does it behave so nicely? There is a lovely pattern. The *distance from the bottom* is $w - 3$, and each step changes it like this:
+
+$$
+w_{\text{new}} - 3 = (w - 3) - \alpha \cdot 2(w - 3) = (1 - 2\alpha)\,(w - 3).
+$$
+
+So **every step multiplies the distance from the bottom by $(1 - 2\alpha)$**. That is a geometric sequence, which you know from school. Starting at $w = 0$, the distance is 3, so after $k$ steps
+
+$$
+w_k = 3 - 3\,(1 - 2\alpha)^k.
+$$
+
+With $\alpha = 0.1$ the factor is $0.8$, so the distance shrinks to 80% each step, and after 10 steps it is $3 \times 0.8^{10} \approx 0.32$. That matches $w \approx 2.678$. Now see what other step sizes do:
+
+| Step size α | Factor $1 - 2\alpha$ | $w$ after 1, 2, 3 steps | What happens |
+| --- | --- | --- | --- |
+| 0.1 | 0.8 | 0.6, 1.08, 1.46 | slides smoothly down |
+| 0.5 | 0 | 3, 3, 3 | straight to the bottom in one step |
+| 0.9 | −0.8 | 5.4, 1.08, 4.54 | overshoots each time, but settles |
+| 1.0 | −1 | 6, 0, 6 | bounces back and forth forever |
+| 1.1 | −1.2 | 6.6, −1.32, 8.18 | gets further away every step |
+
+A geometric sequence shrinks to zero exactly when its factor lies strictly between $-1$ and $1$. So descent settles exactly when $|1 - 2\alpha| < 1$, which means **$0 < \alpha < 1$**. A step size of 1.1 makes the distance grow by a factor of 1.2 each step: after 10 steps, the walker is at $-15.6$, miles from where it should be.
+
+This is the most important practical lesson about gradient descent: **too small a step is slow, too big a step is unstable.** Try it yourself:
+
+<GradientDescent />
+
+Try these. Leave $\alpha$ at 0.1 and press Step repeatedly. Then set it to 0.5. Then 0.9. Then push it past 1 and watch it fly off the chart.
+
+## Two variables: one slope at a time
+
+A real model has many weights, so we need to descend in many directions at once. Let us see how with two. Take a bowl in two variables:
+
+$$
+f(w_1, w_2) = (w_1 - 3)^2 + 2\,(w_2 + 1)^2.
+$$
+
+Its lowest point is at $(3, -1)$. Now there are two slopes: how steeply it rises if we move $w_1$, and how steeply if we move $w_2$. We find each one **keeping the other variable fixed**. These are called **partial derivatives**, and you already know how to take them: treat the other variable as just a number.
+
+- Slope in the $w_1$ direction: $2\,(w_1 - 3)$.
+- Slope in the $w_2$ direction: $4\,(w_2 + 1)$. (The 2 in front, times the 2 from the square.)
+
+Together, these two slopes make a pair called the **gradient**, and it points **uphill**. At the start point $(0, 0)$, the gradient is $(-6, 4)$. To go downhill, we step in the opposite direction, updating each variable by its own slope:
+
+$$
+w_1 \leftarrow w_1 - \alpha \cdot 2\,(w_1 - 3), \qquad w_2 \leftarrow w_2 - \alpha \cdot 4\,(w_2 + 1).
+$$
+
+With $\alpha = 0.1$ from $(0, 0)$, the first step goes to $(0.6, -0.4)$, the second to $(1.08, -0.64)$, and after 50 steps we are at the bottom, $(3, -1)$. It is exactly the one-variable rule applied to each variable in turn, and nothing more. That is all "gradient" means: **the slope in each direction, one variable at a time.**
+
+## Putting it into value learning
+
+Now we can find good weights. We have the error $\tfrac{1}{2}(U - w \cdot x)^2$, and we want to nudge each weight downhill. The slope of the error with respect to weight $w_i$ is
+
+$$
+\frac{\partial\,\text{error}}{\partial w_i} = -(U - w \cdot x)\, x_i,
+$$
+
+(by the chain rule from the maths toolkit: the square gives a 2 that cancels the $\tfrac{1}{2}$, and the inner part $w \cdot x$ has slope $x_i$ in the direction of $w_i$). Stepping against that slope gives the update
+
+$$
+w_i \leftarrow w_i + \alpha \,(U - w \cdot x)\, x_i.
+$$
+
+Read it in words: **new weight = old weight + step size × surprise × the feature.** It is the shape you have met all course, with one new ingredient: each weight moves in proportion to how much *its feature* was involved in the situation. A feature that was zero here is left alone, and a big feature gets a big nudge.
+
+A tiny example. Features $x = [1, 0.5]$, weights $w = [0, 0]$, target $U = 1$, and $\alpha = 0.1$. The current prediction is $0$, so the surprise is $1$. The update moves the weights to $[0 + 0.1 \times 1 \times 1,\ 0 + 0.1 \times 1 \times 0.5] = [0.1, 0.05]$. The new prediction is $0.1 + 0.05 \times 0.5 = 0.125$, a step in the right direction from 0.
+
+When the target is the TD target $U = R + \gamma\,\hat{V}(s')$ from the last chapter, this is called **semi-gradient TD**. ("Semi" because we treat the target as a fixed number, even though it depends on the weights too.)
+
+## A thousand-position walk
+
+Let us watch this work. A walker stands on a line of 1,000 positions and starts in the middle. Each step it jumps a random distance, between 1 and 100, to the left or right. Falling off the left end gives $-1$; falling off the right end gives $+1$. What is each position worth?
+
+It turns out the true values rise smoothly from about $-0.92$ on the far left, through $0$ in the middle, to about $+0.92$ on the far right. They lie almost exactly on a straight line.
+
+We tried three learners, all using the TD update, all starting from nothing:
+
+- **A table:** one weight for each of the 1,000 positions.
+- **Groups:** 10 weights. Positions 1–100 share one weight, 101–200 share another, and so on. Learning about one position teaches the whole group.
+- **A line:** just **2** weights. The formula is $w_1 + w_2 \times (\text{position}/1000)$, a straight line.
+
+This table shows the average error (how far the learned values are from the truth; smaller is better), averaged over 5 runs:
+
+| Episodes | Table (1,000 numbers) | Groups (10 numbers) | Line (2 numbers) |
+| --- | --- | --- | --- |
+| 100 | 0.529 | 0.414 | 0.458 |
+| 300 | 0.501 | 0.250 | 0.311 |
+| 1,000 | 0.412 | 0.118 | 0.131 |
+| 3,000 | 0.224 | 0.131 | **0.049** |
+
+Look at the table. It is slow. Each position has to be visited over and over, and even after 3,000 episodes its error is still more than four times the line's. The two-number line, in contrast, is better after 1,000 episodes (0.131) than the thousand-number table after 3,000 (0.224). Every step teaches the line something about *every* position at once, because they all share the same two weights.
+
+A couple of honest notes. The groups learner plateaus around 0.12 to 0.13 and does not improve with more episodes. It has only 10 flat steps to work with, so it cannot draw a smooth slope. Even the best possible setting of 10 group weights would have an error of 0.053, and the best possible straight line only 0.003, because the true values are almost exactly a line. The line gets close to that, though learning with TD never lands precisely on the best fit.
+
+## The price of sharing
+
+If sharing is so powerful, why not share everything? Because sharing **forces unrelated situations to be treated alike**. In the groups learner, positions 1 and 100 must share a value, even though they are different. A learner with only two weights can only ever represent a straight line, which was perfect here only because the true values happen to be almost straight. If they curved, two weights could not capture it.
+
+So the real art is in the **features**. Good features make similar situations similar and different ones different. Choosing them by hand is difficult and requires insight into the problem. The next part of the course shows how a neural network can *learn* good features by itself, and that is the idea behind almost all modern RL.
+
+One more warning. Combining a formula with TD's habit of using its own guesses can sometimes go badly wrong: the weights can grow without bound and never settle. This is a known danger, and it is part of why deep RL needs careful tricks. We will meet them.
+
+## Run it yourself
+
+At the bottom of this page you can download:
+
+- `gradient_descent.py` runs gradient descent with several step sizes, and then in two variables. It needs only NumPy.
+- `linear_td.py` runs the thousand-position walk with a table, groups and a line, and prints the error table above.
+- `check_numbers.py` checks every number quoted in this chapter.
+
+Try changing the step size in `linear_td.py` for the line learner. How large can you make it before it goes wrong?
+
+## Check yourself
+
+<Check q="Gradient descent on f(w) = (w − 3)², starting at w = 0 with α = 0.25. What is w after one step, and after two?">
+The slope at 0 is $2(0 - 3) = -6$, so $w = 0 + 0.25 \times 6 = 1.5$. The slope at 1.5 is $2(1.5 - 3) = -3$, so $w = 1.5 + 0.25 \times 3 = 2.25$. Check with the pattern: the factor is $1 - 2 \times 0.25 = 0.5$, so $w_k = 3 - 3 \times 0.5^k$, giving 1.5 and 2.25.
+</Check>
+
+<Check q="For which step sizes does gradient descent on (w − 3)² settle at the bottom, and why?">
+For $0 < \alpha < 1$. Each step multiplies the distance from the bottom by $1 - 2\alpha$. A geometric sequence shrinks to zero only when the absolute value of its ratio is less than 1, so we need $|1 - 2\alpha| < 1$, which means $0 < \alpha < 1$. At $\alpha = 1$ it bounces forever, and above 1 it flies away.
+</Check>
+
+<Check q="Take f(w1, w2) = (w1 − 3)² + 2(w2 + 1)². What is the gradient at (1, 1)?">
+The slope in the $w_1$ direction is $2(w_1 - 3) = 2(1 - 3) = -4$. The slope in the $w_2$ direction is $4(w_2 + 1) = 4(1 + 1) = 8$. So the gradient is $(-4, 8)$.
+</Check>
+
+<Check q="A linear value formula has features x = [1, 2] and weights w = [0.5, 0.25]. The target is 2 and α = 0.1. What are the new weights?">
+The prediction is $0.5 \times 1 + 0.25 \times 2 = 1.0$, so the surprise is $2 - 1 = 1$. The new weights are $0.5 + 0.1 \times 1 \times 1 = 0.6$ and $0.25 + 0.1 \times 1 \times 2 = 0.45$. So $w = [0.6, 0.45]$.
+</Check>
+
+<Check q="Why is a table useless for Papersseum?">
+There are astronomically many possible boards, around $10^{8796}$ by a rough count, far more than could ever be stored. And in any case an agent would almost never see the same board twice, so it could never fill in an entry. It has to generalise, using what it learned about one board to value similar ones.
+</Check>
+
+## Recap
+
+- A **table** needs one entry per situation, and real problems have far too many. We also almost never see the same situation twice, so we must **generalise**.
+- Describe each situation by a few numbers, its **features**, and estimate its value with a **formula**, such as a weighted sum $w \cdot x$. We learn the **weights**.
+- **Gradient descent** reduces an error by stepping against the slope: **$w \leftarrow w - \alpha \times \text{slope}$**. With many weights, use the slope in each direction, one at a time (the **gradient**).
+- The **step size** matters: too small is slow, and too large is unstable. On a simple bowl, descent settles exactly when $0 < \alpha < 1$.
+- The update for a linear formula is **new weight = old weight + α × surprise × feature**. With the TD target, this is **semi-gradient TD**.
+- Sharing weights makes learning much faster, but forces similar treatment of different situations. Good **features** are the key, and the next part lets a network find them itself.
+
+## Where next
+
+You now have everything needed for Part D. Next we build a neural network from scratch: a stack of weighted sums that learns its own features, trained by the gradient descent you just met.

@@ -38,6 +38,9 @@ class Agent:
             self.W = unpack_weights(WEIGHTS)
         else:
             self.W = init_random(np.random.default_rng(config["seed"] * 1000 + config["pid"]))
+        # Warm up: the first numpy call is slower (library start-up, memory allocation).
+        # Do it here, where you have 2 s, so the first act() is not the slow one.
+        self.forward(np.zeros((16, 31, 31), dtype=np.float32))
 
     def forward(self, local):
         """local: (16, 31, 31) view centred on your head, rotated so you face up."""
