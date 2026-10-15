@@ -63,8 +63,12 @@ def land_pieces(mask):
     return pieces
 
 
-def consolidate(state, pid, before=None):
-    """Keep a bot's land in one piece. Land that has been cut off from the main mass becomes neutral.
+def connect_land(state, pid, before=None):
+    """Keep a bot's land in one piece.
+
+    Any piece that is not joined to the main mass is linked to it by a one-cell-wide strip of land over
+    empty ground (the shortest way, cells in 4-neighbour steps, never over another bot's land, trail or
+    the wall). If no strip fits, that piece becomes neutral instead.
 
     `before` is the bot's land map from before the change; the piece that shares the most cells with it
     is the main mass (ties: the bigger piece). Without it, the biggest piece is.
@@ -75,10 +79,42 @@ def consolidate(state, pid, before=None):
     def weight(piece):
         rows, cols = piece
         return (int(before[rows, cols].sum()) if before is not None else 0, len(rows))
-    keep = max(pieces, key=weight)
-    for piece in pieces:
-        if piece is not keep:
-            state.owner[piece[0], piece[1]] = -1
+    main = max(pieces, key=weight)
+    mine = np.zeros_like(state.arena_mask)
+    mine[main[0], main[1]] = True
+    free = state.arena_mask & (state.owner == -1) & (state.trail == -1)
+    h, w = free.shape
+    others = sorted((p for p in pieces if p is not main), key=lambda p: -len(p[0]))
+    for rows, cols in others:
+        parent = {}
+        q = deque()
+        for r, c in zip(rows.tolist(), cols.tolist()):
+            parent[(r, c)] = None
+            q.append((r, c))
+        hit = None
+        while q and hit is None:
+            r, c = q.popleft()
+            for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                a, b = r + dr, c + dc
+                if not (0 <= a < h and 0 <= b < w) or (a, b) in parent:
+                    continue
+                if mine[a, b]:
+                    hit = (r, c)
+                    break
+                if free[a, b]:
+                    parent[(a, b)] = (r, c)
+                    q.append((a, b))
+        if hit is None:
+            state.owner[rows, cols] = -1                         # no way through empty ground: cut loose
+            continue
+        cell = hit
+        while cell is not None:                                  # walk back to the piece, laying the strip
+            if state.owner[cell] != pid:
+                state.owner[cell] = pid
+                free[cell] = False
+            mine[cell] = True
+            cell = parent[cell]
+        mine[rows, cols] = True
     recount_areas(state)
 
 

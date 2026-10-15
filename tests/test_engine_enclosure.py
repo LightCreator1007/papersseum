@@ -64,8 +64,10 @@ def test_a_bot_enclosed_by_a_rivals_loop_dies_and_the_rival_takes_its_land():
     eng.advance_tick(None)
     assert b.alive and not a.alive and a.deaths == 1
     assert (st.owner[57:64, 67:74] == 1).all()               # the loop's interior is b's
-    assert st.owner[40, 40] == -1                            # a's far-away land is not joined to b's, so it becomes neutral
+    assert st.owner[40, 40] == 1                             # a's far-away land goes to b, joined to b's land by a strip
     assert not (st.trail == 0).any()                         # a's trail is gone
+    from test_engine_connected import pieces
+    assert len(pieces(st.owner == 1)) == 1
     assert b.boost_timer > 0                                 # the kill boost
     assert a.respawn_timer > 0
 
