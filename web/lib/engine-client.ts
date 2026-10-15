@@ -84,6 +84,9 @@ export function createEngineClient(makeWorker: () => WorkerLike): EngineClient {
 
 let shared: EngineClient | null = null;
 
+// The page's one engine. It runs one replay at a time: a newer run supersedes
+// an earlier one that wasn't cancelled, which then gets no more messages (the
+// worker stops it between batches). Viewers cancel their run when they unmount.
 export function engineClient(): EngineClient {
   // A plain URL, not bundled: Pyodide 314 needs a module worker, and Turbopack's workers are classic.
   shared ??= createEngineClient(() => new Worker("/engine/worker.mjs", { type: "module" }));
