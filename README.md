@@ -14,7 +14,7 @@ The name is paper plus colosseum: an arena where paper-thin territories are foug
 - **Match.** Five players, 180 seconds. Everyone starts with a small disc worth 1% of the map. The engine runs at 30 ticks per second; agents decide 10 times per second.
 - **Movement.** Three actions: `0` straight, `1` left, `2` right. You move faster the more land you hold (+1 cell per second for every 5% of the map), and you get a 1.5x burst for 5 seconds after a kill. Speed is capped so you never move more than one cell per tick.
 - **Capture.** Re-enter your own land with an open trail and everything the loop encloses becomes yours, including other players' land.
-- **Death.** Two bots never share a cell: one waits a tick. You can cross your own trail freely. Get cut by a rival, lose a head-on, or get caught inside a loop a rival closes, and the killer takes your land. You respawn with a fresh 1% patch on empty ground.
+- **Death.** Two bots never share a cell: one waits a tick. You can cross your own trail freely. Get cut by a rival, lose a head-on, or get caught inside a loop a rival closes, and the killer takes the part of your land that touches its own (the rest goes neutral; a bot's land is always one connected piece). You respawn with a fresh 1% patch on empty ground.
 - **Score.** Your share of the map at the end. Ties break on time-averaged coverage, then fewer deaths.
 
 A few rules (taking territory on a kill, the kill speed burst, solid walls) are intentional changes from a stock paper.io-style game.
