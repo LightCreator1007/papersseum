@@ -113,6 +113,7 @@ main a.btn, main a.btn-secondary { text-decoration: none; }
 .board { border: 1px solid var(--rule); background: var(--surface); padding: 10px; }
 .board img { display: block; width: 100%; height: auto; }
 .board canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+.board canvas[hidden] { display: none; }
 
 /* placeholders */
 .placeholder-line { height: 37px; border-bottom: 1px solid var(--rule-soft); }
@@ -126,3 +127,17 @@ main a.btn, main a.btn-secondary { text-decoration: none; }
 .prose code { font-family: var(--mono); font-size: 13px; }
 
 input[type="file"] { font: inherit; font-size: 14px; max-width: 100%; }
+
+/* replay viewer */
+.replay { max-width: 560px; }
+.replay-empty { aspect-ratio: 1; }
+.replay-controls { margin-top: 12px; }
+.replay-scrub { flex: 1 1 160px; min-width: 120px; accent-color: var(--text); }
+.replay-speeds { display: inline-flex; gap: 10px; font-size: 14px; }
+.replay-speeds [aria-pressed="true"] { font-weight: 600; text-decoration: none; }
+.replay-legend { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 10px; font-size: 14px; }
+.replay-legend .seat + .seat::before { content: none; }
+.replay-status { margin-top: 8px; overflow-wrap: anywhere; }
+.drop-zone { display: block; position: relative; border: 1px dashed var(--rule); background: var(--surface); padding: 28px 18px; text-align: center; cursor: pointer; }
+.drop-zone[data-over="true"], .drop-zone:focus-within { border-color: var(--text); }
+.drop-zone input { position: absolute; width: 1px; height: 1px; opacity: 0; }

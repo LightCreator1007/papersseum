@@ -33,7 +33,7 @@ def cmd_play(args):
         print(f"wrote {args.render}")
     if args.save_replay:
         from papersseum.replay_io import write_replay
-        write_replay(args.save_replay, args.seed, result)
+        write_replay(args.save_replay, args.seed, result, players=result["players"])
         print(f"wrote {args.save_replay}")
     return 0
 
