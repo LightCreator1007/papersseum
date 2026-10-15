@@ -1,9 +1,10 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { safeNext } from "@/features/auth/redirect";
 import { createClient } from "@/lib/supabase/server";
+import { DEV_AUTH_COOKIE } from "@/lib/dev-auth";
 
 export async function signInWithGoogle(formData: FormData) {
   const next = safeNext(formData.get("next")?.toString());
@@ -30,5 +31,6 @@ export async function signInWithGoogle(formData: FormData) {
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  (await cookies()).delete(DEV_AUTH_COOKIE); // dev login, if any
   redirect("/");
 }

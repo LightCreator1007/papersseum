@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   MATCH_STATUS, SUBMISSION_STATUS, clockTime, duration, elo, eloChange, intervalMinutes,
-  minutesUntil, nextRoundAt, percent, relativeTime, shortDate, shortDateTime,
+  minutesUntil, nextRoundAt, nextRoundSentence, percent, rating, relativeTime, shortDate, shortDateTime,
 } from "@/features/ladder/format";
 
 const NOW = Date.parse("2026-10-13T09:00:00Z"); // 14:30 in Kolkata
@@ -26,10 +26,10 @@ describe("dates in Kolkata time", () => {
     expect(shortDate("2026-10-06T20:00:00Z")).toBe("7 Oct"); // 01:30 on the 7th in IST
   });
   it("formats a date and time", () => {
-    expect(shortDateTime("2026-10-07T12:32:00Z")).toBe("7 Oct, 18:02");
+    expect(shortDateTime("2026-10-07T12:32:00Z")).toBe("7 Oct, 18:02 IST");
   });
   it("formats a clock time", () => {
-    expect(clockTime(Date.parse("2026-10-13T09:15:00Z"))).toBe("14:45");
+    expect(clockTime(Date.parse("2026-10-13T09:15:00Z"))).toBe("14:45 IST");
   });
 });
 
@@ -45,7 +45,7 @@ describe("duration", () => {
 describe("numbers", () => {
   it("formats Elo with one decimal", () => {
     expect(elo(1342.64)).toBe("1342.6");
-    expect(elo(null)).toBe("—");
+    expect(elo(null)).toBe("-");
   });
   it("formats an Elo gain, loss and no change", () => {
     expect(eloChange(1330.1, 1342.6)).toEqual({ text: "+12.5", tone: "up" });
@@ -58,7 +58,23 @@ describe("numbers", () => {
   });
   it("formats coverage as a percentage", () => {
     expect(percent(31.42)).toBe("31.4%");
-    expect(percent(null)).toBe("—");
+    expect(percent(null)).toBe("-");
+  });
+});
+
+describe("rating", () => {
+  it("says not rated yet for a bot with no games", () => {
+    expect(rating(1000, 0)).toBe("Not rated yet");
+    expect(rating(null, 0)).toBe("Not rated yet");
+  });
+  it("shows the number once a bot has played", () => {
+    expect(rating(412.34, 3)).toBe("412.3");
+  });
+});
+
+describe("no dashes", () => {
+  it("never renders an em or en dash", () => {
+    expect(elo(null) + percent(null)).not.toMatch(new RegExp(`[${String.fromCharCode(0x2013, 0x2014)}]`));
   });
 });
 
@@ -83,6 +99,24 @@ describe("next round", () => {
     const now = Date.parse("2026-10-13T09:14:50Z");
     expect(minutesUntil(nextRoundAt(now), now)).toBe(1);
     expect(minutesUntil(Date.parse("2026-10-13T09:15:00Z"), Date.parse("2026-10-13T09:08:10Z"))).toBe(7);
+  });
+});
+
+describe("nextRoundSentence", () => {
+  const at = Date.parse("2026-10-13T16:00:00Z"); // 21:30 in Kolkata
+  const base = { frozen: false, backlog: false, at };
+  it("gives the clock time in IST", () => {
+    expect(nextRoundSentence(base)).toBe("Next round at 21:30 IST.");
+    expect(nextRoundSentence(base, { first: true })).toBe("The first round runs at 21:30 IST.");
+  });
+  it("doesn't promise a time while rounds are skipped for the backlog", () => {
+    expect(nextRoundSentence({ ...base, backlog: true })).toBe("Next round after the queue clears.");
+  });
+  it("says frozen before anything else", () => {
+    expect(nextRoundSentence({ ...base, frozen: true, backlog: true })).toMatch(/frozen/);
+  });
+  it("waits for a player when nobody has a bot", () => {
+    expect(nextRoundSentence({ ...base, noPlayers: true })).toMatch(/once a player/);
   });
 });
 
