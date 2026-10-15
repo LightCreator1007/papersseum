@@ -95,7 +95,7 @@ def validate(path):
 def play(seed, players):
     """players: 5 dicts with "slot", "bot_id", "submission_id" and either
     "path" or "builtin".
-    -> scores, placements, action_log, strikes, crashed (plain Python types)
+    -> scores, placements, action_log, strikes, crashed, seats (plain Python types)
        and replay (gzipped JSONL bytes)"""
     players = sorted(players, key=lambda p: p["slot"])       # engine player id == slot
     uploaded = any(not p.get("builtin") for p in players)
@@ -116,5 +116,7 @@ def play(seed, players):
         "action_log": [[int(a) for a in row] for row in result["action_log"]],
         "strikes": {i: s["strikes"] for i, s in enumerate(slots) if s["strikes"]},
         "crashed": {i: True for i, s in enumerate(slots) if s["status"] != "ok"},
+        "seats": {i: {"status": s["status"], "error": (s["error"] or None) and str(s["error"])[:300]}
+                  for i, s in enumerate(slots)},
         "replay": gzip.compress(result["replay"], mtime=0),
     }

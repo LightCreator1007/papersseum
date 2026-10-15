@@ -19,3 +19,9 @@ LIBRARY_VERSION = papersseum.__version__
 WORKER_VERSION = "0.1.0"
 POLL_SECONDS = 5
 HEARTBEAT_SECONDS = 60
+
+# Email through Resend. Optional: without the first two the worker records
+# notifications but sends no email.
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY") or None
+NOTIFY_FROM = os.environ.get("NOTIFY_FROM") or None
+SITE_URL = os.environ.get("SITE_URL", "http://localhost:3000").rstrip("/")

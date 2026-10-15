@@ -35,6 +35,15 @@ SANDBOX_BACKEND=subprocess
 PAPERSSEUM_UNSAFE_LOCAL=1
 ```
 
+Optional email through Resend. Without the first two, notifications are still
+recorded and no email is sent. The worker stops at 90 emails a day.
+
+| Variable | Meaning |
+| --- | --- |
+| `RESEND_API_KEY` | Resend API key. |
+| `NOTIFY_FROM` | Sender, for example `Papersseum <arena@example.org>`. |
+| `SITE_URL` | Public site address used in email links (default `http://localhost:3000`). |
+
 Other settings: `SANDBOX_IMAGE` (default `papersseum-sandbox`), `DOCKER` (the
 docker binary, default `docker`).
 

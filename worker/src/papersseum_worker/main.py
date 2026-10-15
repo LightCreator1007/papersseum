@@ -5,7 +5,7 @@ import time
 
 import psycopg
 
-from papersseum_worker import config, db, runner, storage
+from papersseum_worker import config, db, notify, runner, storage
 from papersseum_worker.ratings import new_ratings
 
 log = logging.getLogger("worker")
@@ -20,6 +20,7 @@ def handle_validate(conn, job):
     res = runner.validate(path)
     db.complete_validation(conn, job["job_id"], res["ok"], res["error"], res["violations"])
     log.info("submission %s: %s", job["submission_id"], "passed" if res["ok"] else res["error"])
+    notify.after_validation(conn, job["submission_id"])
 
 
 def handle_match(conn, job):
@@ -43,12 +44,15 @@ def handle_match(conn, job):
             "deaths": score_of[slot]["deaths"],
             "strikes": result["strikes"].get(slot, 0),
             "crashed": result["crashed"].get(slot, False),
+            "status": result["seats"][slot]["status"],
+            "error": result["seats"][slot]["error"],
             "score": blended[slot],
             "elo_after": elo_after[slot],
         } for slot, *_ in seats]
 
     db.finish_match(conn, job["job_id"], job["match_id"], compute_players, replay_path)
     log.info("match %s done, placements %s", job["match_id"], result["placements"])
+    notify.after_match(conn, job["match_id"])
 
 
 def heartbeat_once(conn):
