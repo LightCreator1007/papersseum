@@ -88,6 +88,48 @@ describe("engine client", () => {
     expect(workers[1].sent).toEqual([{ type: "run", id: 2, bytes }]);
   });
 
+  it("replaces the worker after an engine-load failure, failing its other open runs", () => {
+    const { client, workers } = setup();
+    const a: WorkerOut[] = [];
+    const b: WorkerOut[] = [];
+    client.run(bytes, (m) => a.push(m));
+    client.run(bytes, (m) => b.push(m));
+    const failure: WorkerOut = { type: "error", id: 1, stage: "engine", message: "TypeError: Failed to fetch" };
+    workers[0].reply(failure);
+    expect(a).toEqual([failure]);
+    expect(b).toEqual([{ ...failure, id: 2 }]);
+    expect(workers[0].terminated).toBe(true);
+    client.run(bytes, () => {});
+    expect(workers).toHaveLength(2);
+    expect(workers[1].sent).toEqual([{ type: "run", id: 3, bytes }]);
+    workers[0].reply({ type: "error", id: 2, stage: "engine", message: "late" }); // already failed
+    expect(b).toHaveLength(1);
+  });
+
+  it("keeps the worker after a replay or run error", () => {
+    const { client, workers } = setup();
+    const b: WorkerOut[] = [];
+    client.run(bytes, () => {});
+    client.run(bytes, (m) => b.push(m));
+    workers[0].reply({ type: "error", id: 1, stage: "replay", message: "not a replay" });
+    workers[0].reply({ type: "error", id: 1, stage: "run", message: "boom" });
+    expect(workers[0].terminated).toBe(false);
+    expect(b).toEqual([]);
+    client.run(bytes, () => {});
+    expect(workers).toHaveLength(1);
+  });
+
+  it("does not fail runs on a newer worker when an old worker reports an engine error", () => {
+    const { client, workers } = setup();
+    client.run(bytes, () => {});
+    workers[0].crash();
+    const b: WorkerOut[] = [];
+    client.run(bytes, (m) => b.push(m));
+    workers[0].reply({ type: "error", id: 1, stage: "engine", message: "late" });
+    expect(b).toEqual([]);
+    expect(workers[1].terminated).toBe(false);
+  });
+
   it("reports a worker that cannot start as an error, then retries", async () => {
     const workers: FakeWorker[] = [];
     let calls = 0;

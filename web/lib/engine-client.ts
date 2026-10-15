@@ -12,28 +12,40 @@ export type EngineClient = {
 export function createEngineClient(makeWorker: () => WorkerLike): EngineClient {
   let worker: WorkerLike | null = null;
   let nextId = 1;
-  const listeners = new Map<number, (m: WorkerOut) => void>();
+  // Each open run, with the worker it was sent to (null if none could start).
+  const runs = new Map<number, { onMessage: (m: WorkerOut) => void; worker: WorkerLike | null }>();
 
   const deliver = (m: WorkerOut) => {
-    const listener = listeners.get(m.id);
-    if (!listener) return;
-    if (m.type === "done" || m.type === "error") listeners.delete(m.id);
-    listener(m);
+    const run = runs.get(m.id);
+    if (!run) return;
+    if (m.type === "done" || m.type === "error") runs.delete(m.id);
+    run.onMessage(m);
+  };
+
+  // Throw a worker away and fail every run still open on it. A fresh worker is
+  // made on the next run, so the viewer's Retry really retries.
+  const retire = (w: WorkerLike, message: string) => {
+    w.terminate();
+    if (worker === w) worker = null;
+    for (const [id, run] of [...runs]) {
+      if (run.worker === w) deliver({ type: "error", id, stage: "engine", message });
+    }
   };
 
   const getWorker = (): WorkerLike => {
     if (worker) return worker;
     const w = makeWorker();
-    w.addEventListener("message", (e) => deliver((e as MessageEvent<WorkerOut>).data));
-    w.addEventListener("error", () => {
-      // The worker itself died. Fail every open run and start a fresh worker
-      // next time, so the viewer's Retry really retries.
-      w.terminate();
-      if (worker === w) worker = null;
-      for (const id of [...listeners.keys()]) {
-        deliver({ type: "error", id, stage: "engine", message: "the replay engine stopped" });
-      }
+    w.addEventListener("message", (e) => {
+      const m = (e as MessageEvent<WorkerOut>).data;
+      const from = runs.get(m.id)?.worker;
+      deliver(m);
+      // The engine failed to load (offline, CDN down...). Its runs share that
+      // failed boot, and the worker may keep failing (a failed module import
+      // is cached, Pyodide may be half set up), so replace it.
+      if (m.type === "error" && m.stage === "engine" && from === w) retire(w, m.message);
     });
+    // The worker itself died.
+    w.addEventListener("error", () => retire(w, "the replay engine stopped"));
     worker = w;
     return w;
   };
@@ -41,10 +53,9 @@ export function createEngineClient(makeWorker: () => WorkerLike): EngineClient {
   return {
     run(bytes, onMessage) {
       const id = nextId++;
-      listeners.set(id, onMessage);
       const fail = () => {
         // Report it as an error message (after run() has returned its cancel).
-        listeners.delete(id);
+        runs.delete(id);
         queueMicrotask(() =>
           onMessage({ type: "error", id, stage: "engine", message: "the replay engine could not start" }),
         );
@@ -57,6 +68,7 @@ export function createEngineClient(makeWorker: () => WorkerLike): EngineClient {
         fail();
         return () => {};
       }
+      runs.set(id, { onMessage, worker: w });
       try {
         w.postMessage({ type: "run", id, bytes } satisfies WorkerIn);
       } catch {
@@ -64,7 +76,7 @@ export function createEngineClient(makeWorker: () => WorkerLike): EngineClient {
         fail();
       }
       return () => {
-        if (listeners.delete(id)) worker?.postMessage({ type: "cancel", id } satisfies WorkerIn);
+        if (runs.delete(id)) w.postMessage({ type: "cancel", id } satisfies WorkerIn);
       };
     },
   };
