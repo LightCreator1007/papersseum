@@ -106,6 +106,16 @@ describe("engine client", () => {
     expect(b).toHaveLength(1);
   });
 
+  it("replaces the worker after an engine-load failure even if that run was cancelled", () => {
+    const { client, workers } = setup();
+    const cancel = client.run(bytes, () => {});
+    cancel();
+    workers[0].reply({ type: "error", id: 1, stage: "engine", message: "TypeError: Failed to fetch" });
+    expect(workers[0].terminated).toBe(true);
+    client.run(bytes, () => {});
+    expect(workers).toHaveLength(2);
+  });
+
   it("keeps the worker after a replay or run error", () => {
     const { client, workers } = setup();
     const b: WorkerOut[] = [];

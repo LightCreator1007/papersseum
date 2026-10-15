@@ -12,8 +12,8 @@ export type EngineClient = {
 export function createEngineClient(makeWorker: () => WorkerLike): EngineClient {
   let worker: WorkerLike | null = null;
   let nextId = 1;
-  // Each open run, with the worker it was sent to (null if none could start).
-  const runs = new Map<number, { onMessage: (m: WorkerOut) => void; worker: WorkerLike | null }>();
+  // Each open run, with the worker it was sent to.
+  const runs = new Map<number, { onMessage: (m: WorkerOut) => void; worker: WorkerLike }>();
 
   const deliver = (m: WorkerOut) => {
     const run = runs.get(m.id);
@@ -37,12 +37,12 @@ export function createEngineClient(makeWorker: () => WorkerLike): EngineClient {
     const w = makeWorker();
     w.addEventListener("message", (e) => {
       const m = (e as MessageEvent<WorkerOut>).data;
-      const from = runs.get(m.id)?.worker;
       deliver(m);
-      // The engine failed to load (offline, CDN down...). Its runs share that
-      // failed boot, and the worker may keep failing (a failed module import
-      // is cached, Pyodide may be half set up), so replace it.
-      if (m.type === "error" && m.stage === "engine" && from === w) retire(w, m.message);
+      // The engine failed to load (offline, CDN down...). Its other runs share
+      // that failed boot, and the worker may keep failing (a failed module
+      // import is cached, Pyodide may be half set up), so replace it. Even if
+      // this run was cancelled meanwhile.
+      if (m.type === "error" && m.stage === "engine" && worker === w) retire(w, m.message);
     });
     // The worker itself died.
     w.addEventListener("error", () => retire(w, "the replay engine stopped"));
