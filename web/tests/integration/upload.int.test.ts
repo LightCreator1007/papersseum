@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { afterAll, describe, expect, it } from "vitest";
 import type { Database } from "@/lib/supabase/database.types";
 import { createSubmission } from "@/features/upload/upload";
+import { CONCURRENT_UPLOAD_MESSAGE, JUST_STARTED_MS } from "@/features/upload/upload-rules";
 
 try {
   process.loadEnvFile(".env.local");
@@ -78,14 +79,42 @@ describe("createSubmission", () => {
     expect(jobs).toEqual([{ kind: "validate" }]);
   });
 
-  it("refuses a second upload inside the cooldown and deletes its file", async () => {
+  // A different file, so the duplicate check doesn't answer first.
+  const OTHER = new TextEncoder().encode(new TextDecoder().decode(SOURCE) + "\n# another version\n");
+
+  it("refuses the same file again without storing it or spending the cooldown", async () => {
     const { userId, botId } = await newPlayer();
     const first = await createSubmission(admin, userId, { name: "agent.py", bytes: SOURCE });
     expect(first.ok).toBe(true);
     const [kept] = await filesOf(botId);
     stored.push(`${botId}/${kept}`);
 
-    const second = await createSubmission(admin, userId, { name: "agent.py", bytes: SOURCE });
+    const again = await createSubmission(admin, userId, { name: "agent.py", bytes: SOURCE });
+    expect(again).toEqual({ ok: false, message: "Identical to v1. Nothing uploaded, and your cooldown wasn't used." });
+    expect(await filesOf(botId)).toEqual([kept]);
+  });
+
+  it("tells a second tab another upload just started, and deletes its file", async () => {
+    const { userId, botId } = await newPlayer();
+    expect((await createSubmission(admin, userId, { name: "agent.py", bytes: SOURCE })).ok).toBe(true);
+    const [kept] = await filesOf(botId);
+    stored.push(`${botId}/${kept}`);
+
+    const second = await createSubmission(admin, userId, { name: "agent.py", bytes: OTHER });
+    expect(second).toEqual({ ok: false, message: CONCURRENT_UPLOAD_MESSAGE });
+    expect(await filesOf(botId)).toEqual([kept]);
+  });
+
+  it("refuses a second upload inside the cooldown and deletes its file", async () => {
+    const { userId, botId } = await newPlayer();
+    expect((await createSubmission(admin, userId, { name: "agent.py", bytes: SOURCE })).ok).toBe(true);
+    const [kept] = await filesOf(botId);
+    stored.push(`${botId}/${kept}`);
+    // Past the "just started" window, still inside the 10-minute cooldown.
+    const past = new Date(Date.now() - 2 * JUST_STARTED_MS).toISOString();
+    await admin.from("submissions").update({ created_at: past }).eq("bot_id", botId);
+
+    const second = await createSubmission(admin, userId, { name: "agent.py", bytes: OTHER });
     expect(second).toEqual({ ok: false, message: expect.stringMatching(/^You can upload again in .+\.$/) });
     expect(await filesOf(botId)).toEqual([kept]);
   });
