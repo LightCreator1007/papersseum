@@ -8,7 +8,7 @@ n*(u16 cell index, u8 value).
 Cell byte: 0xFE outside the arena, else low nibble = owner (0-4, 15 none),
 high nibble = trail (0-4, 15 none); 0xFF is an empty cell.
 
-The browser runs this module in Pyodide (web/workers/engine.worker.ts), one
+The browser runs this module in Pyodide (web/public/engine/worker.mjs), one
 batch at a time so a run can be cancelled between batches.
 """
 
