@@ -93,6 +93,8 @@ def main():
     ap.add_argument("--fast", action="store_true", help="short matches (300 decisions) for smoke tests")
     ap.add_argument("--out", default="learned_weights.npz")
     args = ap.parse_args()
+    if args.fast:
+        args.updates, args.episodes = min(args.updates, 2), min(args.episodes, 4)
     if args.fast and args.out == "learned_weights.npz":
         args.out = os.path.join(tempfile.mkdtemp(), "fast_weights.npz")      # never overwrite the real weights
 
