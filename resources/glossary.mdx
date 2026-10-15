@@ -1,0 +1,131 @@
+Every term from the course in one or two sentences, in alphabetical order. Each entry points to the chapter that explains it properly.
+
+## A
+
+**Action.** A choice the agent can make at a given moment, such as "push left". See [MDPs](/learn/04-mdps).
+
+**Actor-critic.** A policy method that also learns a value function (the critic) to judge how good the actor's moves were, which cuts the noise in the updates. See [Policy gradients](/learn/12-policy-gradients).
+
+**Advantage.** How much better an action's return was than usual: the return minus a baseline. See [Policy gradients](/learn/12-policy-gradients).
+
+**Agent.** The learner that observes, acts and receives rewards. See [Welcome](/learn/00-welcome).
+
+## B
+
+**Backpropagation.** The chain rule applied layer by layer to find how the error changes with every weight of a network. See [Neural networks](/learn/10-neural-networks).
+
+**Baseline.** A typical reward or return, subtracted from the actual one so that updates reflect "better or worse than usual". It leaves the average update unchanged and reduces noise. See [Policy gradients](/learn/12-policy-gradients).
+
+**Bellman equation.** The statement that the value of a state equals the immediate reward plus the discounted value of what follows, averaged over the possible outcomes. See [Value functions](/learn/05-value-functions).
+
+**Bootstrapping.** Updating an estimate using another estimate, as TD learning does, rather than waiting for the final outcome. See [TD learning](/learn/08-td-learning).
+
+## C
+
+**Contraction.** A step that always brings any two value tables closer together. It is why value iteration is guaranteed to converge. See [Dynamic programming](/learn/06-dynamic-programming).
+
+## D
+
+**Discount factor (γ).** A number between 0 and 1 saying how much a reward one step later is worth compared with a reward now. See [MDPs](/learn/04-mdps).
+
+**DQN.** Deep Q-network: Q-learning with a neural network in place of the table, made stable by a replay buffer and a target network. See [DQN](/learn/11-dqn).
+
+**Dynamic programming.** Computing values by sweeping through all states using the Bellman equations, when the rules of the world are known. See [Dynamic programming](/learn/06-dynamic-programming).
+
+## E
+
+**Elo rating.** A number per player, updated after each game by the gap between the actual and the expected score. See [Multi-agent RL](/learn/13-multi-agent).
+
+**Episode.** One run from a start to an end, such as one game. See [MDPs](/learn/04-mdps).
+
+**Epsilon-greedy.** With probability ε pick a random action, otherwise pick the best-looking one. See [Bandits](/learn/03-bandits).
+
+**Exploration and exploitation.** Trying things to learn more, against using what you already know to score now. See [Bandits](/learn/03-bandits).
+
+**Expected value.** The probability-weighted average of the possible outcomes. See [Maths toolkit](/learn/01-maths-toolkit).
+
+## F
+
+**Function approximation.** Representing values with a formula with adjustable numbers instead of a table, so that similar states share what is learned. See [Function approximation](/learn/09-function-approximation).
+
+## G
+
+**Gradient descent.** Repeatedly stepping against the slope of an error to make it smaller. See [Function approximation](/learn/09-function-approximation).
+
+**Greedy.** Always choosing the action that currently looks best. See [Bandits](/learn/03-bandits).
+
+## L
+
+**Learning rate (step size, α).** How far one update moves an estimate or a weight. See [TD learning](/learn/08-td-learning).
+
+**Log-derivative trick.** The identity that turns the slope of an expected reward into an average of reward times the slope of the log-probability. See [Policy gradients](/learn/12-policy-gradients).
+
+## M
+
+**Markov decision process (MDP).** The standard model: states, actions, transition probabilities, rewards and a discount factor. See [MDPs](/learn/04-mdps).
+
+**Monte Carlo method.** Estimating values by averaging the returns of complete episodes. See [Monte Carlo](/learn/07-monte-carlo).
+
+## N
+
+**Nash equilibrium.** A set of strategies where no player gains by changing alone. See [Multi-agent RL](/learn/13-multi-agent).
+
+**Non-stationarity.** The rules a learner faces change over time, for example because other players are learning too. See [Multi-agent RL](/learn/13-multi-agent).
+
+## O
+
+**Off-policy.** Learning about one policy (the best one) while following another (an exploring one). Q-learning is off-policy. See [TD learning](/learn/08-td-learning).
+
+**On-policy.** Learning about the policy you are actually following. SARSA is on-policy. See [TD learning](/learn/08-td-learning).
+
+## P
+
+**Policy (π).** The agent's way of choosing actions: for each state, a rule or a probability of each action. See [MDPs](/learn/04-mdps).
+
+**Policy gradient.** Adjusting a policy's parameters directly in the direction that raises expected reward. See [Policy gradients](/learn/12-policy-gradients).
+
+**Policy iteration.** Alternate between evaluating the current policy and improving it, until it stops changing. See [Dynamic programming](/learn/06-dynamic-programming).
+
+## Q
+
+**Q-function (action value).** How good it is to take action *a* in state *s* and then follow a given policy. See [Value functions](/learn/05-value-functions).
+
+**Q-learning.** Update Q toward the reward plus the discounted best Q-value of the next state. See [TD learning](/learn/08-td-learning).
+
+## R
+
+**REINFORCE.** The basic policy-gradient algorithm: play an episode, then nudge each action's probability by its advantage. See [Policy gradients](/learn/12-policy-gradients).
+
+**Replay buffer.** A memory of recent experience from which random batches are drawn for training, which breaks up correlated data. See [DQN](/learn/11-dqn).
+
+**Return.** The total of the (discounted) rewards from a moment onward. See [MDPs](/learn/04-mdps).
+
+**Reward.** The number the environment gives after each step, saying how well things are going. See [Welcome](/learn/00-welcome).
+
+## S
+
+**SARSA.** On-policy TD control: update Q toward the reward plus the discounted Q-value of the action actually taken next. See [TD learning](/learn/08-td-learning).
+
+**Self-play.** Training against copies of yourself. See [Multi-agent RL](/learn/13-multi-agent).
+
+**Softmax.** The function that turns a list of scores into probabilities that are positive and add up to one. See [Policy gradients](/learn/12-policy-gradients).
+
+**State.** What the agent knows about the situation at a given moment. See [MDPs](/learn/04-mdps).
+
+## T
+
+**Target network.** A frozen, occasionally updated copy of the Q-network used to compute training targets, so they hold still. See [DQN](/learn/11-dqn).
+
+**Temporal-difference (TD) learning.** Updating a value after every step, using the reward and the estimate of the next state. See [TD learning](/learn/08-td-learning).
+
+**Transition.** The move from one state to the next after an action, possibly random. See [MDPs](/learn/04-mdps).
+
+## U
+
+**UCB.** Upper confidence bound: pick the action whose estimate plus an uncertainty bonus is highest. See [Bandits](/learn/03-bandits).
+
+## V
+
+**Value function (V).** How good it is to be in a state, as the expected return when following a given policy. See [Value functions](/learn/05-value-functions).
+
+**Value iteration.** Repeatedly replace each state's value by the best one-step lookahead, until nothing changes. See [Dynamic programming](/learn/06-dynamic-programming).
