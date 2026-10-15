@@ -1,5 +1,8 @@
 "use client";
 
+import stage from "@/components/arena/arena-stage.module.css";
+import { HeadOverlay } from "@/components/arena/head-overlay";
+import { currentBoardTheme, onBoardThemeChange } from "@/lib/arena/board-theme";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Swatch } from "@/features/ladder/components/swatch";
 import { engineClient } from "@/features/replay/engine-client";
@@ -8,6 +11,12 @@ import {
   FrameStore, THEMES, applyFrame, buildColorTable, clock, headsAt, paintCells, type Theme,
 } from "@/features/replay/replay-format";
 import { parseResult, seatNames, verdict, verdictText, type ExpectedSeat } from "@/features/replay/replay-verdict";
+import { MomentList, MomentMarks } from "@/features/replay/components/replay-moments";
+import { FinalBoard } from "@/features/replay/components/final-board";
+import { finalBoard } from "@/features/replay/replay-fallback";
+import { LoadBoundary } from "@/components/load-boundary";
+import styles from "./replay-viewer.module.css";
+import { eventsFrom, keyMoments, playableCells, type ArenaEvent } from "@/lib/arena/events";
 
 export type ReplaySource = { url: string } | { bytes: Uint8Array };
 
@@ -64,10 +73,12 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
   const [frames, setFrames] = useState(0); // 0 until the header arrives
   const [available, setAvailable] = useState(0);
   const [frame, setFrame] = useState(0);
+  const [events, setEvents] = useState<ArenaEvent[]>([]); // known once every frame is computed
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [phase, setPhase] = useState<Phase>("url" in source ? { kind: "fetching" } : { kind: "loading-engine" });
   const [names, setNames] = useState(() => seatNames(null, expected));
+  const [board, setBoard] = useState<{ width: number; height: number; heads: ReturnType<typeof headsAt> } | null>(null);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -83,20 +94,20 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
     paintCells(imageRef.current.data, cellsRef.current, tableRef.current);
     ctx.putImageData(imageRef.current, 0, 0);
     ctx.fillStyle = THEMES[themeRef.current].head;
-    for (const head of headsAt(store, frameRef.current)) if (head) ctx.fillRect(head[1] - 1, head[0] - 1, 3, 3);
+    const heads = headsAt(store, frameRef.current);
+    for (const head of heads) if (head) ctx.fillRect(head[1] - 1, head[0] - 1, 3, 3);
+    setBoard({ width: store.width, height: store.height, heads });
   }, []);
 
-  // Light or dark board, following the system setting live.
+  // Light or dark board, following the site theme live.
   useEffect(() => {
-    const dark = window.matchMedia("(prefers-color-scheme: dark)");
-    const apply = () => {
-      themeRef.current = dark.matches ? "dark" : "light";
-      tableRef.current = buildColorTable(themeRef.current);
+    const apply = (theme: Theme) => {
+      themeRef.current = theme;
+      tableRef.current = buildColorTable(theme);
       draw();
     };
-    apply();
-    dark.addEventListener("change", apply);
-    return () => dark.removeEventListener("change", apply);
+    apply(currentBoardTheme());
+    return onBoardThemeChange(apply);
   }, [draw]);
 
   // Pause when the page is hidden, so the button reads "Play" on return.
@@ -129,6 +140,7 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
           cellsRef.current = store.initial.slice();
           // A restart (left mid-run and came back) begins playback afresh too.
           frameRef.current = 0;
+          setEvents([]);
           endedRef.current = false;
           setFrame(0);
           setPlaying(false);
@@ -152,6 +164,7 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
             return;
           }
           setAvailable(store.available);
+          if (store.available >= store.frames) setEvents(keyMoments(eventsFrom(store), playableCells(store)));
           if (first && autoplay) setPlaying(true);
           break;
         }
@@ -263,33 +276,49 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
   const ready = frames > 0;
   // The live region below holds only this message, which changes per stage, so
   // a screen reader hears each stage and the verdict but not every percent.
+  const failedBeforeStart = phase.kind === "error" && !ready;
+  // Without a playable replay, the recorded result still shows how the board ended.
+  const fallback = failedBeforeStart ? finalBoard(expected) : null;
   const status =
     phase.kind === "error"
-      ? errorText(phase, available)
+      ? errorText(phase, available) + (fallback ? " The final territory is shown instead." : "")
       : phase.kind === "done"
         ? phase.text
         : phase.kind === "fetching"
-          ? "Fetching the replay…"
+          ? "Preparing replay: fetching the file…"
           : phase.kind === "loading-engine"
-            ? "Loading the replay engine (one-time download)…"
+            ? "Preparing replay: loading the engine (one-time download)…"
             : "Computing the match…";
   const progress = phase.kind === "computing" ? ` ${frames ? Math.floor((available / frames) * 100) : 0}%` : null;
   const canRetry = phase.kind === "error" && (phase.stage === "fetch" || phase.stage === "engine");
-  const failedBeforeStart = phase.kind === "error" && !ready;
 
   return (
     <div className="replay">
       {!failedBeforeStart && (
         <div className="board">
-          <canvas
-            ref={canvasRef}
-            width={120}
-            height={120}
-            hidden={!ready}
-            role="img"
-            aria-label="Replay of this match: five players' territories in the arena"
-          />
-          {!ready && <div className="replay-empty" />}
+          <div className={stage.stage}>
+            <canvas
+              ref={canvasRef}
+              width={120}
+              height={120}
+              hidden={!ready}
+              role="img"
+              aria-label="Replay of this match: five players' territories in the arena"
+            />
+            {ready && board && (
+              <HeadOverlay width={board.width} height={board.height} heads={board.heads} names={names} still={!playing} />
+            )}
+          </div>
+          {!ready && (
+            <div className={styles.waiting} aria-hidden="true">
+              Preparing replay
+            </div>
+          )}
+        </div>
+      )}
+      {fallback && (
+        <div className="board">
+          <FinalBoard board={fallback} />
         </div>
       )}
       {ready && (
@@ -297,16 +326,18 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
           <button type="button" className="btn-secondary" onClick={toggle}>
             {playing ? "Pause" : "Play"}
           </button>
-          <input
-            type="range"
-            className="replay-scrub"
-            min={0}
-            max={frames - 1}
-            value={frame}
-            onChange={(e) => seek(Number(e.target.value))}
-            aria-label="Match time"
-            aria-valuetext={clock(frame)}
-          />
+          <MomentMarks events={events} frames={frames} frame={frame} names={names} onSeek={seek}>
+            <input
+              type="range"
+              className="replay-scrub"
+              min={0}
+              max={frames - 1}
+              value={frame}
+              onChange={(e) => seek(Number(e.target.value))}
+              aria-label="Match time"
+              aria-valuetext={clock(frame)}
+            />
+          </MomentMarks>
           <span className="num small">
             {clock(frame)} / {clock(frames - 1)}
           </span>
@@ -319,14 +350,21 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
           </span>
         </div>
       )}
-      <ul className="list-plain replay-legend">
-        {names.map((name, slot) => (
-          <li key={slot} className="seat">
-            <Swatch slot={slot} />
-            {name}
-          </li>
-        ))}
-      </ul>
+      {ready && (
+        <LoadBoundary what="the key moments">
+          <MomentList events={events} frame={frame} names={names} onSeek={seek} />
+        </LoadBoundary>
+      )}
+      {!fallback && (
+        <ul className="list-plain replay-legend">
+          {names.map((name, slot) => (
+            <li key={slot} className="seat">
+              <Swatch slot={slot} />
+              {name}
+            </li>
+          ))}
+        </ul>
+      )}
       <p className="small replay-status">
         <span className={phase.kind === "error" ? "error-text" : "muted"}>
           <span role="status">{status}</span>

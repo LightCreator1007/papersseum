@@ -1,0 +1,57 @@
+.card {
+  border: 1px solid var(--rule);
+  padding: var(--space-5) var(--space-6) var(--space-6);
+  margin: 0 0 var(--space-7);
+  display: grid;
+  gap: var(--space-6);
+}
+.card[data-stuck] { border-color: color-mix(in srgb, var(--slot-3) 60%, var(--rule)); }
+
+.head { display: grid; grid-template-columns: auto 1fr auto; gap: var(--space-4); align-items: center; }
+.head h2 { margin: 0; font-size: 18px; font-weight: 500; letter-spacing: -0.01em; }
+.head p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+.clock { font-family: var(--font-pixel); font-size: 22px; font-variant-numeric: tabular-nums; }
+
+/* Four squares on one line; the line fills up to the current step. */
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.steps li { position: relative; display: grid; gap: 2px; padding-top: 22px; padding-right: var(--space-3); min-width: 0; }
+.steps li::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--rule);
+}
+.steps li[data-state="done"]::before { background: var(--text); }
+.steps li:last-child::before { right: auto; width: 12px; }
+.steps i { position: absolute; top: 0; left: 0; width: 11px; height: 11px; border: 1px solid var(--text); background: var(--bg); }
+.steps li[data-state="done"] i { background: var(--text); }
+.steps li[data-state="now"] i { background: var(--slot-3); border-color: var(--slot-3); animation: beat 1.2s steps(2, jump-none) infinite; }
+.steps li[data-state="next"] i { border-color: var(--rule); }
+.steps span { font-size: 14px; }
+.steps li[data-state="next"] span { color: var(--muted); }
+.steps small { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.note, .warn { margin: 0; font-size: 14px; line-height: 1.5; }
+.note { color: var(--muted); }
+.warn { padding: var(--space-3) var(--space-4); border-left: 2px solid var(--slot-3); background: color-mix(in srgb, var(--slot-3) 10%, transparent); }
+
+@keyframes beat { 50% { opacity: 0.35; } }
+
+@media (max-width: 640px) {
+  .steps { grid-template-columns: 1fr; gap: var(--space-4); }
+  .steps li { padding: 0 0 0 24px; }
+  .steps li::before { top: 11px; bottom: -16px; left: 5px; right: auto; width: 1px; height: auto; }
+  .steps li:last-child::before { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .steps li[data-state="now"] i { animation: none; }
+}

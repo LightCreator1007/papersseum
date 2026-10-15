@@ -1,0 +1,11 @@
+.game { position: relative; width: 100%; max-width: 760px; margin: 0 auto; user-select: none; }
+.canvas { display: block; width: 100%; aspect-ratio: 760 / 220; cursor: pointer; touch-action: manipulation; image-rendering: pixelated; }
+.hud { position: absolute; right: 0; top: 4px; display: flex; gap: var(--space-5); font-family: var(--font-pixel); font-size: 18px; letter-spacing: 0.06em; }
+.hud span:first-child { color: var(--muted); }
+.prompt {
+  position: absolute; left: 50%; top: 36%; transform: translate(-50%, -50%); margin: 0; white-space: nowrap;
+  font-family: var(--font-pixel); font-size: 16px; padding: 6px 12px; background: var(--text); color: var(--bg);
+  animation: pulse 1.2s steps(2, jump-none) infinite;
+}
+@keyframes pulse { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .prompt { animation: none; } }

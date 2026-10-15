@@ -1,0 +1,12 @@
+.hero { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-6); align-items: end; padding-top: var(--space-6); margin-bottom: var(--space-6); }
+.portrait {
+  display: grid; place-items: center; width: 184px; aspect-ratio: 1; border: 1px solid var(--rule);
+  background: color-mix(in oklch, var(--hero-accent) 10%, var(--bg));
+}
+.text h1 { font-size: clamp(36px, 6vw, 64px); letter-spacing: -0.03em; line-height: 1; margin: 0; overflow-wrap: anywhere; }
+.text p { margin: var(--space-3) 0 0; color: var(--muted); font-size: 14px; }
+.rank { font-family: var(--font-pixel); font-size: 28px; color: var(--muted); display: block; margin-bottom: var(--space-2); }
+@media (max-width: 640px) {
+  .hero { grid-template-columns: 1fr; }
+  .portrait { width: 136px; }
+}

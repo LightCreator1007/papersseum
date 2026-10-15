@@ -1,0 +1,35 @@
+.forge { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: var(--space-7); align-items: start; }
+.stage {
+  position: sticky; top: 90px; display: flex; flex-direction: column; align-items: center; gap: var(--space-5);
+  padding: var(--space-8) var(--space-5) var(--space-6); border: 1px solid var(--rule);
+  background:
+    linear-gradient(var(--rule-soft) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, var(--rule-soft) 1px, transparent 1px) 0 0 / 24px 24px,
+    color-mix(in oklch, var(--forge-accent) 8%, var(--bg));
+}
+.pop { animation: pop var(--dur-moderate) var(--ease-swing) both; }
+@keyframes pop { from { transform: scale(0.92); opacity: 0.4; } to { transform: none; opacity: 1; } }
+.sizes { display: flex; gap: var(--space-5); align-items: end; }
+.name { font-family: var(--font-pixel); font-size: 22px; margin: 0; }
+.controls { display: flex; flex-direction: column; gap: var(--space-4); }
+.part { border: 0; padding: 0; margin: 0; }
+.part legend { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: var(--space-2); }
+.options { display: flex; flex-wrap: wrap; gap: 6px; }
+.option, .arrow {
+  font: inherit; font-size: 14px; padding: 6px 12px; border: 1px solid var(--rule); background: var(--bg); color: var(--text);
+  cursor: pointer; transition: background-color var(--dur-fast) var(--ease-swing), border-color var(--dur-fast) var(--ease-swing);
+}
+.option:hover, .arrow:hover { background: var(--rule-soft); }
+.option[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+.option[data-swatch] { padding: 6px; }
+.swatch { display: block; width: 18px; height: 18px; background: var(--chip); }
+.option[data-swatch][aria-pressed="true"] { background: var(--bg); border-color: var(--text); box-shadow: inset 0 0 0 2px var(--text); }
+.arrow { padding: 6px 10px; color: var(--muted); }
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); }
+.msg { font-size: 14px; margin: 0; }
+.msg[data-ok="false"] { color: var(--down, #d33); }
+@media (max-width: 860px) {
+  .forge { grid-template-columns: 1fr; }
+  .stage { position: static; }
+}
+@media (prefers-reduced-motion: reduce) { .pop { animation: none; } }

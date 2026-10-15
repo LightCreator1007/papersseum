@@ -1,9 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import stage from "@/components/arena/arena-stage.module.css";
+import { ArenaHud, type Hud } from "@/components/arena/arena-hud";
+import { HeadOverlay } from "@/components/arena/head-overlay";
+import { currentBoardTheme, onBoardThemeChange } from "@/lib/arena/board-theme";
 import {
-  THEMES, applyFrame, buildColorTable, decodeReplay, headsAt, paintCells, type Replay, type Theme,
+  OUTSIDE, THEMES, applyFrame, buildColorTable, decodeReplay, headsAt, paintCells, type Replay, type Theme,
 } from "@/features/replay/replay-format";
+
+// The baseline bots make_replay.py plays in the recorded home match, by seat.
+const HOME_SEATS = ["house_greedy_1", "house_safe_expander_1", "house_hunter", "house_greedy_2", "house_safe_expander_2"];
+type Heads = ReturnType<typeof headsAt>;
 
 const STEP_MS = 100; // 10 decisions per second: real match speed
 const HOLD_MS = 3000; // pause on the final board before restarting
@@ -21,6 +29,8 @@ async function loadReplay(signal: AbortSignal): Promise<Replay> {
 export function BoardReplay() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
+  const [board, setBoard] = useState<{ width: number; height: number; heads: Heads } | null>(null);
+  const [hud, setHud] = useState<Hud | null>(null);
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -39,8 +49,7 @@ export function BoardReplay() {
         canvas.width = replay.width;
         canvas.height = replay.height;
 
-        const dark = window.matchMedia("(prefers-color-scheme: dark)");
-        let theme: Theme = dark.matches ? "dark" : "light";
+        let theme: Theme = currentBoardTheme();
         let table = buildColorTable(theme);
         const image = ctx.createImageData(replay.width, replay.height);
         const cells = replay.initial.slice();
@@ -54,7 +63,18 @@ export function BoardReplay() {
           paintCells(image.data, cells, table);
           ctx.putImageData(image, 0, 0);
           ctx.fillStyle = THEMES[theme].head;
-          for (const head of headsAt(replay, frame)) if (head) ctx.fillRect(head[1] - 1, head[0] - 1, 3, 3);
+          const heads = headsAt(replay, frame);
+          for (const head of heads) if (head) ctx.fillRect(head[1] - 1, head[0] - 1, 3, 3);
+          setBoard({ width: replay.width, height: replay.height, heads });
+          const owned = new Array<number>(replay.players).fill(0);
+          let playable = 0;
+          for (const v of cells) {
+            if (v === OUTSIDE) continue;
+            playable++;
+            const o = v & 15;
+            if (o < replay.players) owned[o]++;
+          }
+          setHud({ frame, frames: replay.frames, coverage: owned.map((n) => (playable ? n / playable : 0)) });
         };
 
         const tick = (now: number) => {
@@ -104,14 +124,13 @@ export function BoardReplay() {
         const onVisibility = () => (document.hidden ? pause() : play());
         document.addEventListener("visibilitychange", onVisibility);
         cleanups.push(() => document.removeEventListener("visibilitychange", onVisibility));
-        const onTheme = () => {
-          theme = dark.matches ? "dark" : "light";
-          table = buildColorTable(theme);
-          draw();
-        };
-        dark.addEventListener("change", onTheme);
-        cleanups.push(() => dark.removeEventListener("change", onTheme));
-
+        cleanups.push(
+          onBoardThemeChange((next) => {
+            theme = next;
+            table = buildColorTable(theme);
+            draw();
+          }),
+        );
         draw();
         setReady(true);
         play();
@@ -140,7 +159,7 @@ export function BoardReplay() {
   }, []);
 
   return (
-    <>
+    <div className={stage.stage}>
       {!ready && (
         <picture>
           <source srcSet="/board-dark.svg" media="(prefers-color-scheme: dark)" />
@@ -155,6 +174,8 @@ export function BoardReplay() {
         role="img"
         aria-label="A recorded Papersseum match replaying: five players' territories in an arena"
       />
-    </>
+      {ready && board && <HeadOverlay width={board.width} height={board.height} heads={board.heads} names={HOME_SEATS} />}
+      {ready && hud && <ArenaHud hud={hud} names={HOME_SEATS} />}
+    </div>
   );
 }
