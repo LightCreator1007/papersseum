@@ -37,3 +37,4 @@ planning-chat.md
 # generated from resources/ by web/scripts/sync-learn.mjs
 web/generated/
 web/public/learn/
+!web/public/footer-logo.png
