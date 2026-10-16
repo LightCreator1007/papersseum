@@ -28,7 +28,7 @@ export function describeNotification(n: Notification): { title: string; body: st
       return {
         title: v ? `Version ${v} was rejected` : "Your upload was rejected",
         body: str(p.error) ?? "Open your bot page to see why.",
-        href: "/me",
+        href: v ? `/me/versions#v${v}` : "/me/versions",
       };
     }
     case "first_match": {

@@ -12,18 +12,22 @@
     opacity var(--dur-fast) linear;
   pointer-events: none;
 }
+.upload { display: inline-flex; }
+.upload:empty { display: none; }
 .account { font-weight: 500; }
 .account a { color: var(--text); }
 .menu {
   display: none; font: inherit; font-size: 14px; padding: 6px 12px; border-radius: 6px;
   border: 1px solid var(--rule); background: transparent; color: var(--text); cursor: pointer;
 }
+.drawerUpload { display: grid; margin-bottom: var(--space-4); }
+.drawerUpload:empty { display: none; }
 .drawerLinks { display: flex; flex-direction: column; gap: 4px; font-size: 18px; }
 .drawerLinks a { padding: 10px 4px; color: var(--muted); }
 .drawerLinks a[aria-current="page"] { color: var(--text); }
 
 @media (max-width: 640px) {
-  .links, .account { display: none; }
+  .links, .account, .upload { display: none; }
   .menu { display: inline-block; }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { setActiveSubmission } from "@/features/upload/actions";
 import { ActionForm } from "@/components/me/action-form";
@@ -6,6 +7,7 @@ import { LiveRefresh } from "@/components/live-refresh";
 import { LoadBoundary } from "@/components/load-boundary";
 import { EmptyState } from "@/components/ui/empty-state";
 import styles from "@/components/me/me.module.css";
+import { RejectionReason } from "@/features/upload/components/rejection-reason";
 import { Placeholder } from "@/components/placeholder";
 import { SUBMISSION_STATUS, percent, shortDateTime } from "@/features/ladder/format";
 import { requireMyBot } from "@/lib/me";
@@ -25,13 +27,14 @@ async function VersionsContent() {
       <EmptyState
         title="No uploads yet"
         body="Upload your first version from the overview, or from the command line with the CLI."
-        action={{ label: "Upload a version", href: "/me" }}
+        action={{ label: "Upload a version", href: "/me#upload" }}
         secondary={{ label: "CLI quickstart", href: "/docs/getting-started" }}
       />
     );
   }
   const cards = new Map(versionScorecards(history).map((c) => [c.submissionId, c]));
   const cap = capNote(subs.length, MY_SUBMISSIONS_LIMIT);
+  const newest = Math.max(...subs.map((s) => s.version));
 
   return (
     <div className="table-scroll">
@@ -52,8 +55,8 @@ async function VersionsContent() {
           {subs.map((s) => {
             const c = cards.get(s.id);
             const canSwitch = s.status === "superseded";
-            return (
-              <tr key={s.id}>
+            const rows = [
+              <tr key={s.id} id={`v${s.version}`}>
                 <td>v{s.version}</td>
                 <td className="muted">{shortDateTime(s.createdAt)}</td>
                 <td>{s.status === "active" ? <b>{SUBMISSION_STATUS[s.status]}</b> : SUBMISSION_STATUS[s.status]}</td>
@@ -68,8 +71,25 @@ async function VersionsContent() {
                     </ActionForm>
                   )}
                 </td>
-              </tr>
-            );
+              </tr>,
+            ];
+            if (s.status === "rejected") {
+              rows.push(
+                <tr key={`${s.id}:reason`} className={styles.reasonRow}>
+                  <td colSpan={8}>
+                    <div className={styles.reasonBody}>
+                      <RejectionReason sub={s} />
+                      {s.version === newest && (
+                        <Link href="/me#upload" className="small">
+                          Upload a fix
+                        </Link>
+                      )}
+                    </div>
+                  </td>
+                </tr>,
+              );
+            }
+            return rows;
           })}
         </tbody>
       </table>

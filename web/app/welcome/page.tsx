@@ -12,19 +12,32 @@ import { firstName } from "@/lib/owner-name";
 import { safeNext } from "@/features/auth/redirect";
 import styles from "./welcome.module.css";
 import { ISSUES_URL } from "@/components/contact-organisers";
+import { STARTER_URL } from "@/features/upload/upload-rules";
 
 export const metadata: Metadata = { title: "Welcome", robots: { index: false } };
 
 
 // First sign-in only (the auth callback sends new accounts here). FigJam Flow 1 and the
 // Identity stickies: show the public name before anything else is public, offer the one
-// rename, say what is and isn't public, then point at the quickstart.
+// rename, say what is and isn't public, then point at the starter and the upload.
 
+// The starter plays as it is, so the shortest path is download, upload, then the look.
 const NEXT_STEPS = [
-  { n: "01", title: "Set up locally", body: "Install the package and write a starter bot.", code: "pip install papersseum", href: "/docs/getting-started" },
-  { n: "02", title: "Pick a look", body: "Build the character that plays for you on the board.", code: null, href: "/me/forge" },
-  { n: "03", title: "Upload it", body: "It's checked, then plays a match every 15 minutes.", code: null, href: "/me" },
+  { n: "01", title: "Get the starter", body: "A working bot in one file. Or run papersseum new.", code: "my_agent.py", href: STARTER_URL, download: true },
+  { n: "02", title: "Upload it", body: "It's checked, then plays a match every 15 minutes.", code: null, href: "/me#upload", download: false },
+  { n: "03", title: "Make it yours", body: "Build the character that plays for you on the board.", code: null, href: "/me/forge", download: false },
 ] as const;
+
+function StepBody({ s }: { s: (typeof NEXT_STEPS)[number] }) {
+  return (
+    <>
+      <span className={styles.n}>{s.n}</span>
+      <b>{s.title}</b>
+      <span>{s.body}</span>
+      {s.code && <code>{s.code}</code>}
+    </>
+  );
+}
 
 async function WelcomeContent({ searchParams }: { searchParams: PageProps<"/welcome">["searchParams"] }) {
   const params = await searchParams;
@@ -88,17 +101,21 @@ async function WelcomeContent({ searchParams }: { searchParams: PageProps<"/welc
         <ol>
           {NEXT_STEPS.map((s) => (
             <li key={s.n}>
-              <Link href={s.href}>
-                <span className={styles.n}>{s.n}</span>
-                <b>{s.title}</b>
-                <span>{s.body}</span>
-                {s.code && <code>{s.code}</code>}
-              </Link>
+              {s.download ? (
+                <a href={s.href} download>
+                  <StepBody s={s} />
+                </a>
+              ) : (
+                <Link href={s.href}>
+                  <StepBody s={s} />
+                </Link>
+              )}
             </li>
           ))}
         </ol>
         <div className={styles.actions}>
-          <ButtonLink href="/docs/getting-started">Start the quickstart</ButtonLink>
+          <ButtonLink href="/me#upload">Upload your bot</ButtonLink>
+          <Link href="/docs/getting-started">Read the quickstart</Link>
           <Link href={next}>Skip to your bot</Link>
         </div>
       </section>

@@ -10,6 +10,7 @@ import {
   checkFile,
   identicalMessage,
   identicalVersion,
+  NOT_TEXT_MESSAGE,
   isUtf8,
   startedJustNow,
   uploadErrorMessage,
@@ -33,7 +34,7 @@ export async function createSubmission(
   const bad = checkFile(file.name, file.bytes.byteLength);
   if (bad) return { ok: false, message: bad };
   if (!isUtf8(file.bytes)) {
-    return { ok: false, message: "That file isn't readable text. Upload the .py source file." };
+    return { ok: false, message: NOT_TEXT_MESSAGE };
   }
 
   const { data: bot, error: botError } = await admin.from("bots").select("id").eq("owner_id", userId).maybeSingle();

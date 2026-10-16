@@ -1,6 +1,9 @@
 // Upload checks shared by the browser (before sending) and the server.
 // Matches MAX_BYTES in papersseum/security/static_check.py, the validation that actually decides.
 export const MAX_BYTES = 1_000_000;
+// Copied from examples/my_agent.py by scripts/sync-starter.mjs.
+export const STARTER_URL = "/starter/my_agent.py";
+export const VALIDATE_DOCS = "/docs/competition/commands";
 export const GENERIC_UPLOAD_ERROR = "Upload failed, please try again.";
 export const SESSION_EXPIRED = "Your session expired. Sign in again to upload.";
 export const NO_BOT_MESSAGE = "Your account has no bot to upload to. Open an issue on GitHub and an organiser will sort it out.";
@@ -17,6 +20,38 @@ export function checkFile(name: string, size: number): string | null {
   if (size === 0) return "That file is empty.";
   if (size > MAX_BYTES) return "That file is over 1 MB.";
   return null;
+}
+
+export const NOT_TEXT_MESSAGE = "That file isn't readable text. Upload the .py source file.";
+export const NO_AGENT_WARNING = "No class Agent found. The check rejects a file without one.";
+export const STARTER_NOTE = "This is the starter, unchanged. It plays as is; edit it to climb.";
+export const MULTIPLE_FILES_NOTE = "One file at a time, so only the first was used.";
+
+// Read in the browser after a file is picked. Only unreadable bytes block the upload: the
+// server check is the one that decides, so a missing Agent is a warning, not a refusal.
+export function checkSource(text: string, starter: string | null): { warning: string | null; note: string | null } {
+  const warning = /^class\s+Agent\b/m.test(text) ? null : NO_AGENT_WARNING;
+  const note = starter !== null && sameSource(text, starter) ? STARTER_NOTE : null;
+  return { warning, note };
+}
+
+// Windows line endings and a trailing newline don't make it a different bot.
+function sameSource(a: string, b: string): boolean {
+  const norm = (t: string) => t.replace(/\r\n?/g, "\n").trimEnd();
+  return norm(a) === norm(b);
+}
+
+export function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+// A long name truncates in the middle so the extension stays visible: the head takes the
+// ellipsis and the tail keeps the last few characters.
+export function splitName(name: string, tail = 8): [string, string] {
+  if (name.length <= tail) return ["", name];
+  return [name.slice(0, -tail), name.slice(-tail)];
 }
 
 export function isUtf8(bytes: Uint8Array): boolean {

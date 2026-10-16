@@ -1,0 +1,12 @@
+/* Clears the sticky site header when an "Upload" link scrolls here. */
+.panel { display: grid; gap: var(--space-4); scroll-margin-top: 88px; }
+.head { display: grid; gap: var(--space-1); }
+.head p { margin: 0; }
+.title { margin: 0; font-size: var(--text-md); font-weight: 500; }
+
+.steps { display: grid; gap: var(--space-5); margin: 0; padding: 0; list-style: none; }
+.steps > li { display: grid; grid-template-columns: 28px 1fr; gap: var(--space-3); }
+.n { font-family: var(--mono); font-size: var(--text-xs); color: var(--muted); line-height: 22px; }
+.step { display: grid; gap: var(--space-3); min-width: 0; }
+.step > b { font-weight: 500; line-height: 22px; }
+.starter { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }

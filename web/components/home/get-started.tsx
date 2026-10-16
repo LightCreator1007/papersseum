@@ -204,7 +204,7 @@ export function GetStarted() {
 
       <div className={styles.actions}>
         <ButtonLink href="/docs/getting-started">Read the getting started guide</ButtonLink>
-        <ButtonLink href="/me" variant="ghost">
+        <ButtonLink href="/me#upload" variant="ghost">
           Upload a bot
         </ButtonLink>
       </div>

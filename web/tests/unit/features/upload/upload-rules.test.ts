@@ -6,7 +6,12 @@ import {
   MAX_BYTES,
   NO_BOT_MESSAGE,
   NOTEBOOK_MESSAGE,
+  NO_AGENT_WARNING,
+  STARTER_NOTE,
   checkFile,
+  checkSource,
+  formatBytes,
+  splitName,
   identicalMessage,
   identicalVersion,
   isUtf8,
@@ -136,5 +141,32 @@ describe("identicalVersion", () => {
   });
   it("words the refusal", () => {
     expect(identicalMessage(3)).toBe("Identical to v3. Nothing uploaded, and your cooldown wasn't used.");
+  });
+});
+
+describe("checkSource", () => {
+  const bot = "import math\n\nclass Agent:\n    def act(self, obs):\n        return 0\n";
+  it("warns, without blocking, when there's no class Agent", () => {
+    expect(checkSource(bot, null)).toEqual({ warning: null, note: null });
+    expect(checkSource("def act(obs):\n    return 0\n", null).warning).toBe(NO_AGENT_WARNING);
+    expect(checkSource("# class Agent\n", null).warning).toBe(NO_AGENT_WARNING);
+  });
+  it("spots the unchanged starter whatever the line endings", () => {
+    expect(checkSource(bot.replace(/\n/g, "\r\n"), bot).note).toBe(STARTER_NOTE);
+    expect(checkSource(`${bot}\n\n`, bot).note).toBe(STARTER_NOTE);
+    expect(checkSource(bot.replace("return 0", "return 2"), bot).note).toBeNull();
+  });
+});
+
+describe("formatBytes and splitName", () => {
+  it("formats sizes", () => {
+    expect(formatBytes(512)).toBe("512 B");
+    expect(formatBytes(1552)).toBe("1.5 KB");
+    expect(formatBytes(1_000_000)).toBe("976.6 KB");
+    expect(formatBytes(2 * 1024 * 1024)).toBe("2.00 MB");
+  });
+  it("keeps the extension in the tail", () => {
+    expect(splitName("a.py")).toEqual(["", "a.py"]);
+    expect(splitName("my_really_long_agent_v2.py")).toEqual(["my_really_long_age", "nt_v2.py"]);
   });
 });

@@ -1,0 +1,13 @@
+.status {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+  gap: var(--space-2) var(--space-4); margin: 4px 0 20px;
+}
+.status p { margin: 0; }
+
+/* The newest version's verdict leads when it failed, with the drop zone straight under it. */
+.rejected {
+  margin: 0 0 var(--space-4); padding: 14px 16px;
+  border: 1px solid var(--rule); border-left: 2px solid var(--down);
+  background: var(--surface);
+}
+.rejectedTitle { margin: 0 0 var(--space-2); font-size: var(--text-md); font-weight: 500; }

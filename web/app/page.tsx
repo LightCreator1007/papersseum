@@ -31,14 +31,14 @@ async function HeroActions() {
   const signedIn = (await getUserId()) !== null;
   return (
     <div className={styles.heroActions}>
-      {signedIn ? <ButtonLink href="/me">Upload a bot</ButtonLink> : <SignInButton next="/me" />}
+      {signedIn ? <ButtonLink href="/me#upload">Upload a bot</ButtonLink> : <SignInButton next="/me" />}
       <Link href="/docs/getting-started">Read the rules</Link>
     </div>
   );
 }
 
 async function ProofStats() {
-  const [season, stats] = await Promise.all([getSeason(), getLadderStats()]);
+  const [season, stats, userId] = await Promise.all([getSeason(), getLadderStats(), getUserId()]);
   const outlook = await getRoundOutlook(season.frozen);
   if (stats.matches === 0) {
     return (
@@ -46,7 +46,7 @@ async function ProofStats() {
         className={styles.statsEmpty}
         title="No matches yet"
         body={nextRoundSentence(outlook, { first: true })}
-        action={{ label: "Get started", href: "/docs/getting-started" }}
+        action={userId ? { label: "Upload your bot", href: "/me#upload" } : { label: "Get started", href: "/docs/getting-started" }}
       />
     );
   }

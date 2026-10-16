@@ -16,3 +16,9 @@
 .list strong { display: block; }
 .list p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
 .list time { font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+/* Versions: a rejected row's reason sits under it, pinned to the left edge so it stays
+   readable while the table scrolls sideways on a phone. */
+tr:has(+ .reasonRow) > td { border-bottom-color: transparent; }
+.reasonRow > td { padding-top: 0; white-space: normal; }
+.reasonBody { position: sticky; left: 0; display: grid; gap: var(--space-2); justify-items: start; max-width: min(640px, calc(100vw - 48px)); }
