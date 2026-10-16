@@ -14,8 +14,9 @@
     "gen:types": "supabase gen types typescript --local --schema public --workdir .. > lib/supabase/database.types.ts",
     "sync:learn": "node scripts/sync-learn.mjs",
     "sync:docs": "node scripts/sync-docs.mjs",
-    "predev": "npm run sync:learn && npm run sync:docs",
-    "prebuild": "npm run sync:learn && npm run sync:docs",
+    "sync:starter": "node scripts/sync-starter.mjs",
+    "predev": "npm run sync:learn && npm run sync:docs && npm run sync:starter",
+    "prebuild": "npm run sync:learn && npm run sync:docs && npm run sync:starter",
     "pretypecheck": "npm run sync:learn && npm run sync:docs",
     "prelint": "npm run sync:learn && npm run sync:docs"
   },

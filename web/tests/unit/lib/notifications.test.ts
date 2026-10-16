@@ -12,7 +12,7 @@ describe("describeNotification", () => {
   });
   it("quotes the rejection reason", () => {
     expect(describeNotification(n("submission_rejected", { version: 2, error: "agent is too slow" }))).toEqual({
-      title: "Version 2 was rejected", body: "agent is too slow", href: "/me",
+      title: "Version 2 was rejected", body: "agent is too slow", href: "/me/versions#v2",
     });
   });
   it("links the first match", () => {

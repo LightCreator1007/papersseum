@@ -37,5 +37,7 @@ planning-chat.md
 # generated from resources/ by web/scripts/sync-learn.mjs
 web/generated/
 web/public/learn/
+# copied from examples/ by web/scripts/sync-starter.mjs
+web/public/starter/
 !web/public/footer-logo.png
 !web/public/tpc-logo.png

@@ -111,7 +111,8 @@ type ButtonLinkProps = Common & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "c
 /** Same look as Button, for navigation. Uses next/link for internal routes. */
 export function ButtonLink({ variant = "ink", size = "md", href, className, children, ...rest }: ButtonLinkProps) {
   const classes = cx(styles.button, styles[variant], size === "sm" && styles.sm, className);
-  const external = /^(https?:)?\/\//.test(href) || href.startsWith("mailto:");
+  // A download is a file, not a route, so it skips client-side navigation too.
+  const external = /^(https?:)?\/\//.test(href) || href.startsWith("mailto:") || rest.download !== undefined;
   const inner = <Inner roll={variant !== "link"}>{children}</Inner>;
   if (external) {
     return (

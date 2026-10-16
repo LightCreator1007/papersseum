@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { LogoMark } from "@/components/brand/logo-mark";
+import { ButtonLink } from "@/components/ui/button";
 import { getProfileName } from "@/features/ladder/queries";
 import { firstName } from "@/lib/owner-name";
 import { getUserId } from "@/lib/supabase/server";
@@ -21,6 +22,25 @@ async function AccountLink() {
   return <Link href="/me">{firstName(name) ?? "Your bot"}</Link>;
 }
 
+// Signed in only. It goes to /me even when uploads are closed (banned bot, frozen season):
+// /me says why, and the header stays free of a per-page bot read.
+async function UploadLink() {
+  if (!(await getUserId())) return null;
+  return (
+    <ButtonLink href="/me#upload" size="sm">
+      Upload
+    </ButtonLink>
+  );
+}
+
+function Upload() {
+  return (
+    <Suspense fallback={null}>
+      <UploadLink />
+    </Suspense>
+  );
+}
+
 function Account() {
   return (
     <Suspense fallback={<Link href="/me">Your bot</Link>}>
@@ -38,8 +58,8 @@ export function SiteHeader() {
             <LogoMark size={20} animate="hover" />
             <span>Papersseum</span>
           </Link>
-          <Suspense fallback={<StaticNav account={<Account />} />}>
-            <Nav account={<Account />} />
+          <Suspense fallback={<StaticNav account={<Account />} upload={<Upload />} />}>
+            <Nav account={<Account />} upload={<Upload />} />
           </Suspense>
         </div>
         <ScrollEdge />

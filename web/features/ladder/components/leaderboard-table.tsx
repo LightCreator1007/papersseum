@@ -66,11 +66,12 @@ export async function LeaderboardTable({
 }) {
   const [all, mine] = await Promise.all([getLeaderboard(limit), myBotId()]);
   if (all.length === 0) {
+    const signedIn = (await getUserId()) !== null;
     return (
       <EmptyState
         title="No bots on the ladder yet"
         body="Upload one and it joins after its test match. The first bot here leads the season."
-        action={{ label: "Get started", href: "/docs/getting-started" }}
+        action={signedIn ? { label: "Upload your bot", href: "/me#upload" } : { label: "Get started", href: "/docs/getting-started" }}
       />
     );
   }

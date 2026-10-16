@@ -36,18 +36,19 @@ function Links({ path, onPick }: { path: string | null; onPick?: () => void }) {
 
 // usePathname() suspends on routes whose params aren't known at build time, so
 // the header wraps Nav in <Suspense> and shows these links meanwhile.
-export function StaticNav({ account }: { account: ReactNode }) {
+export function StaticNav({ account, upload }: { account: ReactNode; upload: ReactNode }) {
   return (
     <nav className={styles.nav} aria-label="Main">
       <div className={styles.links}>
         <Links path={null} />
       </div>
+      <span className={styles.upload}>{upload}</span>
       <span className={styles.account}>{account}</span>
     </nav>
   );
 }
 
-export function Nav({ account }: { account: ReactNode }) {
+export function Nav({ account, upload }: { account: ReactNode; upload: ReactNode }) {
   const path = usePathname();
   const linksRef = useRef<HTMLDivElement>(null);
   const [bar, setBar] = useState<{ x: number; w: number } | null>(null);
@@ -81,11 +82,17 @@ export function Nav({ account }: { account: ReactNode }) {
           style={bar ? { transform: `translateX(${bar.x}px)`, width: bar.w, opacity: 1 } : { opacity: 0 }}
         />
       </div>
+      <span className={styles.upload}>{upload}</span>
       <span className={styles.account}>{account}</span>
       <button type="button" className={styles.menu} aria-expanded={open} onClick={() => setOpen(true)}>
         Menu
       </button>
       <Drawer open={open} onClose={() => setOpen(false)} title="Menu">
+        {/* Upload leads the menu. Closing on click covers /me#upload from /me itself,
+            where the path doesn't change. */}
+        <div className={styles.drawerUpload} onClick={() => setOpen(false)}>
+          {upload}
+        </div>
         <div className={styles.drawerLinks}>
           <Links path={path} onPick={() => setOpen(false)} />
           {account}
