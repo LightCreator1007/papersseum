@@ -249,6 +249,10 @@ export default function Home() {
       <section className={styles.cta}>
         <BotCharacter genome={genomeFromSeed("papersseum")} size={96} accent="var(--slot-3)" state="idle" label="" lookAt />
         <h2>Build your first bot.</h2>
+        <p className={styles.ctaSub}>
+          Start from the example bot, upload it, and it joins the next round. New to reinforcement learning? The free
+          course starts from zero.
+        </p>
         <div className={styles.actions}>
           <ButtonLink href="/docs/getting-started" className={styles.ctaPrimary}>
             Start in 5 minutes

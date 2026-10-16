@@ -16,6 +16,10 @@ body {
   flex-direction: column;
 }
 
+/* Full-bleed sections are 100vw wide, which includes a classic (Windows) scrollbar, so the
+   page scrolled sideways by its width. clip, not hidden: no new scroll container, sticky works. */
+html { overflow-x: clip; }
+
 .wrap { width: 100%; max-width: 960px; margin: 0 auto; padding: 0 16px; }
 @media (min-width: 640px) { .wrap { padding: 0 28px; } }
 main.wrap { flex: 1; padding-top: 36px; padding-bottom: 56px; }

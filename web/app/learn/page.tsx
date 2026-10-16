@@ -8,7 +8,7 @@ import { course, type Chapter } from "@/features/learn/manifest";
 
 export const metadata: Metadata = {
   title: "Learn",
-  description: "A free, beginner-friendly course on reinforcement learning. JEE Mains maths is all you need.",
+  description: "A free, beginner-friendly course on reinforcement learning. No machine learning needed to start.",
 };
 
 // Parts get harder as the course goes on; each part also gets a slot colour for its drawings.
@@ -79,8 +79,8 @@ export default function LearnHome() {
               <dd>{hours}</dd>
             </div>
             <div>
-              <dt>maths needed</dt>
-              <dd>JEE</dd>
+              <dt>machine learning needed</dt>
+              <dd>None</dd>
             </div>
           </dl>
         </div>

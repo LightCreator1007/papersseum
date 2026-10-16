@@ -19,9 +19,10 @@
   transform-origin: 50% 50%;
 }
 
+/* An inverted surface sets --bot-ink (and --bot-hole) so the body doesn't vanish into it. */
 .body,
 .antenna {
-  fill: var(--text);
+  fill: var(--bot-ink, var(--text));
 }
 .accent {
   fill: var(--bot-accent, var(--text));

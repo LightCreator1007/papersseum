@@ -136,7 +136,14 @@
   display: flex; flex-direction: column; align-items: center; gap: var(--space-5);
   background: var(--text); color: var(--bg);
 }
+/* The band inverts the ground, so the character's body and holes swap too. */
+.cta { --bot-ink: var(--bg); --bot-hole: var(--text); }
 .cta h2 { font-size: clamp(40px, 6.5vw, 96px); font-weight: 300; letter-spacing: -0.05em; line-height: 1; margin: 0; }
+.ctaSub {
+  margin: calc(var(--space-4) - var(--space-5)) 0 var(--space-3); max-width: 46ch;
+  font-size: 18px; font-weight: 300; line-height: 1.6; text-wrap: pretty;
+  color: color-mix(in srgb, var(--bg) 72%, var(--text));
+}
 /* The band is inverted, so its buttons are too: they reuse the shared Button states and
    only swap the colour variables. The primary keeps the shared yellow fill. */
 .cta .ctaPrimary, .cta .ctaGhost { --btn-h: 48px; --btn-radius: 999px; padding: 0 var(--space-6); font-size: 15px; font-weight: 400; }

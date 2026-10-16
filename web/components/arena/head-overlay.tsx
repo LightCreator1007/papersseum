@@ -18,13 +18,12 @@ type Props = {
 };
 
 const RIDER_CELLS = 8; // character width in board cells
-const JUMP = 3; // cells; a bigger move between frames is a respawn, not a step
 
 // Pixel characters riding each snake head, plus a ring in the dead bot's colour
 // where a head leaves the board. Sits over the board canvas, ignoring pointer events.
 export function HeadOverlay({ width, height, heads, names, still = false }: Props) {
   const [rings, setRings] = useState<Ring[]>([]);
-  const [frames, setFrames] = useState({ cur: heads, prev: [] as readonly Head[], seq: 0 });
+  const [frames, setFrames] = useState({ cur: heads, seq: 0 });
 
   // Derived state from the incoming heads: a head that disappears spawns a ring.
   if (frames.cur !== heads) {
@@ -33,14 +32,9 @@ export function HeadOverlay({ width, height, heads, names, still = false }: Prop
     frames.cur.forEach((h, slot) => {
       if (h && !heads[slot]) added.push({ id: seq++, slot, row: h[0], col: h[1] });
     });
-    setFrames({ cur: heads, prev: frames.cur, seq });
+    setFrames({ cur: heads, seq });
     if (added.length) setRings((r) => [...r.slice(-8), ...added]);
   }
-
-  const jumps = heads.map((h, slot) => {
-    const p = frames.prev[slot];
-    return !h || !p || Math.abs(h[0] - p[0]) > JUMP || Math.abs(h[1] - p[1]) > JUMP;
-  });
 
   const at = (row: number, col: number): CSSProperties => ({
     left: `${((col + 0.5) / width) * 100}%`,
@@ -54,7 +48,6 @@ export function HeadOverlay({ width, height, heads, names, still = false }: Prop
           <div
             key={slot}
             className={styles.rider}
-            data-jump={jumps[slot] || undefined}
             style={{ ...at(h[0], h[1]), width: `${(RIDER_CELLS / width) * 100}%` }}
           >
             <BotCharacter
