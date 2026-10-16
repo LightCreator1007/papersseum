@@ -60,12 +60,22 @@ class Engine:
                 kill(st, victim, killer=pid)
             p = st.players[pid]
             p.heading = p.desired_heading
+            left = (p.r, p.c)
             p.r, p.c = nr, nc
             if not is_outside_own_land(st, pid, nr, nc):
                 if p.trail_cells:
                     close_trail(st, pid)
             else:
+                if not p.trail_cells and st.owner[left] == pid:
+                    p.anchor = left                    # the land cell this trail starts from
                 lay_trail(st, pid, nr, nc)
+
+        # A bot out on a trail needs the land it left from. If someone took that cell (or all of the
+        # bot's land), the trail is cut off from its home: the bot dies and the new owner takes what is left.
+        for p in st.players:
+            if p.alive and p.trail_cells and p.anchor is not None and st.owner[p.anchor] != p.pid:
+                taker = int(st.owner[p.anchor])
+                kill(st, p.pid, killer=taker if taker >= 0 and st.players[taker].alive else None)
 
         tick_respawns(st)
         for p in st.players:

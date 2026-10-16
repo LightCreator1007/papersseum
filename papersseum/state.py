@@ -19,6 +19,7 @@ class Player:
     respawn_timer: int = 0
     boost_timer: int = 0
     respawn_retry: int = 0      # no respawn search before this tick (set after a failed search)
+    anchor: tuple = None        # the land cell a bot stepped off to start its current trail; None when it has no trail
 
 
 @dataclass
@@ -132,6 +133,7 @@ def stamp_start_patch(state, pid, center_rc):
     p.desired_heading = p.heading
     p.accumulator = 0.0
     p.trail_cells = []
+    p.anchor = None
     p.alive = True
     p.respawn_timer = 0
     p.boost_timer = 0

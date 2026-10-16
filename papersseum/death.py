@@ -35,6 +35,7 @@ def kill(state, pid, killer=None):
     else:
         state.owner[state.owner == pid] = -1
     p.trail_cells = []
+    p.anchor = None
     p.alive = False
     p.deaths += 1
     p.respawn_timer = C.RESPAWN_DELAY_TICKS

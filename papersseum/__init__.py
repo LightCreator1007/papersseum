@@ -31,7 +31,7 @@ __all__ = [
     "__version__", "ENGINE_HASH",
 ]
 
-__version__ = "0.6.3"
+__version__ = "0.6.4"
 
 # modules whose source defines match behavior; their combined hash must match
 # the server's for local play to equal the ladder.

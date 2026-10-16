@@ -14,6 +14,7 @@ def close_trail(state, pid):
         state.owner[r, c] = pid
         state.trail[r, c] = -1
     p.trail_cells = []
+    p.anchor = None
 
     # 2) enclosure: cells not reachable from the border without crossing pid's land
     passable = state.arena_mask & (state.owner != pid)
