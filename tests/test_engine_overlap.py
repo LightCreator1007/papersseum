@@ -77,13 +77,54 @@ def test_a_tie_goes_to_the_lower_seat():
     assert (a.r, a.c) == (ROW, 59) and (b.r, b.c) == (ROW, 60)
 
 
-def test_bots_cannot_swap_through_each_other():
+def test_two_bots_that_swap_cells_pass_through_each_other():
     eng, st = build()
-    a = put(st, 0, 60, heading=EAST, own_cells=[(ROW, 60)])     # at home
-    b = put(st, 1, 61, heading=WEST)                             # outside, heading into a's cell
+    a = put(st, 0, 60, heading=EAST, own_cells=[(ROW, 60)])      # at home
+    b = put(st, 1, 61, heading=WEST, own_cells=[(ROW, 61)])      # at home on the next cell: a land border
     eng.advance_tick(None)
     assert a.alive and b.alive
-    assert (a.r, a.c) == (ROW, 60) and (b.r, b.c) == (ROW, 61)
+    assert (a.r, a.c) == (ROW, 61) and (b.r, b.c) == (ROW, 60)  # swapped, one bot per cell
+
+
+def test_a_defender_at_home_cuts_an_intruder_it_runs_into():
+    """The deadlock seen in match 57: the intruder's head sits on its own trail, next to the defender's home."""
+    eng, st = build()
+    b = put(st, 1, 60, heading=EAST, own_cells=[(ROW, 59), (ROW, 60), (ROW + 1, 60)])    # defender at home, walking east
+    a = put(st, 0, 61, heading=WEST)                                                       # intruder, walking west
+    for c in (62, 61):
+        st.trail[ROW, c] = 0
+    a.trail_cells = [(ROW, 62), (ROW, 61)]
+    eng.advance_tick(None)
+    assert not a.alive and a.deaths == 1 and b.alive
+    assert (b.r, b.c) == (ROW, 61)
+    assert len(set(cells_of(st))) == len(cells_of(st))
+
+
+def test_a_bot_that_runs_onto_a_standing_rivals_head_on_trail_cuts_it():
+    eng, st = build()
+    v = put(st, 1, 61, moving=False)                             # standing still, head on its own trail
+    st.trail[ROW, 61] = 1
+    v.trail_cells = [(ROW, 61)]
+    a = put(st, 0, 60, heading=EAST, own_cells=[(ROW, 60)])
+    eng.advance_tick(None)
+    assert not v.alive and a.alive and (a.r, a.c) == (ROW, 61)
+
+
+def test_two_bots_cutting_the_same_trail_cell_do_not_both_step_in():
+    eng, st = build()
+    land = [(ROW - 3, 59), (ROW - 3, 60), (ROW - 3, 61), (ROW + 3, 59), (ROW + 3, 60), (ROW + 3, 61)]
+    v = st.players[1]; v.r, v.c = 20, 20                          # the victim's head is elsewhere
+    st.trail[ROW, 60] = 1; v.trail_cells = [(ROW, 60)]
+    a = put(st, 0, 58, heading=EAST, own_cells=[(ROW, 58), (ROW - 1, 58), (ROW + 1, 58)])   # bigger
+    b = put(st, 3, 62, heading=WEST, own_cells=[(ROW, 62)])
+    st.players[3].accumulator = 1.0
+    a.accumulator = 1.0
+    # make both a step into (ROW, 59) first so the cut cell is the second step: put them one cell from it
+    a.c, b.c = 59, 61
+    eng.advance_tick(None)
+    assert len(set(cells_of(st))) == len(cells_of(st))
+    assert not v.alive
+    assert sorted([(a.r, a.c), (b.r, b.c)]).count((ROW, 60)) == 1     # exactly one of them took the cell
 
 
 def test_head_on_between_two_trail_drawers_is_still_a_fight():

@@ -83,13 +83,19 @@ def resolve_headon(state, moves):
 
 
 def resolve_cell_conflicts(state, moves):
-    """One bot per cell. Drops from `moves` every move that would leave two live bots on one cell.
+    """One bot per cell, and nobody gets stuck. Drops from `moves` every move that would leave two
+    live bots on one cell at the end of the tick.
 
     Head-ons between two trail-drawing bots were settled by `resolve_headon` (the smaller dies).
-    What is left is a conflict nobody dies in: two bots heading for the same cell, a swap, or a
-    bot stepping onto one that is staying put. A bot that is staying put keeps its cell. Between
-    two movers the bigger bot (ties: the lower seat) moves in, and the other waits a tick. A bot
-    that has to wait becomes a staying-put bot itself, so this repeats until nothing clashes.
+    What is left:
+      * A bot running into the cell of a bot whose head sits on its own trail cuts that trail: the
+        owner dies (the normal cut), so the mover steps in. A defender on its own land therefore
+        kills an intruder it runs into, instead of the two blocking each other.
+      * Two bots that swap cells pass through each other: they end on different cells.
+      * Two or more bots heading for the same cell: the bigger bot (ties: the lower seat) moves in
+        and the others wait a tick.
+      * A bot that is staying put at home keeps its cell; a mover that wants it waits a tick.
+    A bot that has to wait becomes a staying-put bot itself, so this repeats until nothing clashes.
     """
     pos = {p.pid: (p.r, p.c) for p in state.players if p.alive}
     dest = {pid: moves.get(pid, pos[pid]) for pid in pos}
@@ -104,22 +110,19 @@ def resolve_cell_conflicts(state, moves):
         by_cell = {}
         for pid in sorted(pos):
             by_cell.setdefault(dest[pid], []).append(pid)
-        for pids in by_cell.values():
+        for cell, pids in by_cell.items():
             if len(pids) < 2:
                 continue
             stayers = [pid for pid in pids if dest[pid] == pos[pid]]
-            winner = stayers[0] if stayers else max(pids, key=priority)
-            for pid in pids:
+            movers = [pid for pid in pids if dest[pid] != pos[pid]]
+            if stayers and movers and state.trail[cell] == stayers[0]:
+                winner = max(movers, key=priority)               # the stayer is cut (and dies) by whoever steps in
+            else:
+                winner = stayers[0] if stayers else max(pids, key=priority)
+            for pid in movers:
                 if pid != winner:
                     dest[pid] = pos[pid]
                     waiting.add(pid)
-                    changed = True
-        for a in sorted(pos):                                   # two movers swapping cells
-            for b in sorted(pos):
-                if a < b and dest[a] != pos[a] and dest[a] == pos[b] and dest[b] == pos[a]:
-                    loser = min((a, b), key=priority)
-                    dest[loser] = pos[loser]
-                    waiting.add(loser)
                     changed = True
     for pid in waiting:
         moves.pop(pid, None)
