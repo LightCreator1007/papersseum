@@ -101,7 +101,7 @@ export async function saveAppearance(_prev: ActionState, form: FormData): Promis
   if (await devPersona()) return { ok: false, reason: "unavailable", message: DEV_NOTE };
   const r = await callRpc<null>(client, "set_bot_appearance", { p_appearance: genome });
   if (!r.ok) return r;
-  revalidatePath("/me");
+  revalidatePath("/me", "layout"); // /me and /me/forge both draw it
   return { ok: true, message: "Saved. Your character shows everywhere your bot plays." };
 }
 

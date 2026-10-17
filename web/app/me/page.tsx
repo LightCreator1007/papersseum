@@ -11,7 +11,7 @@ import { LoadBoundary } from "@/components/load-boundary";
 import { Placeholder } from "@/components/placeholder";
 import { characterFor, signatureColor } from "@/lib/character/for-bot";
 import { botHref } from "@/features/ladder/links";
-import { getMyBot, getMySubmissions, getSeason, type MySubmission } from "@/features/ladder/queries";
+import { getMyBot, getMySubmissions, getSeason, type MyBot, type MySubmission } from "@/features/ladder/queries";
 import { loadArenaStatus } from "@/lib/server/arena-status";
 import { loadCheckProgress } from "@/features/upload/check-progress";
 import { uploadView } from "@/features/upload/upload-view";
@@ -22,10 +22,10 @@ export const metadata: Metadata = { title: "Your bot" };
 
 // The newest upload still being checked, with where it is in the queue (FigJam C1).
 // Either read failing falls back to what the submission row already says.
-async function CheckingCard({ sub, botName }: { sub: MySubmission; botName: string }) {
+async function CheckingCard({ sub, bot }: { sub: MySubmission; bot: MyBot }) {
   const [progress, arena] = await Promise.all([loadCheckProgress(sub.id), loadArenaStatus()]);
   const p = progress.ok ? progress.data : null;
-  const genome = characterFor({ name: botName });
+  const genome = characterFor(bot);
   return (
     <CheckProgress
       version={sub.version}
@@ -75,7 +75,7 @@ async function MyBotContent() {
 
       {view.checking && (
         <Suspense fallback={null}>
-          <CheckingCard sub={view.checking} botName={bot.name} />
+          <CheckingCard sub={view.checking} bot={bot} />
         </Suspense>
       )}
 

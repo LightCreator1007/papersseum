@@ -9,7 +9,7 @@ export const DEV_AUTH_COOKIE = "papersseum-dev-as";
 
 export const DEV_PERSONAS = {
   newcomer: { label: "First sign-in, nothing uploaded", userId: "00000000-0000-4000-8000-00000000d001", name: "Riya Sen" },
-  player: { label: "Player with a bot, 3 versions", userId: "00000000-0000-4000-8000-00000000d002", name: "Ashutosh Kumar" },
+  player: { label: "Player with a bot, 3 versions, a saved character", userId: "00000000-0000-4000-8000-00000000d002", name: "Ashutosh Kumar" },
   banned: { label: "Player whose bot is banned", userId: "00000000-0000-4000-8000-00000000d003", name: "Rule Bender" },
   organiser: { label: "Organiser, opens the admin panel", userId: "00000000-0000-4000-8000-00000000d004", name: "Season Organiser" },
 } as const;

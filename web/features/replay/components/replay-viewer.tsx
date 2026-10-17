@@ -10,7 +10,7 @@ import type { ErrorStage, ReplayMeta, WorkerOut } from "@/features/replay/engine
 import {
   FrameStore, THEMES, applyFrame, buildColorTable, clock, headsAt, paintCells, type Theme,
 } from "@/features/replay/replay-format";
-import { parseResult, seatNames, verdict, verdictText, type ExpectedSeat } from "@/features/replay/replay-verdict";
+import { parseResult, seatAppearances, seatNames, verdict, verdictText, type ExpectedSeat } from "@/features/replay/replay-verdict";
 import { MomentList, MomentMarks } from "@/features/replay/components/replay-moments";
 import { FinalBoard } from "@/features/replay/components/final-board";
 import { finalBoard } from "@/features/replay/replay-fallback";
@@ -78,6 +78,7 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
   const [speed, setSpeed] = useState(1);
   const [phase, setPhase] = useState<Phase>("url" in source ? { kind: "fetching" } : { kind: "loading-engine" });
   const [names, setNames] = useState(() => seatNames(null, expected));
+  const [appearances] = useState(() => seatAppearances(expected));
   const [board, setBoard] = useState<{ width: number; height: number; heads: ReturnType<typeof headsAt> } | null>(null);
 
   const draw = useCallback(() => {
@@ -306,7 +307,7 @@ function ViewerRun({ source, expected, onRetry }: Props & { onRetry: () => void 
               aria-label="Replay of this match: five players' territories in the arena"
             />
             {ready && board && (
-              <HeadOverlay width={board.width} height={board.height} heads={board.heads} names={names} still={!playing} />
+              <HeadOverlay width={board.width} height={board.height} heads={board.heads} names={names} appearances={appearances} still={!playing} />
             )}
           </div>
           {!ready && (

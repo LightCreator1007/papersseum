@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MatchResult } from "@/features/replay/engine-protocol";
-import { parseResult, seatNames, verdict, verdictText, type ExpectedSeat } from "@/features/replay/replay-verdict";
+import { parseResult, seatAppearances, seatNames, verdict, verdictText, type ExpectedSeat } from "@/features/replay/replay-verdict";
 
 const HASH = "679481f8fede2383";
 const got: MatchResult = {
@@ -135,5 +135,20 @@ describe("verdictText", () => {
     expect(verdictText({ kind: "older-engine", engineHash: null }, names)).toBe(
       "Recorded on an older engine, so this result can't be verified.",
     );
+  });
+});
+
+describe("seatAppearances", () => {
+  const saved = { v: 1, head: 5, eyes: 1, antenna: 3, mouth: 3, pattern: 2, signature: 4 };
+  it("puts each seat's saved character at its slot, null elsewhere", () => {
+    const expected: ExpectedSeat[] = [
+      { slot: 3, name: "x", placement: 1, coverage: 10, appearance: saved },
+      { slot: 0, name: "y", placement: 2, coverage: 5 },
+      { slot: 9, name: "z", placement: 3, coverage: 1, appearance: saved }, // not a seat: ignored
+    ];
+    expect(seatAppearances(expected)).toEqual([null, null, null, saved, null]);
+  });
+  it("is all null for a dropped file with no database seats", () => {
+    expect(seatAppearances(undefined)).toEqual([null, null, null, null, null]);
   });
 });

@@ -22,7 +22,7 @@ function BotName({ seat, note }: { seat: SeatResult; note?: string | null }) {
   return (
     <>
       {seat.name ? (
-        <BotTag name={seat.name} accent={PLAYER_COLORS[seat.slot]} />
+        <BotTag name={seat.name} appearance={seat.appearance} accent={PLAYER_COLORS[seat.slot]} />
       ) : (
         <>
           <Swatch slot={seat.slot} />
@@ -169,7 +169,7 @@ async function MatchContent({ params }: { params: PageProps<"/matches/[id]">["pa
                 <ReplayViewer
                   source={{ url: replayUrl(match.replayPath) }}
                   expected={match.seats.map((s) => ({
-                    slot: s.slot, name: s.name, placement: s.placement, coverage: s.coverage,
+                    slot: s.slot, name: s.name, placement: s.placement, coverage: s.coverage, appearance: s.appearance,
                   }))}
                 />
               </LoadBoundary>

@@ -10,9 +10,9 @@ export const metadata: Metadata = { title: "Bot Forge" };
 async function ForgeContent() {
   const { bot } = await requireMyBot("/me/forge");
   if (!bot) return <ContactOrganisers lead="Your account has no bot." />;
-  // `saved` stays null until the bots.appearance column ships (ask A1); the forge
-  // then keeps the design in the browser.
-  return <Forge name={bot.name} saved={null} />;
+  // The account's saved character wins; with none, the forge falls back to the
+  // copy kept in this browser, then to the one the name seeds.
+  return <Forge name={bot.name} saved={bot.appearance} />;
 }
 
 export default function ForgePage() {

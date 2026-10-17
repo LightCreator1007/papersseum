@@ -63,7 +63,7 @@ async function BotContent({ params }: { params: PageProps<"/bots/[name]">["param
 
   return (
     <>
-      <ProfileHero name={bot.name} rank={unrated ? null : bot.rank}>
+      <ProfileHero name={bot.name} appearance={bot.appearance} rank={unrated ? null : bot.rank}>
         {bot.isHouse ? "House bot" : `Owned by ${bot.owner ?? "a deleted account"}`}
         {bot.activeVersion && bot.activeSince && ` · version ${bot.activeVersion}, active since ${shortDate(bot.activeSince)}`}
       </ProfileHero>

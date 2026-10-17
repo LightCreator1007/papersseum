@@ -2,7 +2,7 @@
 
 import { useState, type CSSProperties } from "react";
 import { BotCharacter } from "@/components/character/bot-character";
-import { genomeFromSeed } from "@/lib/character/genome";
+import { genomeFromSeed, parseGenome } from "@/lib/character/genome";
 import { PLAYER_COLORS } from "@/features/ladder/colors";
 import styles from "./head-overlay.module.css";
 
@@ -14,6 +14,7 @@ type Props = {
   height: number;
   heads: readonly Head[];
   names: readonly string[];
+  appearances?: readonly unknown[]; // saved characters by slot; a seat without one is seeded from its name
   still?: boolean;
 };
 
@@ -21,7 +22,7 @@ const RIDER_CELLS = 8; // character width in board cells
 
 // Pixel characters riding each snake head, plus a ring in the dead bot's colour
 // where a head leaves the board. Sits over the board canvas, ignoring pointer events.
-export function HeadOverlay({ width, height, heads, names, still = false }: Props) {
+export function HeadOverlay({ width, height, heads, names, appearances, still = false }: Props) {
   const [rings, setRings] = useState<Ring[]>([]);
   const [frames, setFrames] = useState({ cur: heads, seq: 0 });
 
@@ -51,7 +52,7 @@ export function HeadOverlay({ width, height, heads, names, still = false }: Prop
             style={{ ...at(h[0], h[1]), width: `${(RIDER_CELLS / width) * 100}%` }}
           >
             <BotCharacter
-              genome={genomeFromSeed(names[slot] ?? `seat-${slot}`)}
+              genome={parseGenome(appearances?.[slot]) ?? genomeFromSeed(names[slot] ?? `seat-${slot}`)}
               size={24}
               accent={PLAYER_COLORS[slot] ?? "currentColor"}
               state={still ? "still" : "idle"}

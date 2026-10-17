@@ -3,8 +3,18 @@ import { BotCharacter } from "@/components/character/bot-character";
 import { characterFor, signatureColor } from "@/lib/character/for-bot";
 import styles from "./profile-hero.module.css";
 
-export function ProfileHero({ name, rank, children }: { name: string; rank: number | null; children: ReactNode }) {
-  const g = characterFor({ name });
+export function ProfileHero({
+  name,
+  appearance,
+  rank,
+  children,
+}: {
+  name: string;
+  appearance?: unknown;
+  rank: number | null;
+  children: ReactNode;
+}) {
+  const g = characterFor({ name, appearance });
   const accent = signatureColor(g);
   return (
     <header className={styles.hero} style={{ "--hero-accent": accent } as React.CSSProperties}>
