@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const rpc = vi.hoisted(() => vi.fn());
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn(async () => ({ rpc })) }));
-import { getNotifications } from "@/features/ladder/queries";
+import { getEmailOptIn, getNotifications } from "@/features/ladder/queries";
 
 beforeEach(() => rpc.mockReset());
 
@@ -40,5 +40,21 @@ describe("getNotifications", () => {
     expect(await getNotifications()).toMatchObject({ available: true, error: "Couldn't load your inbox. Try again in a minute." });
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
+  });
+});
+
+describe("getEmailOptIn", () => {
+  it("reads the saved choice from my_settings", async () => {
+    rpc.mockResolvedValueOnce({ data: [{ email_opt_in: true }], error: null });
+    expect(await getEmailOptIn()).toBe(true);
+    expect(rpc).toHaveBeenCalledWith("my_settings", {});
+  });
+  it("is off when nothing is saved", async () => {
+    rpc.mockResolvedValueOnce({ data: [], error: null });
+    expect(await getEmailOptIn()).toBe(false);
+  });
+  it("is off when the function isn't deployed", async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: { code: "PGRST202" } });
+    expect(await getEmailOptIn()).toBe(false);
   });
 });

@@ -1,6 +1,7 @@
 import { ContactOrganisers } from "@/components/contact-organisers";
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { getEmailOptIn } from "@/features/ladder/queries";
 import { setEmailOptIn } from "@/features/upload/actions";
 import { ActionForm } from "@/components/me/action-form";
 import styles from "@/components/me/me.module.css";
@@ -13,6 +14,7 @@ export const metadata: Metadata = { title: "Settings" };
 async function SettingsContent() {
   const { bot } = await requireMyBot("/me/settings");
   if (!bot) return <ContactOrganisers lead="Your account has no bot." />;
+  const emailOptIn = await getEmailOptIn();
   return (
     <>
       <section className={styles.panel}>
@@ -33,7 +35,7 @@ async function SettingsContent() {
         </p>
         <ActionForm action={setEmailOptIn} submit="Save">
           <label className={styles.row}>
-            <input type="checkbox" name="opt_in" /> Email me about my bot
+            <input type="checkbox" name="opt_in" defaultChecked={emailOptIn} /> Email me about my bot
           </label>
         </ActionForm>
       </section>

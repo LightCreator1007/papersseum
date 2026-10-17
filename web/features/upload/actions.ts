@@ -112,6 +112,7 @@ export async function setEmailOptIn(_prev: ActionState, form: FormData): Promise
   if (await devPersona()) return devSaved(optIn ? "Emails on." : "Emails off.");
   const r = await callRpc<null>(client, "set_email_opt_in", { p_opt_in: optIn });
   if (!r.ok) return r;
+  revalidatePath("/me/settings");
   return { ok: true, message: optIn ? "You'll get an email for verdicts and your first match." : "No more emails. The inbox still updates." };
 }
 
