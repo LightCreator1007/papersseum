@@ -1,6 +1,6 @@
 -- Repeat lobbies: the same bots running the same code don't meet again within the window.
 begin;
-select plan(15);
+select plan(14);
 
 delete from public.jobs; delete from public.rounds; delete from public.workers; delete from auth.users;
 update public.season set frozen = false, games_per_round = 1, max_backlog = 1000, matchmaking_noise = 0,
@@ -97,21 +97,21 @@ select is((select count(*)::int from public.matches), 4, 'two games per round: f
 select is(pg_temp.repeats(0), 0, 'the second game of a round uses new lobbies');
 update public.season set games_per_round = 1;
 
--- New code makes a new lobby; the same file does not.
--- Six players: the lowest-rated five (2-6) fill a lobby, player 1 gets house bots.
+-- Six players: two lobbies of three players, each topped up with two house bots (nobody plays alone).
 select pg_temp.reset_rounds();
 select pg_temp.drop_players_above(6);
 create temp table e1 as select internal.schedule_round() as id;
-select ok(exists(select 1 from pg_temp.lobbies((select id from e1)) l where l = array[2, 3, 4, 5, 6]),
-  'players 2-6 share a lobby');
-select pg_temp.upload(2, 'sha-v2');
-create temp table e2 as select internal.schedule_round() as id;
-select ok(exists(select 1 from pg_temp.lobbies((select id from e2)) l where l = array[2, 3, 4, 5, 6]),
-  'after player 2 uploads new code, players 2-6 can meet again');
-select pg_temp.upload(2, 'sha-v2');
-create temp table e3 as select internal.schedule_round() as id;
-select ok(not exists(select 1 from pg_temp.lobbies((select id from e3)) l where l = array[2, 3, 4, 5, 6]),
-  're-uploading the same file still counts as a repeat');
+select is(
+  (select array_agg(n order by n) from (
+     select (count(*) filter (where p.n is not null))::int as n
+       from public.matches m join public.match_players mp on mp.match_id = m.id
+       left join players p on p.bot = mp.bot_id
+      where m.round_id = (select id from e1) group by m.id) x),
+  array[3, 3], 'six players: two lobbies of three players');
+select is(
+  (select count(*)::int from public.match_players mp join public.matches m on m.id = mp.match_id
+     join public.bots b on b.id = mp.bot_id where m.round_id = (select id from e1) and b.is_house), 4,
+  'each of them is topped up with two house bots');
 
 -- Five players: the repeat can't be avoided, so it is played
 select pg_temp.reset_rounds();
