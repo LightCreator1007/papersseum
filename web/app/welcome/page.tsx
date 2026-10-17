@@ -53,7 +53,7 @@ async function WelcomeContent({ searchParams }: { searchParams: PageProps<"/welc
   }
   const owner = await getProfileName(userId).catch(() => null);
   const first = firstName(owner);
-  const genome = characterFor({ name: bot.name });
+  const genome = characterFor(bot);
   const accent = signatureColor(genome);
 
   return (

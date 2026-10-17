@@ -24,7 +24,7 @@ function Row({ r, mine, compact }: { r: LeaderRow; mine: string | null; compact:
       <td className="rank-cell">{r.games === 0 ? "-" : r.rank}</td>
       <td>
         <span className={styles.bot} title={r.name}>
-          <BotTag name={r.name} />
+          <BotTag name={r.name} appearance={r.appearance} />
           {r.isHouse && <span className={styles.house} title="House bot, run by the organisers">house</span>}
           {r.botId === mine && <span className={styles.you}>you</span>}
         </span>

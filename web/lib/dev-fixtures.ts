@@ -3,6 +3,7 @@ import type { Notification } from "@/lib/notifications";
 import type { MyBot, MySubmission } from "@/features/ladder/queries";
 import type { CheckProgress } from "@/features/upload/check-progress";
 import type { SeatRow } from "@/lib/stats/scorecards";
+import type { BotGenome } from "@/lib/character/genome";
 
 // Fixture data behind the dev login (lib/dev-auth.ts). Seeded, so every reload shows the
 // same thing. Each persona covers a different set of states on the /me pages.
@@ -10,11 +11,19 @@ import type { SeatRow } from "@/lib/stats/scorecards";
 const bot = (n: number) => `00000000-0000-4000-8000-00000000b00${n}`;
 const sub = (b: number, v: number) => `00000000-0000-4000-8000-0000000${b}${String(v).padStart(4, "0")}`;
 
+// The player has made a character in the Bot Forge; the others still wear the one
+// their name seeds. Saving in the forge under the dev login stays in the browser,
+// and the player's saved character still wins over that copy.
+export const DEV_PLAYER_APPEARANCE: BotGenome = { v: 1, head: 5, eyes: 1, antenna: 3, mouth: 3, pattern: 2, signature: 4 };
+
 const BOTS: Record<DevPersona, MyBot | null> = {
   // New accounts get a bot named after the email handle, often a roll number (FigJam Identity).
-  newcomer: { id: bot(1), name: "23bcs101", banned: false, activeVersion: null, rank: null, renamedFrom: null },
-  player: { id: bot(2), name: "ash_bot", banned: false, activeVersion: 3, rank: 12, renamedFrom: "23bcs042" },
-  banned: { id: bot(3), name: "rule_bender", banned: true, activeVersion: 1, rank: null, renamedFrom: null },
+  newcomer: { id: bot(1), name: "23bcs101", banned: false, activeVersion: null, rank: null, renamedFrom: null, appearance: null },
+  player: {
+    id: bot(2), name: "ash_bot", banned: false, activeVersion: 3, rank: 12, renamedFrom: "23bcs042",
+    appearance: DEV_PLAYER_APPEARANCE,
+  },
+  banned: { id: bot(3), name: "rule_bender", banned: true, activeVersion: 1, rank: null, renamedFrom: null, appearance: null },
   organiser: null, // organisers run the season; they needn't have a bot
 };
 

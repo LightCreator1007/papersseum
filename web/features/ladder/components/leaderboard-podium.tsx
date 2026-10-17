@@ -14,7 +14,7 @@ export function LeaderboardPodium({ rows }: { rows: LeaderRow[] }) {
   return (
     <ol className={styles.podium} aria-label="Top three">
       {order.map((r) => {
-        const g = characterFor({ name: r.name });
+        const g = characterFor(r);
         const place = r === top[0] ? 1 : r === top[1] ? 2 : 3;
         return (
           <li key={r.botId} className={styles.step} data-place={place}>

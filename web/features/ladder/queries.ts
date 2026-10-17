@@ -8,6 +8,7 @@ import type { SeasonDates } from "@/lib/season-phase";
 import type { SeatRow } from "@/lib/stats/scorecards";
 import type { Notification } from "@/lib/notifications";
 import { callRpc } from "@/lib/server/rpc";
+import { parseGenome, type BotGenome } from "@/lib/character/genome";
 import { DEV_PERSONAS, devPersona, personaForUser } from "@/lib/dev-auth";
 import { devBot, devHistory, devNotifications, devSubmissions, isDevBotId } from "@/lib/dev-fixtures";
 
@@ -96,6 +97,8 @@ export type LeaderRow = {
   games: number;
   version: number | null;
   activeSince: string | null;
+  // The character saved in the Bot Forge, or null to draw the one the name seeds.
+  appearance: BotGenome | null;
 };
 
 // Ties (equal rank) go to more games, then the older bot, then name. The database orders the
@@ -123,6 +126,7 @@ export async function getLeaderboard(limit?: number): Promise<LeaderRow[]> {
     games: r.games ?? 0,
     version: r.active_version,
     activeSince: r.active_since,
+    appearance: parseGenome(r.appearance),
   })));
 }
 
@@ -144,6 +148,7 @@ export type SeatSummary = {
   placement: number | null;
   coverage: number | null;
   crashed: boolean | null;
+  appearance: BotGenome | null;
 };
 
 export type MatchSummary = {
@@ -168,7 +173,7 @@ export async function getMatches({
   const from = (page - 1) * pageSize;
   let query = supabase
     .from("matches")
-    .select("id, round_id, status, created_at, finished_at, match_players(slot, placement, coverage, crashed, bots(name, is_house))");
+    .select("id, round_id, status, created_at, finished_at, match_players(slot, placement, coverage, crashed, bots(name, is_house, appearance))");
   if (finishedOnly) query = query.eq("status", "done");
   const rows = check(
     "matches",
@@ -188,6 +193,7 @@ export async function getMatches({
         placement: p.placement,
         coverage: p.coverage,
         crashed: p.crashed,
+        appearance: parseGenome(p.bots?.appearance),
       }))
       .sort((a, b) => (a.placement ?? 9) - (b.placement ?? 9) || a.slot - b.slot),
   }));
@@ -207,6 +213,7 @@ export type SeatResult = {
   eloAfter: number | null;
   version: number | null;
   banned: boolean;
+  appearance: BotGenome | null;
 };
 
 export type MatchDetail = {
@@ -228,7 +235,7 @@ export async function getMatch(id: number): Promise<MatchDetail | null> {
     "this match",
     await supabase
       .from("matches")
-      .select("id, round_id, seed, status, error, replay_path, created_at, started_at, finished_at, match_players(slot, submission_id, placement, coverage, deaths, strikes, crashed, elo_before, elo_after, bots(name, is_house, banned))")
+      .select("id, round_id, seed, status, error, replay_path, created_at, started_at, finished_at, match_players(slot, submission_id, placement, coverage, deaths, strikes, crashed, elo_before, elo_after, bots(name, is_house, banned, appearance))")
       .eq("id", id)
       .maybeSingle(),
   );
@@ -258,6 +265,7 @@ export async function getMatch(id: number): Promise<MatchDetail | null> {
         eloAfter: p.elo_after,
         version: p.submission_id ? (versions.get(p.submission_id) ?? null) : null,
         banned: !!p.bots?.banned,
+        appearance: parseGenome(p.bots?.appearance),
       }))
       .sort((a, b) => (a.placement ?? 9) - (b.placement ?? 9) || a.slot - b.slot),
   };
@@ -297,6 +305,7 @@ export type BotProfile = {
   rank: number | null;
   rating: number | null;
   sigma: number | null;
+  appearance: BotGenome | null;
 };
 
 export async function getBot(name: string): Promise<BotProfile | null> {
@@ -305,7 +314,7 @@ export async function getBot(name: string): Promise<BotProfile | null> {
     "this bot",
     await supabase
       .from("bots")
-      .select("id, name, is_house, banned, elo, games, active_version, active_since, profiles(display_name)")
+      .select("id, name, is_house, banned, elo, games, active_version, active_since, appearance, profiles(display_name)")
       .eq("name", name)
       .maybeSingle(),
   );
@@ -327,6 +336,7 @@ export async function getBot(name: string): Promise<BotProfile | null> {
     rank: ladder?.rank ?? null,
     rating: ladder?.conservative ?? null,
     sigma: ladder?.sigma ?? null,
+    appearance: parseGenome(bot.appearance),
   };
 }
 
@@ -370,6 +380,7 @@ export type MyBot = {
   rank: number | null;
   // The bot's name before this season's rename, or null if the rename is still unused.
   renamedFrom: string | null;
+  appearance: BotGenome | null;
 };
 
 export async function getMyBot(userId: string): Promise<MyBot | null> {
@@ -380,7 +391,7 @@ export async function getMyBot(userId: string): Promise<MyBot | null> {
     "your bot",
     await supabase
       .from("bots")
-      .select("id, name, banned, active_version, bot_name_aliases(old_name)")
+      .select("id, name, banned, active_version, appearance, bot_name_aliases(old_name)")
       .eq("owner_id", userId)
       .maybeSingle(),
   );
@@ -396,6 +407,7 @@ export async function getMyBot(userId: string): Promise<MyBot | null> {
     activeVersion: bot.active_version,
     rank: ladder?.rank ?? null,
     renamedFrom: bot.bot_name_aliases[0]?.old_name ?? null,
+    appearance: parseGenome(bot.appearance),
   };
 }
 

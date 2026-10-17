@@ -13,7 +13,7 @@ export async function RosterMarquee() {
   if (rows.length === 0) return null;
   const pass = (copy: number) =>
     rows.map((r) => {
-      const g = characterFor({ name: r.name });
+      const g = characterFor(r);
       return (
         <li key={`${copy}-${r.botId}`} aria-hidden={copy > 0 || undefined}>
           <Link href={botHref(r.name)} tabIndex={copy > 0 ? -1 : undefined}>

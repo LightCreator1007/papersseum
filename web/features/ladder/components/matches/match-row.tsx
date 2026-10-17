@@ -14,7 +14,7 @@ const CTA: Record<MatchStatus, string> = { queued: "View match", running: "View 
 const nameOf = (s: SeatSummary) => s.name ?? "deleted bot";
 
 function Face({ seat, size }: { seat: SeatSummary; size: number }) {
-  return <BotCharacter genome={characterFor({ name: seat.name })} size={size} accent={`var(--slot-${seat.slot})`} state="still" label="" />;
+  return <BotCharacter genome={characterFor(seat)} size={size} accent={`var(--slot-${seat.slot})`} state="still" label="" />;
 }
 
 // The other four, smallest to the right: a face with its place, then the names in one muted line.

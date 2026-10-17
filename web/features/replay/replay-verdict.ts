@@ -13,7 +13,13 @@ export const COVERAGE_TOLERANCE = 1e-5;
 const coverageAgrees = (a: number, b: number) =>
   Math.abs(a - b) <= COVERAGE_TOLERANCE * Math.max(1, Math.abs(a), Math.abs(b));
 
-export type ExpectedSeat = { slot: number; name: string | null; placement: number | null; coverage: number | null };
+export type ExpectedSeat = {
+  slot: number;
+  name: string | null;
+  placement: number | null;
+  coverage: number | null;
+  appearance?: unknown; // the bot's saved character, drawn on its snake head
+};
 type Facts = { place: number | null; coverage: number | null };
 export type SeatDiff = { slot: number; got: { place: number; coverage: number }; recorded: Facts };
 export type Verdict =
@@ -110,6 +116,14 @@ export function seatNames(players: unknown, expected?: ExpectedSeat[]): string[]
     names[slot] = bot_name.trim().slice(0, MAX_NAME);
   }
   return names;
+}
+
+// Each seat's saved character, by slot, from the match page's database rows.
+// A replay file carries none, so a dropped file draws every head from its name.
+export function seatAppearances(expected?: ExpectedSeat[]): unknown[] {
+  const out: unknown[] = Array.from({ length: SEATS }, () => null);
+  for (const s of expected ?? []) if (inSeats(s.slot)) out[s.slot] = s.appearance ?? null;
+  return out;
 }
 
 const ORDINALS = ["1st", "2nd", "3rd", "4th", "5th"];

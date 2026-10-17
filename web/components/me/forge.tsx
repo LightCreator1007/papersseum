@@ -55,8 +55,18 @@ export function Forge({ name, saved }: { name: string; saved: BotGenome | null }
   const [state, save, pending] = useActionState(
     async (prev: ActionState, form: FormData): Promise<ActionState> => {
       const res = await saveAppearance(prev, form);
-      if (res.ok || res.reason !== "unavailable") return res;
-      // The database column isn't deployed yet: keep the design in this browser meanwhile.
+      if (res.ok) {
+        // Saved on the account, which now wins: drop this browser's older copy.
+        try {
+          localStorage.removeItem(storageKey(name));
+          window.dispatchEvent(new StorageEvent("storage"));
+        } catch {
+          // storage blocked: there's no copy to drop
+        }
+        return res;
+      }
+      if (res.reason !== "unavailable") return res;
+      // Saving on the account is off (dev login, or the database function is missing): keep the design in this browser meanwhile.
       try {
         localStorage.setItem(storageKey(name), String(form.get("appearance")));
         window.dispatchEvent(new StorageEvent("storage"));
