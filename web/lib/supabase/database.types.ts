@@ -281,6 +281,11 @@ isOneToOne: false
 "resolve_bot_name":
 { Args: { "p_name": string }; Returns: string
                            },
+"set_active_submission":
+{ Args: { "p_submission": string }; Returns: {
+              "status": string
+            }[]
+                           },
 "set_bot_appearance":
 { Args: { "p_appearance": Json }; Returns: undefined
                            }
