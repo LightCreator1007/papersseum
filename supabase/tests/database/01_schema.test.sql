@@ -4,7 +4,8 @@ select plan(32);
 
 select tables_are('public',
   array['season', 'profiles', 'admins', 'bots', 'submissions', 'rounds', 'matches',
-        'match_players', 'jobs', 'workers', 'bot_name_aliases'],
+        'match_players', 'jobs', 'workers', 'bot_name_aliases', 'notification_settings',
+        'notifications'],
   'public schema has exactly the expected tables');
 
 select is(
@@ -19,7 +20,8 @@ select ok(
 select functions_are('internal',
   array['handle_new_user', 'claim_job', 'heartbeat', 'own_running_job', 'complete_validation',
         'lock_match_bots', 'complete_match', 'mark_job_failed', 'fail_job', 'requeue_expired',
-        'schedule_round', 'lobby_key', 'lobby_played', 'students_played', 'display_name_from', 'refresh_display_name'],
+        'schedule_round', 'lobby_key', 'lobby_played', 'students_played', 'display_name_from',
+        'refresh_display_name', 'notify_validation', 'notify_match'],
   'internal schema has exactly the expected functions');
 
 -- Season defaults
@@ -56,8 +58,8 @@ select results_eq(
 select is(
   array(select tablename::text from pg_publication_tables where pubname = 'supabase_realtime'
           and schemaname = 'public' order by 1),
-  array['bots', 'matches', 'submissions'],
-  'realtime publishes bots, matches and submissions');
+  array['bots', 'matches', 'notifications', 'submissions'],
+  'realtime publishes bots, matches, notifications and submissions');
 
 -- Table privileges: private tables are closed to browsers
 select table_privs_are('public', 'jobs',    'anon',          array[]::text[], 'anon has no access to jobs');

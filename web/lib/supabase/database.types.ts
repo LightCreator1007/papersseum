@@ -155,6 +155,46 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"notification_settings": {
+                  Row: {
+                    "email_opt_in": boolean,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "email_opt_in"?: boolean,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "email_opt_in"?: boolean,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notification_settings_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"notifications": {
+                  Row: {
+                    "created_at": string,"id": number,"kind": string,"payload": NonNullable<Json>,"read_at": string | null,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: never,"kind": string,"payload"?: NonNullable<Json>,"read_at"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: never,"kind"?: string,"payload"?: NonNullable<Json>,"read_at"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notifications_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"profiles": {
                   Row: {
                     "created_at": string,"display_name": string | null,"handle": string,"id": string
@@ -273,6 +313,29 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"mark_notifications_read":
+{ Args: { "p_ids": (number)[] }; Returns: undefined
+                           },
+"my_notifications":
+{ Args: { "p_limit"?: number }; Returns: {
+              "created_at": string,
+"id": number,
+"kind": string,
+"payload": NonNullable<Json>,
+"read_at": string | null,
+"user_id": string
+            }[]
+                          SetofOptions: {
+        from: "*"
+        to: "notifications"
+        isOneToOne: false
+        isSetofReturn: true
+      } },
+"my_settings":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "email_opt_in": boolean
+            }[]
+                           },
 "rename_bot":
 { Args: { "p_new_name": string }; Returns: {
               "name": string
@@ -288,6 +351,9 @@ isOneToOne: false
                            },
 "set_bot_appearance":
 { Args: { "p_appearance": Json }; Returns: undefined
+                           },
+"set_email_opt_in":
+{ Args: { "p_opt_in": boolean }; Returns: undefined
                            }
           }
           Enums: {

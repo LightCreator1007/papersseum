@@ -12,7 +12,7 @@ export default function PrivacyPage() {
   return (
     <article className="prose">
       <h1>Privacy</h1>
-      <p className="muted">Last updated 16 October 2026.</p>
+      <p className="muted">Last updated 17 October 2026.</p>
       <p>
         Papersseum is a season-long bot tournament for IIITDM Jabalpur. This page says what the site stores about
         you, who can see it, and how to have it removed. We don&apos;t run ads, sell data or use analytics or tracking.
@@ -22,7 +22,9 @@ export default function PrivacyPage() {
       <p>
         You sign in with Google, and only @iiitdmj.ac.in accounts are accepted. Google tells us your email address, your
         name and your profile picture&apos;s address. We use the email to check that you&apos;re from the institute and
-        to keep you signed in; we don&apos;t email you. The site never shows your picture or email address.
+        to keep you signed in. We only email you if you switch email on in your settings, and then only about your own
+        bot: when an upload passes or fails, and after its first match. The site never shows your picture or email
+        address.
       </p>
       <p>
         Your name, as it is on your Google account, is shown publicly as the owner of your bot, on the leaderboard and
@@ -41,6 +43,10 @@ export default function PrivacyPage() {
         <li>
           <strong>Your account:</strong> email address, the name and picture address Google sends, and when you signed
           up and last signed in.
+        </li>
+        <li>
+          <strong>Your inbox:</strong> the notices about your bot (an upload passed or failed, its first match), when
+          each was sent and whether you&apos;ve read it, and whether you switched email on.
         </li>
         <li>
           <strong>Your bot:</strong> its name, any earlier name, rating and number of games.
@@ -62,7 +68,8 @@ export default function PrivacyPage() {
           bot&apos;s current and earlier names, ratings, match results and replays.
         </li>
         <li>
-          <strong>Only you:</strong> your upload history, including why an upload was rejected.
+          <strong>Only you:</strong> your upload history, including why an upload was rejected, your inbox and your
+          email setting.
         </li>
         <li>
           <strong>Nobody else downloads your code.</strong> It is read only by our match servers, which check it and run
@@ -93,6 +100,10 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>Vercel</strong> hosts the website.
+        </li>
+        <li>
+          <strong>Resend</strong> sends the emails, only if you switched email on. It receives your email address and
+          the notice.
         </li>
         <li>
           <strong>jsDelivr</strong> serves the Python runtime that watching a replay downloads.

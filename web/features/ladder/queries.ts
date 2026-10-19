@@ -536,8 +536,15 @@ type NotificationRow = {
   read_at: string | null;
 };
 
-// A10: reads through my_notifications until the notifications table ships and
-// database.types.ts is regenerated; then this can select the table directly.
+// The saved email choice for the settings checkbox. False when it was never
+// saved or can't be read, which matches the database default.
+export async function getEmailOptIn(): Promise<boolean> {
+  if (await devPersona()) return false;
+  const r = await callRpc<{ email_opt_in: boolean }[] | null>(await createClient(), "my_settings", {});
+  return r.ok ? (r.data?.[0]?.email_opt_in ?? false) : false;
+}
+
+// A10: reads through my_notifications, so RLS and the 100-row cap apply.
 export async function getNotifications(limit = 30): Promise<{ items: Notification[]; available: boolean; error: string | null }> {
   const persona = await devPersona();
   if (persona) return { items: devNotifications(persona).slice(0, limit), available: true, error: null };
